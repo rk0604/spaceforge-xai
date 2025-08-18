@@ -1,0 +1,3 @@
+/common/home/rvk22/spaceforge_sim/build/CMakeFiles/simulation.dir
+/common/home/rvk22/spaceforge_sim/build/CMakeFiles/edit_cache.dir
+/common/home/rvk22/spaceforge_sim/build/CMakeFiles/rebuild_cache.dir
