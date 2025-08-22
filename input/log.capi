@@ -1,0 +1,119 @@
+SPARTA (20 Jan 2025)
+Running on 4 MPI task(s)
+################################################################################
+# Wake starter deck (Argon) — inflow at xlo, outflow elsewhere
+# Emits a drifting Maxwellian from xlo (fix emit/face); open boundaries.
+################################################################################
+
+seed                12345
+dimension           3
+global              gridcut 1.0e-5 comm/sort yes    # OK for reproducibility; drop for prod
+
+# ---------------- Domain & grid ----------------
+# Boundary must be set BEFORE create_box. Use two-letter tokens: oo = outflow.
+boundary            oo oo oo
+create_box          0 0.0001   0 0.0001   0 0.0001
+Created orthogonal box = (0 0 0) to (0.0001 0.0001 0.0001)
+create_grid         10 10 10
+WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
+Created 1000 child grid cells
+  CPU time = 0.000350075 secs
+  create/ghost percent = 77.4751 22.5249
+balance_grid        rcb part
+Balance grid migrated 740 cells
+  CPU time = 0.00104753 secs
+  reassign/sort/migrate/ghost percent = 47.3353 0.350062 17.0203 35.2944
+
+# ---------------- Gas, mixture, collisions ----------------
+species             data/ar.species Ar
+mixture             air Ar vstream 7500.0 0.0 0.0 temp 273.15   # ~7.5 km/s
+global              nrho 7.07043e22
+global              fnum 7.07043e6
+collide             vss air data/ar.vss
+
+# ---------------- Inflow emitter ----------------
+# Inject from the xlo face using mixture "air".
+# With n=0 (default), injected count is computed from Bird flux using fnum/nrho/vstream/T.
+fix                 in emit/face air xlo
+# (Alternative: prescribe boundary pressure/temperature)
+# fix              in emit/face air xlo subsonic 0.1 300.0
+
+# ---------------- Diagnostics ----------------
+stats               100
+compute             temp temp
+stats_style         step cpu np nattempt ncoll c_temp
+
+# Optional field dumps for inspection:
+# compute            cN grid all n
+# compute            cT grid all temp
+# dump               d1 grid 100 grid.*.bin fields n T U
+
+# ---------------- Time integration ----------------
+timestep            7.0e-9
+run                 1000
+Memory usage per proc in Mbytes:
+  particles (ave,min,max) = 0 0 0
+  grid      (ave,min,max) = 1.51379 1.51379 1.51379
+  surf      (ave,min,max) = 0 0 0
+  total     (ave,min,max) = 1.51379 1.51379 1.51379
+Step CPU Np Natt Ncoll c_temp 
+       0            0        0        0        0            0 
+     100  0.060808498     9775      930      696     90249.41 
+     200   0.11734311     9762      928      680     90241.68 
+     300   0.17371137     9779      965      683    90346.376 
+     400   0.23007021     9802      965      695     90365.27 
+     500   0.28647675     9782      971      645    90391.634 
+     600   0.34289742     9747      960      656    90244.654 
+     700    0.3992405     9764      983      674    90449.856 
+     800   0.45564567     9761      976      650    90376.928 
+     900   0.51203877     9766      963      621    90175.619 
+    1000   0.56847671     9723      983      650    90383.629 
+Loop time of 0.568481 on 4 procs for 1000 steps with 9723 particles
+
+MPI task timing breakdown:
+Section |  min time  |  avg time  |  max time  |%varavg| %total
+---------------------------------------------------------------
+Move    | 0.1232     | 0.13489    | 0.15642    |   3.5 | 23.73
+Coll    | 0.019571   | 0.022612   | 0.024014   |   1.2 |  3.98
+Sort    | 0.0019146  | 0.0022285  | 0.0023435  |   0.4 |  0.39
+Comm    | 0.070514   | 0.07602    | 0.078116   |   1.2 | 13.37
+Modify  | 4.6168e-05 | 0.11308    | 0.24861    |  33.9 | 19.89
+Output  | 6.8177e-05 | 8.7882e-05 | 0.00013481 |   0.0 |  0.02
+Other   |            | 0.2196     |            |       | 38.62
+
+Particle moves    = 10031664 (10M)
+Cells touched     = 67491791 (67.5M)
+Particle comms    = 5141275 (5.14M)
+Boundary collides = 0 (0K)
+Boundary exits    = 5240116 (5.24M)
+SurfColl checks   = 0 (0K)
+SurfColl occurs   = 0 (0K)
+Surf reactions    = 0 (0K)
+Collide attempts  = 948431 (0.948M)
+Collide occurs    = 663645 (0.664M)
+Reactions         = 0 (0K)
+Particles stuck   = 0
+Axisymm bad moves = 0
+
+Particle-moves/CPUsec/proc: 4.41161e+06
+Particle-moves/step: 10031.7
+Cell-touches/particle/step: 6.72788
+Particle comm iterations/step: 1.999
+Particle fraction communicated: 0.512505
+Particle fraction colliding with boundary: 0
+Particle fraction exiting boundary: 0.522358
+Surface-checks/particle/step: 0
+Surface-collisions/particle/step: 0
+Surf-reactions/particle/step: 0
+Collision-attempts/particle/step: 0.0945437
+Collisions/particle/step: 0.066155
+Reactions/particle/step: 0
+
+Particles: 2430.75 ave 2480 max 2386 min
+Histogram: 2 0 0 0 0 0 0 0 1 1
+Cells:      250 ave 250 max 250 min
+Histogram: 4 0 0 0 0 0 0 0 0 0
+GhostCell: 172.5 ave 240 max 110 min
+Histogram: 1 0 0 0 2 0 0 0 0 1
+EmptyCell: 62.5 ave 130 max 0 min
+Histogram: 1 0 0 0 2 0 0 0 0 1
