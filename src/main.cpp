@@ -9,7 +9,7 @@ Build SPARTA once (external):
   # => ~/opt/sparta/src/libsparta_mpi.a  (and symlink libsparta.a)
 
 Build this project:
-  cd ~/spaceforge_sim
+  cd ~/spaceforge-xais
   cmake -S . -B build -DMPI_CXX_COMPILER=$(which mpicxx) -DSPARTA_DIR=$HOME/opt/sparta/src
   cmake --build build -j
 
@@ -47,8 +47,16 @@ int main(int argc, char** argv) {
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  const char* deck = (argc > 1) ? argv[1] : "in.demo";
-  if (rank == 0) std::cout << "Running SPARTA deck: " << deck << std::endl;
+  // const char* deck = (argc > 1) ? argv[1] : "in.demo";
+  // if (rank == 0) std::cout << "Running SPARTA deck: " << deck << std::endl;
+
+    // Default to in.wake and cd into input/ so relative paths (data/ar.*) work
+  fs::path input_dir = fs::path(PROJECT_SOURCE_DIR) / "input";
+  fs::current_path(input_dir);
+
+  const char* deck = (argc > 1) ? argv[1] : "in.wake";
+  if (rank==0) std::cout << "Running SPARTA deck: " << deck
+                         << " from " << fs::current_path().string() << "\n";
 
   // Run the deck
   sparta_file(spa, const_cast<char*>(deck));

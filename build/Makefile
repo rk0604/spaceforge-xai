@@ -57,10 +57,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /common/home/rvk22/spaceforge_sim
+CMAKE_SOURCE_DIR = /common/home/rvk22/spaceforge-xai
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /common/home/rvk22/spaceforge_sim/build
+CMAKE_BINARY_DIR = /common/home/rvk22/spaceforge-xai/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -87,9 +87,9 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge_sim/build/CMakeFiles /common/home/rvk22/spaceforge_sim/build//CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge-xai/build/CMakeFiles /common/home/rvk22/spaceforge-xai/build//CMakeFiles/progress.marks
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge_sim/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge-xai/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
@@ -113,45 +113,35 @@ preinstall/fast:
 
 # clear depends
 depend:
+	$(CMAKE_COMMAND) -P /common/home/rvk22/spaceforge-xai/build/CMakeFiles/VerifyGlobs.cmake
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named simulation
+# Target rules for targets named simcore
 
 # Build rule for target.
-simulation: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 simulation
-.PHONY : simulation
+simcore: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 simcore
+.PHONY : simcore
 
 # fast build rule for target.
-simulation/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/build
-.PHONY : simulation/fast
+simcore/fast:
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/build
+.PHONY : simcore/fast
 
-src/main.o: src/main.cpp.o
-.PHONY : src/main.o
+#=============================================================================
+# Target rules for targets named sim_app
 
-# target to build an object file
-src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/src/main.cpp.o
-.PHONY : src/main.cpp.o
+# Build rule for target.
+sim_app: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sim_app
+.PHONY : sim_app
 
-src/main.i: src/main.cpp.i
-.PHONY : src/main.i
-
-# target to preprocess a source file
-src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/src/main.cpp.i
-.PHONY : src/main.cpp.i
-
-src/main.s: src/main.cpp.s
-.PHONY : src/main.s
-
-# target to generate assembly for a file
-src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/src/main.cpp.s
-.PHONY : src/main.cpp.s
+# fast build rule for target.
+sim_app/fast:
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim_app.dir/build.make Sim/CMakeFiles/sim_app.dir/build
+.PHONY : sim_app/fast
 
 # Help Target
 help:
@@ -161,10 +151,8 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... simulation"
-	@echo "... src/main.o"
-	@echo "... src/main.i"
-	@echo "... src/main.s"
+	@echo "... sim_app"
+	@echo "... simcore"
 .PHONY : help
 
 
@@ -176,6 +164,7 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
+	$(CMAKE_COMMAND) -P /common/home/rvk22/spaceforge-xai/build/CMakeFiles/VerifyGlobs.cmake
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

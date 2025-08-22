@@ -54,51 +54,94 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /common/home/rvk22/spaceforge_sim
+CMAKE_SOURCE_DIR = /common/home/rvk22/spaceforge-xai
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /common/home/rvk22/spaceforge_sim/build
+CMAKE_BINARY_DIR = /common/home/rvk22/spaceforge-xai/build
 
 #=============================================================================
 # Directory level rules for the build root directory
 
 # The main recursive "all" target.
-all: CMakeFiles/simulation.dir/all
+all: Sim/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
-preinstall:
+preinstall: Sim/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
-clean: CMakeFiles/simulation.dir/clean
+clean: Sim/clean
 .PHONY : clean
 
 #=============================================================================
-# Target rules for target CMakeFiles/simulation.dir
+# Directory level rules for directory Sim
+
+# Recursive "all" directory target.
+Sim/all: Sim/CMakeFiles/simcore.dir/all
+Sim/all: Sim/CMakeFiles/sim_app.dir/all
+.PHONY : Sim/all
+
+# Recursive "preinstall" directory target.
+Sim/preinstall:
+.PHONY : Sim/preinstall
+
+# Recursive "clean" directory target.
+Sim/clean: Sim/CMakeFiles/simcore.dir/clean
+Sim/clean: Sim/CMakeFiles/sim_app.dir/clean
+.PHONY : Sim/clean
+
+#=============================================================================
+# Target rules for target Sim/CMakeFiles/simcore.dir
 
 # All Build rule for target.
-CMakeFiles/simulation.dir/all:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/depend
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/common/home/rvk22/spaceforge_sim/build/CMakeFiles --progress-num=1,2 "Built target simulation"
-.PHONY : CMakeFiles/simulation.dir/all
+Sim/CMakeFiles/simcore.dir/all:
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/depend
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/common/home/rvk22/spaceforge-xai/build/CMakeFiles --progress-num=3,4,5,6,7,8,9,10,11,12,13 "Built target simcore"
+.PHONY : Sim/CMakeFiles/simcore.dir/all
 
 # Build rule for subdir invocation for target.
-CMakeFiles/simulation.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge_sim/build/CMakeFiles 2
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 CMakeFiles/simulation.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge_sim/build/CMakeFiles 0
-.PHONY : CMakeFiles/simulation.dir/rule
+Sim/CMakeFiles/simcore.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge-xai/build/CMakeFiles 11
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Sim/CMakeFiles/simcore.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge-xai/build/CMakeFiles 0
+.PHONY : Sim/CMakeFiles/simcore.dir/rule
 
 # Convenience name for target.
-simulation: CMakeFiles/simulation.dir/rule
-.PHONY : simulation
+simcore: Sim/CMakeFiles/simcore.dir/rule
+.PHONY : simcore
 
 # clean rule for target.
-CMakeFiles/simulation.dir/clean:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/simulation.dir/build.make CMakeFiles/simulation.dir/clean
-.PHONY : CMakeFiles/simulation.dir/clean
+Sim/CMakeFiles/simcore.dir/clean:
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/clean
+.PHONY : Sim/CMakeFiles/simcore.dir/clean
+
+#=============================================================================
+# Target rules for target Sim/CMakeFiles/sim_app.dir
+
+# All Build rule for target.
+Sim/CMakeFiles/sim_app.dir/all: Sim/CMakeFiles/simcore.dir/all
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim_app.dir/build.make Sim/CMakeFiles/sim_app.dir/depend
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim_app.dir/build.make Sim/CMakeFiles/sim_app.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/common/home/rvk22/spaceforge-xai/build/CMakeFiles --progress-num=1,2 "Built target sim_app"
+.PHONY : Sim/CMakeFiles/sim_app.dir/all
+
+# Build rule for subdir invocation for target.
+Sim/CMakeFiles/sim_app.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge-xai/build/CMakeFiles 13
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 Sim/CMakeFiles/sim_app.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /common/home/rvk22/spaceforge-xai/build/CMakeFiles 0
+.PHONY : Sim/CMakeFiles/sim_app.dir/rule
+
+# Convenience name for target.
+sim_app: Sim/CMakeFiles/sim_app.dir/rule
+.PHONY : sim_app
+
+# clean rule for target.
+Sim/CMakeFiles/sim_app.dir/clean:
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim_app.dir/build.make Sim/CMakeFiles/sim_app.dir/clean
+.PHONY : Sim/CMakeFiles/sim_app.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.
@@ -107,6 +150,7 @@ CMakeFiles/simulation.dir/clean:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
+	$(CMAKE_COMMAND) -P /common/home/rvk22/spaceforge-xai/build/CMakeFiles/VerifyGlobs.cmake
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

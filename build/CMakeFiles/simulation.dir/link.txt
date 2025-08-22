@@ -1,1 +1,0 @@
-/usr/bin/c++ CMakeFiles/simulation.dir/src/main.cpp.o -o simulation  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib /common/home/rvk22/opt/sparta/src/libsparta.a /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so 
