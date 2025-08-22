@@ -17,6 +17,10 @@ Run:
   # from the deck directory so relative paths work
   cd ~/opt/sparta/examples/collide
   DISPLAY= mpirun -np 4 ~/spaceforge_sim/build/simulation in.collide
+
+  Note: in.collide is a deck (a plain-text SPARTA input script )
+         - list them all using: find ~/opt/sparta -type f -name 'in.*' | sort
+         - peak inside a deck using: head -n 40 ~/opt/sparta/examples/collide/in.collide
 */
 
 #include <iostream>
