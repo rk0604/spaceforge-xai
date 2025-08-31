@@ -1,93 +1,198 @@
 // Sim/src/main.cpp
+// mpirun -np 4 ./build/Sim/sim_app
+/**
+Build (from repo root):
+  cd ~/spaceforge-xai
+  rm -rf build && mkdir build && cd build
+  cmake -DSPARTA_DIR="$HOME/opt/sparta/src" -DCMAKE_BUILD_TYPE=Release ..
+  cmake --build . -j
+
+Run (from build/, headless):
+  env -u DISPLAY mpirun -np 4 ./Sim/sim_app                            # dual-instance (default)
+  env -u DISPLAY mpirun -np 4 ./Sim/sim_app --mode legacy              # original single-instance
+  env -u DISPLAY mpirun -np 4 ./Sim/sim_app --mode dual --split 3      # 3 ranks wake, 1 effusion
+  env -u DISPLAY mpirun -np 4 ./Sim/sim_app --mode dual \
+    --wake-deck in.wake --eff-deck in.effusion --input-subdir input \
+    --couple-every 10 --sparta-block 200
+*/
+
 #include <mpi.h>
 #include <cstdlib>
+#include <cstring>
 #include <iostream>
+#include <stdexcept>
 
 #include "SimulationEngine.hpp"
 #include "Battery.hpp"
 #include "SolarArray.hpp"
 #include "PowerBus.hpp"
 #include "HeaterBank.hpp"
-
-// ---------------------------
-// SMOKE TEST ADDITIONS
-// ---------------------------
-// Bring in the WakeChamber façade which internally talks to SPARTA
 #include "WakeChamber.hpp"
 
-int main(int argc, char** argv) {              // FIX 1: take argc/argv
-  // FIX 2: initialize MPI with the actual argc/argv pointers
-  // (You can switch to MPI_Init_thread if you later use threads.)
+// ---------------------------
+// Tiny CLI helpers (no deps)
+// ---------------------------
+struct Args {
+  std::string mode     = "dual";     // "dual" or "legacy"
+  std::string wakeDeck = "in.wake";
+  std::string effDeck  = "in.effusion";
+  std::string inputDir = "input";
+  int  nWake           = -1;         // -1 => world_size/2
+  int  coupleEvery     = 10;         // advance SPARTA every X engine ticks
+  int  spartaBlock     = 200;        // run N steps per advance
+  bool showHelp        = false;
+};
+
+static bool arg_eq(const char* a, const char* b) { return std::strcmp(a,b) == 0; }
+
+static Args parse_args(int argc, char** argv) {
+  Args a;
+  for (int i = 1; i < argc; ++i) {
+    if (arg_eq(argv[i], "--mode") && i+1 < argc)             a.mode = argv[++i];
+    else if (arg_eq(argv[i], "--wake-deck") && i+1 < argc)   a.wakeDeck = argv[++i];
+    else if (arg_eq(argv[i], "--eff-deck") && i+1 < argc)    a.effDeck  = argv[++i];
+    else if (arg_eq(argv[i], "--input-subdir") && i+1 < argc)a.inputDir = argv[++i];
+    else if (arg_eq(argv[i], "--split") && i+1 < argc)       a.nWake = std::atoi(argv[++i]);
+    else if (arg_eq(argv[i], "--couple-every") && i+1 < argc)a.coupleEvery = std::atoi(argv[++i]);
+    else if (arg_eq(argv[i], "--sparta-block") && i+1 < argc)a.spartaBlock = std::atoi(argv[++i]);
+    else if (arg_eq(argv[i], "--help"))                      a.showHelp = true;
+  }
+  return a;
+}
+
+static void print_usage() {
+  std::cout <<
+    "Usage: sim_app [--mode dual|legacy]\n"
+    "               [--wake-deck in.wake] [--eff-deck in.effusion]\n"
+    "               [--input-subdir input] [--split N]\n"
+    "               [--couple-every T] [--sparta-block N]\n"
+    "Default 'dual' splits MPI ranks into wake+effusion; each runs persistently.\n"
+    "Coupling advances SPARTA by N steps every T engine ticks.\n";
+}
+
+int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
 
   int rank = 0, size = 1;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &size);
 
+  Args args = parse_args(argc, argv);
+  if (args.showHelp) {
+    if (rank == 0) print_usage();
+    MPI_Finalize();
+    return 0;
+  }
+
   try {
-    // --- Subsystems ----------------------------------------------------------
+    // ------------------------------------------------------------------------
+    // Electrical/power subsystems (independent of SPARTA)
+    // ------------------------------------------------------------------------
     PowerBus   bus;
     SolarArray solar;
     Battery    battery;
-    HeaterBank heater(/*maxPowerW=*/200.0);     // can draw up to 200 W
+    HeaterBank heater(/*maxPowerW=*/200.0);
 
-    // Wire connections
     solar.setPowerBus(&bus);
     battery.setPowerBus(&bus);
     heater.setPowerBus(&bus);
 
-    // --- Engine setup --------------------------------------------------------
     SimulationEngine engine;
     engine.addSubsystem(&solar);
     engine.addSubsystem(&bus);
     engine.addSubsystem(&battery);
     engine.addSubsystem(&heater);
 
-    const double dt = 0.1;                      // seconds per tick
+    const double dt = 0.1; // seconds per tick
     engine.setTickStep(dt);
     engine.initialize();
 
     if (rank == 0) {
       std::cout << "Simulation starting on " << size
                 << " MPI task(s), dt=" << dt << " s\n";
+      std::cout << "Mode = " << args.mode << "\n";
     }
 
-    // ========================================================================
-    // SMOKE TEST: WakeChamber + SPARTA
-    // ------------------------------------------------------------------------
-    // We keep a live WakeChamber instance (backed by SPARTA) while the
-    // electrical/power subsystems tick. For now we run it on WORLD; later you
-    // can split ranks with MPI_Comm_split to dedicate a sub-communicator.
-    // - init() will load and run the deck once to set up grids/state.
-    // - step() currently re-runs the deck each tick (simple, stateless demo).
-    //   Once you add a persistent deck, swap this for a "run N" command.
-    // ========================================================================
-    WakeChamber wake(MPI_COMM_WORLD);
-    wake.init(/*deck_basename*/ "in.wake",
-              /*input_subdir*/  "input");
+    // ======================================================================
+    // MODE A: legacy (single SPARTA instance on WORLD)
+    // ======================================================================
+    if (args.mode == "legacy") {
+      WakeChamber wake(MPI_COMM_WORLD);
+      wake.init(args.wakeDeck.c_str(), args.inputDir.c_str());
 
-    // --- Main loop -----------------------------------------------------------
-    const int NTICKS = 50;
-    for (int i = 0; i < NTICKS; ++i) {
-      heater.setDemand(150.0);                  // request 150 W each tick
-      engine.tick();                            // engine handles parallel dispatch
+      const int NTICKS = 500;
+      for (int i = 0; i < NTICKS; ++i) {
+        heater.setDemand(150.0);
+        engine.tick();
 
-      // ---- SMOKE TEST step: advance the wake solver this tick --------------
-      wake.step();
+        if (i % args.coupleEvery == 0) {
+          // Persistent advance without re-reading input
+          wake.runIfDirtyOrAdvance(args.spartaBlock);
+        }
+      }
+      wake.shutdown();
+      engine.shutdown();
+      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Finalize();
+      return EXIT_SUCCESS;
     }
 
-    // Tidy up the SPARTA-backed module first (optional order)
-    wake.shutdown();
+    // ======================================================================
+    // MODE B: dual (recommended) -- split communicators
+    // ======================================================================
+    int nWake = (args.nWake > 0 ? args.nWake : size / 2);
+    if (nWake < 1) nWake = 1;
+    if (nWake > size - 1) nWake = size - 1;
+    if (size == 1) nWake = 1;
 
+    int color = (rank < nWake) ? 0 : 1; // 0=Wake, 1=Effusion
+    MPI_Comm subcomm;
+    MPI_Comm_split(MPI_COMM_WORLD, color, rank, &subcomm);
+
+    if (rank == 0) {
+      std::cout << "Dual-instance split: nWake=" << nWake
+                << ", nEffusion=" << (size - nWake) << "\n";
+    }
+
+    if (color == 0) {
+      // ------------------------ Wake Chamber ranks --------------------------
+      WakeChamber wake(subcomm);
+      wake.init(args.wakeDeck.c_str(), args.inputDir.c_str());
+
+      const int NTICKS = 500;
+      for (int i = 0; i < NTICKS; ++i) {
+        heater.setDemand(150.0);
+        engine.tick();
+
+        // Advance SPARTA only at coupling cadence; persistent instance
+        if (i % args.coupleEvery == 0) {
+          wake.runIfDirtyOrAdvance(args.spartaBlock);
+        }
+      }
+      wake.shutdown();
+
+    } else {
+      // ------------------------ Effusion Cell ranks -------------------------
+      WakeChamber eff(subcomm);
+      eff.init(args.effDeck.c_str(), args.inputDir.c_str());
+
+      const int NTICKS = 500;
+      for (int i = 0; i < NTICKS; ++i) {
+        // If parameters change significantly, call eff.markDirtyReload();
+        if (i % args.coupleEvery == 0) {
+          eff.runIfDirtyOrAdvance(args.spartaBlock);
+        }
+      }
+      eff.shutdown();
+    }
+
+    MPI_Comm_free(&subcomm);
     engine.shutdown();
-
-    // Be tidy: synchronize before finalize
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return EXIT_SUCCESS;
   }
   catch (const std::exception& e) {
-    // FIX 3: if anything throws, abort the whole MPI job to avoid hangs
     std::cerr << "[fatal] " << e.what() << std::endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
     return EXIT_FAILURE;

@@ -11,6 +11,12 @@ public:
   void runDeck(const std::string& deck_basename,
                const std::string& input_subdir = "input");
 
+  // Add these declarations
+  void command(const char* cmd);
+  void runSteps(int n);   // convenience: issues "run N"
+  void clear();           // convenience: issues "clear"
+
+
 private:
   void* spa_ = nullptr;
   MPI_Comm comm_;

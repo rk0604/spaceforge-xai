@@ -1,0 +1,32 @@
+
+# Effusion cell (minimal starter)
+seed        98765
+dimension   3
+global      gridcut 1.0e-5 comm/sort yes
+
+# open domain; small box for testing
+boundary    oo oo oo
+create_box  0 5e-5   0 5e-5   0 5e-5
+create_grid 8 8 8
+balance_grid rcb part
+
+# --- species/models --- 
+# Use the SAME species + model files your in.wake deck uses.
+# If in.wake says e.g.:
+#   species data/ar.species Ar
+#   collide vss data/ar.vss
+# then do the same here:
+species     data/ar.species Ar
+collide     vss data/ar.vss
+
+# --- effusion emitter ---
+# Emit from xlo toward +x. Tune n,temp,vstream as needed.
+fix         fe emit/face xlo species Ar temp 300.0 n 1.0e20 vstream 800.0 0.0 0.0
+
+# --- diagnostics ---
+compute     temp temp
+stats       100
+stats_style step cpu np nattempt ncoll c_temp
+
+timestep    7.0e-9
+run         1000

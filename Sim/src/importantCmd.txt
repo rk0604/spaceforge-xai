@@ -1,0 +1,171 @@
+SpaceForge-XAI — Exact Commands + Where To Run (importantCmd.txt)
+=================================================================
+
+This is a precise, copy-pasteable runbook for iLab.
+
+Legend:
+- $HOME resolves to /common/home/<your_netid> (e.g., /common/home/rvk22)
+- Run commands from the directory shown on the “From:” line.
+- Lines starting with “#” are comments; don’t paste them.
+
+------------------------------------------------------------------
+0) One-time: Verify external SPARTA install (headers + library)
+------------------------------------------------------------------
+From: ANYWHERE (shell)
+
+# Confirm headers and library exist in your external SPARTA:
+test -f "$HOME/opt/sparta/src/library.h" && echo "SPARTA headers: OK"
+find "$HOME/opt/sparta/src" -maxdepth 1 -type f -name "libsparta*.a" -o -name "libsparta*.so"
+
+# If nothing prints for the lib, build it now (Makefile path):
+cd "$HOME/opt/sparta/src"
+make mpi -j                    # optional (SPARTA exe)
+make mode=lib mpi -j || make lib -j
+ls -l libsparta*.a libsparta*.so
+
+# NOTE: Your project points CMake at SPARTA_DIR="$HOME/opt/sparta/src".
+# Make sure the lib file is in that same folder (src/). If it lives in build/lib,
+# either copy it into src/ OR tweak your CMake to search ../build/lib.
+
+--------------------------------------------
+1) Clean build of spaceforge-xai (CMake)
+--------------------------------------------
+From: $HOME/spaceforge-xai
+
+rm -rf build && mkdir build && cd build
+cmake -DSPARTA_DIR="$HOME/opt/sparta/src" -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j
+
+# Sanity check the binary path (this MUST exist before running):
+ls -l ./Sim/sim_app
+
+----------------------------------------------------------
+2) Ensure both decks exist (wake + effusion) for dual run
+----------------------------------------------------------
+From: $HOME/spaceforge-xai
+
+# Create input/in.effusion if you don’t already have it:
+test -f input/in.effusion || cp input/in.wake input/in.effusion
+ls -l input/in.wake input/in.effusion
+
+# (Later, replace input/in.effusion with a real effusion deck.)
+
+---------------------------------------------
+3) Run (HEADLESS). Use the correct working dir
+---------------------------------------------
+Option A — Run from the build/ directory (preferred)
+From: $HOME/spaceforge-xai/build
+
+# Drop DISPLAY and launch dual-instance (default mode):
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app
+
+# Explicit dual with decks + subdir spelled out:
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
+  --mode dual --wake-deck in.wake --eff-deck in.effusion --input-subdir input
+
+# Dual with a custom split (e.g., 3 ranks for wake, 1 for effusion):
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
+  --mode dual --split 3 --wake-deck in.wake --eff-deck in.effusion --input-subdir input
+
+# Legacy single-instance (your old flow):
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app --mode legacy --wake-deck in.wake --input-subdir input
+
+Option B — Run from repo root (only if you prefer)
+From: $HOME/spaceforge-xai
+
+env -u DISPLAY mpirun -np 4 ./build/Sim/sim_app \
+  --mode dual --wake-deck in.wake --eff-deck in.effusion --input-subdir input
+
+---------------------------------------
+4) What you should see in the console
+---------------------------------------
+- “Simulation starting on N MPI task(s), dt=0.1 s”
+- “Mode = dual”
+- “Dual-instance split: nWake=X, nEffusion=Y”
+- Two SPARTA banners (one per sub-communicator)
+- No “Cannot open input script in.effusion” error.
+
+------------------------------------------
+5) Common errors (and the exact fixes)
+------------------------------------------
+A) ERROR: Cannot open input script in.effusion
+   Cause: The effusion deck is missing.
+   Fix:
+     From: $HOME/spaceforge-xai
+     cp input/in.wake input/in.effusion
+     # then re-run from build/:
+     cd build
+     env -u DISPLAY mpirun -np 4 ./Sim/sim_app --mode dual \
+       --wake-deck in.wake --eff-deck in.effusion --input-subdir input
+
+B) mpirun: could not access ./build/Sim/sim_app (or similar)
+   Cause: Wrong path for where you’re running from.
+   Fix: If you are in build/, use ./Sim/sim_app.
+        If you are in repo root, use ./build/Sim/sim_app.
+        Always confirm: ls -l <path-to-binary>
+
+C) “Authorization required, but no authorization protocol specified”
+   Cause: DISPLAY/X11 noise.
+   Fix: Always run with: env -u DISPLAY mpirun -np ... <binary>
+
+D) “ERROR: Dimension command after simulation box is defined”
+   Cause: Reusing the same SPARTA handle for a second deck.
+   Fix: Not applicable in dual mode (each instance is isolated). If you ever
+        chain decks on the same instance, call “clear” or recreate the handle.
+
+E) SurfColl checks/occurs = 0 (but you expected geometry)
+   Cause: No surfaces loaded or wrong boundary.
+   Fix: Add read_surf (or your shield importer) in the deck; set boundary properly.
+
+------------------------------------------------------
+6) Optional: keep SPARTA path sticky in your shell
+------------------------------------------------------
+From: ANYWHERE
+
+# Add these lines to ~/.bashrc and re-source it:
+echo 'export SPARTA_DIR="$HOME/opt/sparta/src"' >> ~/.bashrc
+echo 'export LD_LIBRARY_PATH="$HOME/opt/sparta/build/lib:$LD_LIBRARY_PATH"' >> ~/.bashrc
+. ~/.bashrc
+
+# Then rebuild as usual:
+cd "$HOME/spaceforge-xai"
+rm -rf build && mkdir build && cd build
+cmake -DSPARTA_DIR="$SPARTA_DIR" -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j
+
+------------------------------------------------------
+7) Run main.cpp
+------------------------------------------------------
+
+cd ~/spaceforge-xai
+rm -rf build && mkdir build && cd build
+cmake -DSPARTA_DIR="$HOME/opt/sparta/src" -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j
+
+Single Mode
+cd ~/spaceforge-xai/build
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app
+
+Dual Mode - split ranks between wake and effusion
+cd ~/spaceforge-xai/build
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
+  --mode dual \
+  --split 2 \
+  --wake-deck in.wake \
+  --eff-deck  in.effusion \
+  --input-subdir input \
+  --couple-every 10 \
+  --sparta-block 200
+
+Return faster with smaller work:
+cd ~/spaceforge-xai/build
+env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
+  --mode dual \
+  --split 2 \
+  --wake-deck in.wake \
+  --eff-deck  in.effusion \
+  --input-subdir input \
+  --couple-every 50 \
+  --sparta-block 50
+
+

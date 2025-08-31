@@ -5,30 +5,44 @@
 
 class SpartaBridge;  // forward declaration
 
-// A thin façade around a SPARTA instance dedicated to wake modeling.
+// Thin façade around a single SPARTA instance.
+// - init() reads the deck once and keeps SPARTA alive
+// - runSteps(N) advances without re-reading the deck (issues "run N")
+// - markDirtyReload() -> next runIfDirtyOrAdvance() will clear+reload the deck
 class WakeChamber {
 public:
   explicit WakeChamber(MPI_Comm comm);
-  ~WakeChamber();  // <-- declare only; define in .cpp
+  ~WakeChamber();                                   // defined in .cpp
 
-  // Open SPARTA and prepare the deck. Defaults point to:
-  //   <project>/input/in.wake  and relative includes under <project>/input/data/
+  // Open SPARTA and read the deck once.
+  // Defaults resolve to:  <project>/input/in.wake
   void init(const std::string& deck_basename = "in.wake",
             const std::string& input_subdir  = "input");
 
-  // Advance the wake simulation by one "tick".
-  void step();
+  // Legacy convenience: advance by a default block of steps (no re-read).
+  // Uses runSteps() under the hood.
+  void step(int nDefault = 1000);
 
   // Close the SPARTA instance.
   void shutdown();
 
-  // Optional: inject parameters before next step by writing an include file.
+  // Persistent advance without re-reading the deck.
+  void runSteps(int n);
+
+  // Mark that a big change happened -> we must reload the deck next time.
+  void markDirtyReload();
+
+  // If dirty: clear+file(deck), else: run N. Returns true if it did something.
+  bool runIfDirtyOrAdvance(int n);
+
+  // Optional: inject parameters by writing an include file the deck reads.
   void setParameter(const std::string& name, double value);
 
 private:
-  MPI_Comm                            comm_;
-  std::unique_ptr<SpartaBridge>       sp_;
-  std::string                         deck_;
-  std::string                         input_subdir_;
-  bool                                initialized_ = false;
+  MPI_Comm                      comm_;
+  std::unique_ptr<SpartaBridge> sp_;
+  std::string                   deck_;
+  std::string                   input_subdir_;
+  bool                          initialized_ = false;
+  bool                          dirtyReload_ = false;
 };
