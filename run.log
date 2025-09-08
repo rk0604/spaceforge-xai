@@ -1,50 +1,19 @@
+Simulation starting on 4 MPI task(s), dt=0.1 s
+Mode = dual
+Dual-instance split: nWake=2, nEffusion=2
 SPARTA (20 Jan 2025)
 Running on 2 MPI task(s)
-################################################################################
-# Wake starter deck (Argon) — inflow at xlo, outflow elsewhere
-################################################################################
-
-seed                12345
-dimension           3
-global              gridcut 1.0e-5 comm/sort yes
-
-# ---------------- Domain & grid ----------------
-boundary            oo oo oo
-create_box          0 0.0001   0 0.0001   0 0.0001
+SPARTA (20 Jan 2025)
+Running on 2 MPI task(s)
 Created orthogonal box = (0 0 0) to (0.0001 0.0001 0.0001)
-create_grid         10 10 10
+ERROR: Illegal log command (../input.cpp:1149)
 WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
 Created 1000 child grid cells
   CPU time = 0.000253231 secs
   create/ghost percent = 83.0503 16.9497
-balance_grid        rcb part
 Balance grid migrated 400 cells
   CPU time = 0.000745692 secs
   reassign/sort/migrate/ghost percent = 37.7134 0.328688 15.7002 46.2577
-
-# ---------------- Gas, mixture, collisions ----------------
-species             data/ar.species Ar
-mixture             air Ar vstream 7500.0 0.0 0.0 temp 273.15
-global              nrho 7.07043e22
-global              fnum 7.07043e6
-collide             vss air data/ar.vss
-
-# ---------------- Inflow emitter ----------------
-fix                 in emit/face air xlo
-
-# ---------------- Diagnostics ----------------
-stats               100
-compute             temp temp
-stats_style         step cpu np nattempt ncoll c_temp
-
-# (optional grid dumps)
-# compute            cN grid all n
-# compute            cT grid all temp
-# dump               d1 grid 100 grid.*.bin fields n T U
-
-# ---------------- Time integration ----------------
-timestep            7.0e-9
-run                 0                           # app-controlled advance
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 0 0 0
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -75,7 +44,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 0 (0K)
 Collide occurs    = 0 (0K)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -88,20 +57,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0
 Collisions/particle/step: 0
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 0 ave 0 max 0 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 0 0 0
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -134,7 +102,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180062 (0.18M)
 Collide occurs    = 131986 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -147,20 +115,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.519486
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899203
 Collisions/particle/step: 0.0659118
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4867 ave 4922 max 4812 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -193,7 +160,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180426 (0.18M)
 Collide occurs    = 132056 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -206,20 +173,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523082
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898885
 Collisions/particle/step: 0.0657905
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4855.5 ave 4942 max 4769 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -252,7 +218,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180153 (0.18M)
 Collide occurs    = 132437 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -265,20 +231,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523058
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0897442
 Collisions/particle/step: 0.0659742
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4861 ave 4956 max 4766 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -311,7 +276,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180412 (0.18M)
 Collide occurs    = 132382 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -324,20 +289,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.52311
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898896
 Collisions/particle/step: 0.0659589
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4881 ave 4941 max 4821 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -370,7 +334,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180285 (0.18M)
 Collide occurs    = 132157 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -383,20 +347,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523023
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898151
 Collisions/particle/step: 0.0658385
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4894.5 ave 4939 max 4850 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -429,7 +392,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180487 (0.18M)
 Collide occurs    = 132199 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -442,20 +405,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523163
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899303
 Collisions/particle/step: 0.0658701
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4877.5 ave 4923 max 4832 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -488,7 +450,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180396 (0.18M)
 Collide occurs    = 132345 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -501,20 +463,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523029
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898618
 Collisions/particle/step: 0.0659258
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4887 ave 4947 max 4827 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -547,7 +508,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180394 (0.18M)
 Collide occurs    = 132111 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -560,20 +521,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523045
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898513
 Collisions/particle/step: 0.0658023
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4878 ave 4951 max 4805 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -606,7 +566,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180511 (0.181M)
 Collide occurs    = 132694 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -619,20 +579,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523063
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899216
 Collisions/particle/step: 0.0661016
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4876 ave 4913 max 4839 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -665,7 +624,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180403 (0.18M)
 Collide occurs    = 132145 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -678,20 +637,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523055
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898692
 Collisions/particle/step: 0.0658291
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4854 ave 4913 max 4795 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -724,7 +682,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180470 (0.18M)
 Collide occurs    = 132575 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -737,20 +695,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.52291
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898892
 Collisions/particle/step: 0.0660335
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4871 ave 4932 max 4810 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -783,7 +740,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 179940 (0.18M)
 Collide occurs    = 132216 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -796,20 +753,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.52314
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.089658
 Collisions/particle/step: 0.0658787
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4855.5 ave 4895 max 4816 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -842,7 +798,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180469 (0.18M)
 Collide occurs    = 132026 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -855,20 +811,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523004
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898982
 Collisions/particle/step: 0.065767
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4886.5 ave 4921 max 4852 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -901,7 +856,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180598 (0.181M)
 Collide occurs    = 132558 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -914,20 +869,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523125
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.089973
 Collisions/particle/step: 0.0660397
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4853 ave 4935 max 4771 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -960,7 +914,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180385 (0.18M)
 Collide occurs    = 132144 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -973,20 +927,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522902
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898323
 Collisions/particle/step: 0.0658081
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4880 ave 4951 max 4809 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1019,7 +972,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180461 (0.18M)
 Collide occurs    = 132649 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1032,20 +985,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522935
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898845
 Collisions/particle/step: 0.0660702
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4876.5 ave 4947 max 4806 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1078,7 +1030,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180294 (0.18M)
 Collide occurs    = 132670 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1091,20 +1043,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523103
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898165
 Collisions/particle/step: 0.0660918
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4869 ave 4953 max 4785 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1137,7 +1088,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180208 (0.18M)
 Collide occurs    = 132195 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1150,20 +1101,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523184
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0897968
 Collisions/particle/step: 0.0658722
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4865.5 ave 4942 max 4789 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1196,7 +1146,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180301 (0.18M)
 Collide occurs    = 132160 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1209,20 +1159,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523115
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898304
 Collisions/particle/step: 0.0658454
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4877.5 ave 4946 max 4809 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1255,7 +1204,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180356 (0.18M)
 Collide occurs    = 132313 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1268,20 +1217,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523027
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898401
 Collisions/particle/step: 0.0659086
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4880 ave 4961 max 4799 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1314,7 +1262,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180688 (0.181M)
 Collide occurs    = 131900 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1327,20 +1275,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0900107
 Collisions/particle/step: 0.0657067
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4897.5 ave 4934 max 4861 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1373,7 +1320,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180277 (0.18M)
 Collide occurs    = 132345 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1386,20 +1333,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522971
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0897849
 Collisions/particle/step: 0.0659129
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4872.5 ave 4928 max 4817 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1432,7 +1378,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180507 (0.181M)
 Collide occurs    = 132643 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1445,20 +1391,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523062
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899224
 Collisions/particle/step: 0.0660782
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4867 ave 4931 max 4803 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1491,7 +1436,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 179877 (0.18M)
 Collide occurs    = 132533 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1504,20 +1449,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523103
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.089619
 Collisions/particle/step: 0.0660311
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4882.5 ave 4959 max 4806 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1550,7 +1494,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180442 (0.18M)
 Collide occurs    = 132446 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1563,20 +1507,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523021
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898846
 Collisions/particle/step: 0.0659761
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4888 ave 4960 max 4816 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1609,7 +1552,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180480 (0.18M)
 Collide occurs    = 132685 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1622,20 +1565,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523234
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899312
 Collisions/particle/step: 0.0661155
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4896.5 ave 4955 max 4838 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1668,7 +1610,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180619 (0.181M)
 Collide occurs    = 132677 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1681,20 +1623,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523075
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899694
 Collisions/particle/step: 0.0660887
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4880 ave 4947 max 4813 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1727,7 +1668,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180418 (0.18M)
 Collide occurs    = 132165 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1740,20 +1681,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523065
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898804
 Collisions/particle/step: 0.0658418
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4890 ave 4943 max 4837 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1786,7 +1726,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180445 (0.18M)
 Collide occurs    = 132485 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1799,20 +1739,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523016
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898812
 Collisions/particle/step: 0.0659919
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4857 ave 4906 max 4808 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1845,7 +1784,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180538 (0.181M)
 Collide occurs    = 132086 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1858,20 +1797,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523098
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899414
 Collisions/particle/step: 0.0658033
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4877.5 ave 4906 max 4849 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1904,7 +1842,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180350 (0.18M)
 Collide occurs    = 132619 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1917,20 +1855,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523127
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.089855
 Collisions/particle/step: 0.0660742
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4889.5 ave 4948 max 4831 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -1963,7 +1900,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180510 (0.181M)
 Collide occurs    = 132220 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -1976,20 +1913,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523021
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899207
 Collisions/particle/step: 0.0658651
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4884 ave 4964 max 4804 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2022,7 +1958,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180043 (0.18M)
 Collide occurs    = 132084 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2035,20 +1971,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.5231
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0896898
 Collisions/particle/step: 0.0657987
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4879.5 ave 4940 max 4819 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2081,7 +2016,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180645 (0.181M)
 Collide occurs    = 132401 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2094,20 +2029,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522985
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899732
 Collisions/particle/step: 0.0659445
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4886 ave 4950 max 4822 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2140,7 +2074,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180471 (0.18M)
 Collide occurs    = 132473 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2153,20 +2087,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522946
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898807
 Collisions/particle/step: 0.065976
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4875.5 ave 4954 max 4797 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2199,7 +2132,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180611 (0.181M)
 Collide occurs    = 132224 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2212,20 +2145,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522994
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899601
 Collisions/particle/step: 0.0658592
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4878.5 ave 4942 max 4815 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2258,7 +2190,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180317 (0.18M)
 Collide occurs    = 132478 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2271,20 +2203,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522982
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898086
 Collisions/particle/step: 0.0659819
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4864.5 ave 4936 max 4793 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2317,7 +2248,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180481 (0.18M)
 Collide occurs    = 132504 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2330,20 +2261,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523351
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899557
 Collisions/particle/step: 0.0660429
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4863 ave 4919 max 4807 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2376,7 +2306,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180427 (0.18M)
 Collide occurs    = 132632 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2389,20 +2319,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522886
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898532
 Collisions/particle/step: 0.0660512
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4887 ave 4946 max 4828 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2435,7 +2364,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180498 (0.18M)
 Collide occurs    = 132481 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2448,20 +2377,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522992
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899074
 Collisions/particle/step: 0.0659897
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4869.5 ave 4944 max 4795 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2494,7 +2422,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180338 (0.18M)
 Collide occurs    = 132309 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2507,20 +2435,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523077
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898345
 Collisions/particle/step: 0.0659091
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4877.5 ave 4970 max 4785 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2553,7 +2480,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180071 (0.18M)
 Collide occurs    = 132550 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2566,20 +2493,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523092
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0897044
 Collisions/particle/step: 0.0660313
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4899 ave 4941 max 4857 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2612,7 +2538,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180533 (0.181M)
 Collide occurs    = 132705 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2625,20 +2551,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.522989
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899257
 Collisions/particle/step: 0.066102
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4886.5 ave 4955 max 4818 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2671,7 +2596,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180658 (0.181M)
 Collide occurs    = 132351 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2684,20 +2609,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523047
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899924
 Collisions/particle/step: 0.0659289
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4876.5 ave 4946 max 4807 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2730,7 +2654,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180688 (0.181M)
 Collide occurs    = 132634 (0.133M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2743,20 +2667,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523104
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0900196
 Collisions/particle/step: 0.0660789
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4904.5 ave 4937 max 4872 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2789,7 +2712,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180507 (0.181M)
 Collide occurs    = 132200 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2802,20 +2725,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523123
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0899202
 Collisions/particle/step: 0.0658559
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4876.5 ave 4939 max 4814 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2848,7 +2770,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180377 (0.18M)
 Collide occurs    = 132473 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2861,20 +2783,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523134
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898893
 Collisions/particle/step: 0.0660167
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4913 ave 4939 max 4887 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2907,7 +2828,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180549 (0.181M)
 Collide occurs    = 132421 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2920,20 +2841,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523163
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.089953
 Collisions/particle/step: 0.0659747
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4867 ave 4931 max 4803 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -2966,7 +2886,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180373 (0.18M)
 Collide occurs    = 132179 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -2979,20 +2899,19 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.52301
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898516
 Collisions/particle/step: 0.0658441
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4889.5 ave 4929 max 4850 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
 EmptyCell: 50 ave 100 max 0 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-run 200
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -3025,7 +2944,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 180420 (0.18M)
 Collide occurs    = 132415 (0.132M)
-Reactions         = 0 (0K)
+Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -3038,14 +2957,14 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0.523167
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surf-reactions/particle/step: 0
+Surface-reactions/particle/step: 0
 Collision-attempts/particle/step: 0.0898882
 Collisions/particle/step: 0.0659714
-Reactions/particle/step: 0
+Gas-reactions/particle/step: 0
 
 Particles: 4897.5 ave 4918 max 4877 min
 Histogram: 1 0 0 0 0 0 0 0 0 1
-Cells:      500 ave 500 max 500 min
+Cells:     500 ave 500 max 500 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 150 ave 200 max 100 min
 Histogram: 1 0 0 0 0 0 0 0 0 1

@@ -1,6 +1,6 @@
 /common/home/rvk22/spaceforge-xai/build/CMakeFiles/edit_cache.dir
 /common/home/rvk22/spaceforge-xai/build/CMakeFiles/rebuild_cache.dir
 /common/home/rvk22/spaceforge-xai/build/Sim/CMakeFiles/simcore.dir
-/common/home/rvk22/spaceforge-xai/build/Sim/CMakeFiles/sim_app.dir
+/common/home/rvk22/spaceforge-xai/build/Sim/CMakeFiles/sim.dir
 /common/home/rvk22/spaceforge-xai/build/Sim/CMakeFiles/edit_cache.dir
 /common/home/rvk22/spaceforge-xai/build/Sim/CMakeFiles/rebuild_cache.dir

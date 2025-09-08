@@ -1,14 +1,12 @@
 ################################################################################
 # Wake starter deck (Argon) — inflow at xlo, outflow elsewhere
-# Emits a drifting Maxwellian from xlo (fix emit/face); open boundaries.
 ################################################################################
 
 seed                12345
 dimension           3
-global              gridcut 1.0e-5 comm/sort yes    # OK for reproducibility; drop for prod
+global              gridcut 1.0e-5 comm/sort yes
 
 # ---------------- Domain & grid ----------------
-# Boundary must be set BEFORE create_box. Use two-letter tokens: oo = outflow.
 boundary            oo oo oo
 create_box          0 0.0001   0 0.0001   0 0.0001
 create_grid         10 10 10
@@ -16,28 +14,24 @@ balance_grid        rcb part
 
 # ---------------- Gas, mixture, collisions ----------------
 species             data/ar.species Ar
-mixture             air Ar vstream 7500.0 0.0 0.0 temp 273.15   # ~7.5 km/s
+mixture             air Ar vstream 7500.0 0.0 0.0 temp 273.15
 global              nrho 7.07043e22
 global              fnum 7.07043e6
 collide             vss air data/ar.vss
 
 # ---------------- Inflow emitter ----------------
-# Inject from the xlo face using mixture "air".
-# With n=0 (default), injected count is computed from Bird flux using fnum/nrho/vstream/T.
 fix                 in emit/face air xlo
-# (Alternative: prescribe boundary pressure/temperature)
-# fix              in emit/face air xlo subsonic 0.1 300.0
 
 # ---------------- Diagnostics ----------------
 stats               100
 compute             temp temp
 stats_style         step cpu np nattempt ncoll c_temp
 
-# Optional field dumps for inspection:
+# (optional grid dumps)
 # compute            cN grid all n
 # compute            cT grid all temp
 # dump               d1 grid 100 grid.*.bin fields n T U
 
 # ---------------- Time integration ----------------
 timestep            7.0e-9
-run                 1000
+run                 0                           # app-controlled advance

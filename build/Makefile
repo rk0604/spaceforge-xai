@@ -113,7 +113,6 @@ preinstall/fast:
 
 # clear depends
 depend:
-	$(CMAKE_COMMAND) -P /common/home/rvk22/spaceforge-xai/build/CMakeFiles/VerifyGlobs.cmake
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
@@ -131,17 +130,17 @@ simcore/fast:
 .PHONY : simcore/fast
 
 #=============================================================================
-# Target rules for targets named sim_app
+# Target rules for targets named sim
 
 # Build rule for target.
-sim_app: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sim_app
-.PHONY : sim_app
+sim: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 sim
+.PHONY : sim
 
 # fast build rule for target.
-sim_app/fast:
-	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim_app.dir/build.make Sim/CMakeFiles/sim_app.dir/build
-.PHONY : sim_app/fast
+sim/fast:
+	$(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim.dir/build.make Sim/CMakeFiles/sim.dir/build
+.PHONY : sim/fast
 
 # Help Target
 help:
@@ -151,7 +150,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... sim_app"
+	@echo "... sim"
 	@echo "... simcore"
 .PHONY : help
 
@@ -164,7 +163,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	$(CMAKE_COMMAND) -P /common/home/rvk22/spaceforge-xai/build/CMakeFiles/VerifyGlobs.cmake
 	$(CMAKE_COMMAND) -S$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

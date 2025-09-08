@@ -14,7 +14,7 @@
 # EXTERNAL cache entries
 ########################
 
-//Build Sim/src/main.cpp
+//Build the Sim executable
 BUILD_SIM_APP:BOOL=ON
 
 //Path to a program.
@@ -31,7 +31,7 @@ CMAKE_BUILD_TYPE:STRING=Release
 CMAKE_COLOR_MAKEFILE:BOOL=ON
 
 //CXX compiler
-CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++
+CMAKE_CXX_COMPILER:STRING=/usr/bin/mpicxx
 
 //A wrapper around 'ar' adding the appropriate '--plugin' option
 // for the GCC compiler
@@ -192,6 +192,9 @@ CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
+//Enable SPARTA coupling
+ENABLE_SPARTA:BOOL=ON
+
 //Executable for running MPI programs.
 MPIEXEC_EXECUTABLE:FILEPATH=/usr/bin/mpiexec
 
@@ -216,19 +219,13 @@ MPI_CXX_ADDITIONAL_INCLUDE_DIRS:STRING=
 MPI_CXX_COMPILER:FILEPATH=/usr/bin/mpicxx
 
 //MPI CXX compiler wrapper include directories
-MPI_CXX_COMPILER_INCLUDE_DIRS:STRING=/usr/lib/x86_64-linux-gnu/openmpi/include;/usr/lib/x86_64-linux-gnu/openmpi/include/openmpi
+MPI_CXX_COMPILER_INCLUDE_DIRS:STRING=
 
 //MPI CXX compilation definitions
 MPI_CXX_COMPILE_DEFINITIONS:STRING=
 
-//MPI CXX compilation options
+//MPI CXX compilation flags
 MPI_CXX_COMPILE_OPTIONS:STRING=
-
-//Path to a file.
-MPI_CXX_HEADER_DIR:PATH=/usr/lib/x86_64-linux-gnu/openmpi/include
-
-//MPI CXX libraries to link against
-MPI_CXX_LIB_NAMES:STRING=mpi_cxx;mpi
 
 //MPI CXX linker flags
 MPI_CXX_LINK_FLAGS:STRING=
@@ -236,29 +233,14 @@ MPI_CXX_LINK_FLAGS:STRING=
 //If true, the MPI-2 C++ bindings are disabled using definitions.
 MPI_CXX_SKIP_MPICXX:BOOL=OFF
 
-//Location of the mpi library for MPI
-MPI_mpi_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so
-
-//Location of the mpi_cxx library for MPI
-MPI_mpi_cxx_LIBRARY:FILEPATH=/usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so
-
 //Arguments to supply to pkg-config
 PKG_CONFIG_ARGN:STRING=
 
 //pkg-config executable
 PKG_CONFIG_EXECUTABLE:FILEPATH=/usr/bin/pkg-config
 
-//SPARTA src dir (headers + lib)
-SPARTA_DIR:PATH=/common/home/rvk22/opt/sparta/src
-
-//Value Computed by CMake
-SimCore_BINARY_DIR:STATIC=/common/home/rvk22/spaceforge-xai/build/Sim
-
-//Value Computed by CMake
-SimCore_IS_TOP_LEVEL:STATIC=OFF
-
-//Value Computed by CMake
-SimCore_SOURCE_DIR:STATIC=/common/home/rvk22/spaceforge-xai/Sim
+//No help, variable specified on the command line.
+SPARTA_DIR:UNINITIALIZED=/common/home/rvk22/opt/sparta/src
 
 //Value Computed by CMake
 SpaceForge_BINARY_DIR:STATIC=/common/home/rvk22/spaceforge-xai/build
@@ -404,9 +386,9 @@ CMAKE_UNAME:INTERNAL=/usr/bin/uname
 //ADVANCED property for variable: CMAKE_VERBOSE_MAKEFILE
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //Details about finding MPI
-FIND_PACKAGE_MESSAGE_DETAILS_MPI:INTERNAL=[TRUE][c ][v3.1()]
+FIND_PACKAGE_MESSAGE_DETAILS_MPI:INTERNAL=[TRUE][cfound components: CXX ][v3.1()]
 //Details about finding MPI_CXX
-FIND_PACKAGE_MESSAGE_DETAILS_MPI_CXX:INTERNAL=[/usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so][/usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so][mpi_cxx;mpi][/usr/lib/x86_64-linux-gnu/openmpi/include][TRUE][v3.1()]
+FIND_PACKAGE_MESSAGE_DETAILS_MPI_CXX:INTERNAL=[/usr/bin/mpicxx][TRUE][v3.1()]
 //ADVANCED property for variable: MPIEXEC_EXECUTABLE
 MPIEXEC_EXECUTABLE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: MPIEXEC_MAX_NUMPROCS
@@ -427,10 +409,6 @@ MPI_CXX_COMPILER_INCLUDE_DIRS-ADVANCED:INTERNAL=1
 MPI_CXX_COMPILE_DEFINITIONS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: MPI_CXX_COMPILE_OPTIONS
 MPI_CXX_COMPILE_OPTIONS-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: MPI_CXX_HEADER_DIR
-MPI_CXX_HEADER_DIR-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: MPI_CXX_LIB_NAMES
-MPI_CXX_LIB_NAMES-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: MPI_CXX_LINK_FLAGS
 MPI_CXX_LINK_FLAGS-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: MPI_CXX_SKIP_MPICXX
@@ -439,10 +417,6 @@ MPI_CXX_SKIP_MPICXX-ADVANCED:INTERNAL=1
 MPI_RESULT_CXX_test_mpi_MPICXX:INTERNAL=TRUE
 //Result of TRY_COMPILE
 MPI_RESULT_CXX_test_mpi_normal:INTERNAL=TRUE
-//ADVANCED property for variable: MPI_mpi_LIBRARY
-MPI_mpi_LIBRARY-ADVANCED:INTERNAL=1
-//ADVANCED property for variable: MPI_mpi_cxx_LIBRARY
-MPI_mpi_cxx_LIBRARY-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: PKG_CONFIG_ARGN
 PKG_CONFIG_ARGN-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: PKG_CONFIG_EXECUTABLE
