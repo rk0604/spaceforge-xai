@@ -1,99 +1,94 @@
 ################################################################################
-# Wake deck (Argon) — J5 cupola + 300 mm wafer @ 1.0 m standoff
-# Inflow at xlo, open/outflow elsewhere. Units are SI (meters, Kelvin, m/s).
+# Wake deck (Argon) — J5 cupola (pentagon → −x) + 300 mm wafer at +1.0 m
+# Inflow at xlo, open elsewhere. SI units (m, K, m/s).
 ################################################################################
 
-# --- dirs and file targets ---
+# --- dirs & file targets ---
 shell               mkdir -p data/tmp
 shell               mkdir -p dump
 variable            diag_file   string "data/tmp/wake_diag.csv"
 variable            wafer_hits  string "dump/wafer_hits.csv"
 variable            shield_dump string "dump/shield_geom.csv"
+variable            wafer_dump  string "dump/wafer_geom.csv"
 
 seed                12345
 dimension           3
 global              gridcut 1.0e-5 comm/sort yes
 
-# ---------------- Domain & grid ----------------
-# Long streamwise domain to allow 1.0 m standoff + buffers
-# x: [-0.25, +1.35] m   y,z: [-0.60, +0.60] m
+# --- domain (room for 1 m standoff + buffers) ---
 boundary            oo oo oo
 create_box          -0.25 1.35   -0.60 0.60   -0.60 0.60
 create_grid         150 60 60
 balance_grid        rcb part
 
-# ---------------- Gas, mixture, collisions ----------------
+# --- gas & collisions ---
 species             data/ar.species Ar
 mixture             air Ar vstream 7500.0 0.0 0.0 temp 273.15
 global              nrho 7.07043e22
 global              fnum 7.07043e6
 collide             vss air data/ar.vss
 
-# ---------------- Inflow emitter ----------------
-# Continuous inflow at xlo; other faces open/outflow
+# --- inflow at xlo ---
 fix                 in emit/face air xlo
 
-# ---------------- Surfaces: J5 cupola + wafer ----------------
-# Place cupola reference plane near x=0; wafer is 1.0 m downstream.
+# --- surfaces ---
+# Place cupola near x=0, wafer 1.0 m downstream.
 variable            x_sh     equal 0.00
 variable            x_wafer  equal ${x_sh}+1.0
 
-# Orientation note:
-# If your J5 mesh needs a 180° yaw (about Y) so that the pentagon faces -x, set rotY=180.
-# If it already faces -x, set rotY=0.
+# If your STL has pentagon toward +x, rotate 180° about Y so it faces −x.
 variable            rotY     equal 180
 
-# Read surfaces (SPARTA .surf). Adjust paths/orientation as needed.
-read_surf           data/surf/j5_cupola.surf   group shield origin 0 0 0 rotate 0 ${rotY} 0 trans ${x_sh} 0 0
-read_surf           data/surf/wafer_300mm.surf group wafer  origin 0 0 0 rotate 0 0 0      trans ${x_wafer} 0 0
+# === Choose where the STL files live relative to the wake CWD ===
+# where the STL files live, relative to the wake CWD (repo root)
+variable            surfdir  string "input/surf"
 
-# Collision models
+read_surf           ${surfdir}/cupola.surf       group shield origin 0 0 0 rotate 0 ${rotY} 0 trans ${x_sh} 0 0
+read_surf           ${surfdir}/wafer_300mm.surf  group wafer  origin 0 0 0 rotate 0 0 0      trans ${x_wafer} 0 0
+
+# Collision laws
 surf_collide        sc_shield diffuse 273.15 1.0
 surf_collide        sc_wafer  vanish
 surf_modify         shield collide sc_shield
 surf_modify         wafer  collide sc_wafer
 
-# Optional: geometry dump of the shield (to verify orientation/placement)
+# Geometry dumps (sanity-check orientation/placement)
 dump                dshield surf shield 100 ${shield_dump} id v1x v1y v1z v2x v2y v2z v3x v3y v3z
+dump                dwaferg surf wafer  100 ${wafer_dump}  id v1x v1y v1z v2x v2y v2z v3x v3y v3z
 
-# ---------------- Screen diagnostics ----------------
+# --- screen stats ---
 compute             temp temp
 stats               100
 stats_style         step cpu np nattempt ncoll c_temp
 
-# ---------------- Time integration ----------------
+# --- time control (driver advances) ---
 timestep            7.0e-9
-run                 0   # app-controlled advance
+run                 0
 
-# ===================== WAKE DIAGNOSTICS (CSV) =====================
-# Common time/step vars
+# ====================== WAKE DIAGNOSTICS (CSV) ======================
 variable            t equal time
 variable            s equal step
 variable            T equal c_temp
 
-# Domain-averaged number density
 compute             gNrho_all grid all air nrho
 compute             R_all     reduce ave c_gNrho_all[*]
 
-# Wake probe: a 10 cm slab centered on wafer; +/-15 cm window in y and z
+# 10 cm slab around the wafer plane; ±15 cm window in y,z
 region              wake_probe block ${x_wafer}-0.05 ${x_wafer}+0.05  -0.15 0.15  -0.15 0.15
 group               wake_grid  grid region wake_probe center
 compute             gNrho_wake grid wake_grid air nrho
 compute             R_wake     reduce ave c_gNrho_wake[*]
 
-# Derivative diagnostics
 variable            Rfree     equal c_R_all
 variable            Rwake     equal c_R_wake
-variable            ratio     equal v_Rwake/v_Rfree       # wake_to_free ratio
-variable            deficit   equal v_Rfree - v_Rwake     # absolute density drop
+variable            ratio     equal v_Rwake/v_Rfree
+variable            deficit   equal v_Rfree - v_Rwake
 
-# Write to CSV every 100 steps
 fix                 fcsv print 100 "${s},${t},${Rfree},${Rwake},${ratio},${deficit},${T}" \
                        file ${diag_file} screen no \
                        title "step,time,free_nrho,wake_nrho,wake_to_free,deficit,temp_K"
 
-# ===================== WAFER HIT TALLIES (surface) =====================
-# True collision-based tallies on the wafer surface (not region snapshots)
+# ====================== WAFER HIT TALLIES ===========================
 compute             cwafer surf wafer air n mflux press ke
 dump                dwafer surf wafer 100 ${wafer_hits} id c_cwafer[*]
 dump_modify         dwafer append yes flush yes

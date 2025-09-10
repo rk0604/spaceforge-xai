@@ -9,12 +9,12 @@ Created orthogonal box = (0 0 0) to (0.5 0.5 0.5)
 create_grid 8 8 8
 WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
 Created 512 child grid cells
-  CPU time = 0.000279345 secs
-  create/ghost percent = 85.1363 14.8637
+  CPU time = 0.000226528 secs
+  create/ghost percent = 85.5749 14.4251
 balance_grid rcb part
 Balance grid migrated 256 cells
-  CPU time = 0.000626288 secs
-  reassign/sort/migrate/ghost percent = 42.1442 0.274474 14.6155 42.9659
+  CPU time = 0.000416122 secs
+  reassign/sort/migrate/ghost percent = 45.4227 0.311687 16.7535 37.5121
 
 species     data/ar.species Ar
 mixture     mEff Ar vstream 800.0 0.0 0.0 temp 300.0
@@ -38,7 +38,7 @@ Memory usage per proc in Mbytes:
   total     (ave,min,max) = 1.51379 1.51379 1.51379
 Step CPU Np 
        0            0        0 
-Loop time of 1.505e-06 on 2 procs for 0 steps with 0 particles
+Loop time of 1.3235e-06 on 2 procs for 0 steps with 0 particles
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
@@ -49,7 +49,7 @@ Sort    | 0          | 0          | 0          |   0.0 |  0.00
 Comm    | 0          | 0          | 0          |   0.0 |  0.00
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
 Output  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 1.505e-06  |            |       |100.00
+Other   |            | 1.323e-06  |            |       |100.00
 
 Particle moves    = 0 (0K)
 Cells touched     = 0 (0K)

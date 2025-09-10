@@ -192,3 +192,8 @@ env -u DISPLAY -u XAUTHORITY mpirun -np 4 ./build/Sim/sim \
   --sparta-block 200 --oversubscribe | tee run.log
 
 build using cmake --build build -j
+
+# use this now
+You’re using SPARTA as a fast micro-physics “wake calculator” inside a much slower 1-minute system loop: at each system tick (every 60 s) you advance SPARTA a short physical time—about 3–5 convective times $t_c=L/U$ ≈ 0.6–1 ms for your 1.6 m, 7.5 km/s case (with dt = 7 ns → \~90k–150k steps)—let the wake settle, average the last bit of the run, and write **one** wake snapshot (density/flux/ratios, etc.) stamped with that tick’s time. The nanosecond steps and microsecond prints stay internal; the ML/ST-GNN only sees a clean, uniform, per-minute dataset (e.g., `WakeChamber.csv`). If you change the SPARTA CSV columns, update the parser once; otherwise no deck edits are required.
+
+ env -u DISPLAY -u XAUTHORITY mpirun -np 4 ./build/Sim/sim   --mode dual --split 2   --wake-deck in.wake --eff-deck in.effusion   --input-subdir input   --dt 60 --couple-every 1 --nticks 500   --sparta-block 91429 --oversubscribe | tee run.log

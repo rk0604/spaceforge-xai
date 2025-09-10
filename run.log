@@ -5,15 +5,15 @@ SPARTA (20 Jan 2025)
 Running on 2 MPI task(s)
 SPARTA (20 Jan 2025)
 Running on 2 MPI task(s)
-Created orthogonal box = (0 0 0) to (0.5 0.5 0.5)
 Created orthogonal box = (-0.25 -0.6 -0.6) to (1.35 0.6 0.6)
+Created orthogonal box = (0 0 0) to (0.5 0.5 0.5)
 WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
 Created 512 child grid cells
-  CPU time = 0.000279345 secs
-  create/ghost percent = 85.1363 14.8637
+  CPU time = 0.000226528 secs
+  create/ghost percent = 85.5749 14.4251
 Balance grid migrated 256 cells
-  CPU time = 0.000626288 secs
-  reassign/sort/migrate/ghost percent = 42.1442 0.274474 14.6155 42.9659
+  CPU time = 0.000416122 secs
+  reassign/sort/migrate/ghost percent = 45.4227 0.311687 16.7535 37.5121
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 0 0 0
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -21,7 +21,7 @@ Memory usage per proc in Mbytes:
   total     (ave,min,max) = 1.51379 1.51379 1.51379
 Step CPU Np 
        0            0        0 
-Loop time of 1.505e-06 on 2 procs for 0 steps with 0 particles
+Loop time of 1.3235e-06 on 2 procs for 0 steps with 0 particles
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
@@ -32,7 +32,7 @@ Sort    | 0          | 0          | 0          |   0.0 |  0.00
 Comm    | 0          | 0          | 0          |   0.0 |  0.00
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
 Output  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 1.505e-06  |            |       |100.00
+Other   |            | 1.323e-06  |            |       |100.00
 
 Particle moves    = 0 (0K)
 Cells touched     = 0 (0K)
@@ -72,10 +72,10 @@ EmptyCell: 0 ave 0 max 0 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
 Created 540000 child grid cells
-  CPU time = 0.0234952 secs
-  create/ghost percent = 85.5691 14.4309
+  CPU time = 0.031375 secs
+  create/ghost percent = 88.6124 11.3876
 Balance grid migrated 266400 cells
-  CPU time = 0.0829475 secs
-  reassign/sort/migrate/ghost percent = 23.2698 1.61938 43.4879 31.6229
+  CPU time = 0.0882455 secs
+  reassign/sort/migrate/ghost percent = 23.7525 1.53022 42.9846 31.7327
 Reading surface file ...
-ERROR on proc 0: Cannot open file data/surf/j5_cupola.surf (../read_surf.cpp:2264)
+ERROR on proc 0: Cannot open file input/surf/cupola.stl (../read_surf.cpp:2264)
