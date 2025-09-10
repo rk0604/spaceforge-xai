@@ -1,9 +1,8 @@
 ################################################################################
 # Wake deck (Argon) — J5 cupola (pentagon → −x) + 300 mm wafer at +1.0 m
-# Inflow at xlo, open elsewhere. SI units (m, K, m/s).
 ################################################################################
 
-# --- dirs & file targets ---
+# --- dirs & file targets (CWD = input/) ---
 shell               mkdir -p data/tmp
 shell               mkdir -p dump
 variable            diag_file   string "data/tmp/wake_diag.csv"
@@ -15,7 +14,7 @@ seed                12345
 dimension           3
 global              gridcut 1.0e-5 comm/sort yes
 
-# --- domain (room for 1 m standoff + buffers) ---
+# --- domain ---
 boundary            oo oo oo
 create_box          -0.25 1.35   -0.60 0.60   -0.60 0.60
 create_grid         150 60 60
@@ -28,31 +27,30 @@ global              nrho 7.07043e22
 global              fnum 7.07043e6
 collide             vss air data/ar.vss
 
-# --- inflow at xlo ---
+# --- inflow ---
 fix                 in emit/face air xlo
 
-# --- surfaces ---
-# Place cupola near x=0, wafer 1.0 m downstream.
-variable            x_sh     equal 0.00
-variable            x_wafer  equal ${x_sh}+1.0
+# --- placement vars ---
+variable            x_sh     equal 0.0
+variable            x_wafer  equal v_x_sh+1.0
+variable            rotY     equal 180.0
 
-# If your STL has pentagon toward +x, rotate 180° about Y so it faces −x.
-variable            rotY     equal 180
+# precompute probe slab bounds (no inline math in 'region'!)
+variable            xw_lo    equal v_x_wafer-0.05
+variable            xw_hi    equal v_x_wafer+0.05
 
-# === Choose where the STL files live relative to the wake CWD ===
-# where the STL files live, relative to the wake CWD (repo root)
-variable            surfdir  string "input/surf"
+# --- surfaces (CWD = input/ so meshes sit in 'surf/') ---
+variable            surfdir  string "surf"
+read_surf           ${surfdir}/cupola.surf      group shield origin 0.0 0.0 0.0 rotate 0.0 v_rotY 0.0 trans v_x_sh 0.0 0.0
+read_surf           ${surfdir}/wafer_300mm.surf group wafer  origin 0.0 0.0 0.0 rotate 0.0 0.0 0.0  trans v_x_wafer 0.0 0.0
 
-read_surf           ${surfdir}/cupola.surf       group shield origin 0 0 0 rotate 0 ${rotY} 0 trans ${x_sh} 0 0
-read_surf           ${surfdir}/wafer_300mm.surf  group wafer  origin 0 0 0 rotate 0 0 0      trans ${x_wafer} 0 0
-
-# Collision laws
+# collisions at surfaces
 surf_collide        sc_shield diffuse 273.15 1.0
 surf_collide        sc_wafer  vanish
 surf_modify         shield collide sc_shield
 surf_modify         wafer  collide sc_wafer
 
-# Geometry dumps (sanity-check orientation/placement)
+# geometry dumps
 dump                dshield surf shield 100 ${shield_dump} id v1x v1y v1z v2x v2y v2z v3x v3y v3z
 dump                dwaferg surf wafer  100 ${wafer_dump}  id v1x v1y v1z v2x v2y v2z v3x v3y v3z
 
@@ -61,7 +59,7 @@ compute             temp temp
 stats               100
 stats_style         step cpu np nattempt ncoll c_temp
 
-# --- time control (driver advances) ---
+# --- time control ---
 timestep            7.0e-9
 run                 0
 
@@ -73,8 +71,8 @@ variable            T equal c_temp
 compute             gNrho_all grid all air nrho
 compute             R_all     reduce ave c_gNrho_all[*]
 
-# 10 cm slab around the wafer plane; ±15 cm window in y,z
-region              wake_probe block ${x_wafer}-0.05 ${x_wafer}+0.05  -0.15 0.15  -0.15 0.15
+# 10 cm slab around wafer plane; ±15 cm window in y,z
+region              wake_probe block v_xw_lo v_xw_hi  -0.15 0.15  -0.15 0.15
 group               wake_grid  grid region wake_probe center
 compute             gNrho_wake grid wake_grid air nrho
 compute             R_wake     reduce ave c_gNrho_wake[*]
