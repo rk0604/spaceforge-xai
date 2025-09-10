@@ -7,6 +7,7 @@
 #include <system_error>
 #include <mutex>
 #include <string>
+#include <vector>     // <-- needed
 
 namespace {
 namespace fs = std::filesystem;
@@ -62,7 +63,7 @@ Logger::~Logger() {
 }
 
 // -----------------------------------------------------------------------------
-// Log one batch of values for a subsystem at (tick, time)
+// Log one batch of values for a subsystem at (tick, time) in long format
 // -----------------------------------------------------------------------------
 void Logger::log(const std::string& subsystem,
                  int tick, double time,
@@ -79,7 +80,7 @@ void Logger::log(const std::string& subsystem,
         if (!central_) {
             warn_open_failure(central_path);
         } else {
-            central_ << "tick,time,subsystem,key,value\n";
+            central_ << "tick,time_s,subsystem,key,value\n";
             central_.flush();
         }
     }
@@ -92,7 +93,7 @@ void Logger::log(const std::string& subsystem,
         if (!ofs) {
             warn_open_failure(node_path);
         } else {
-            ofs << "tick,time,key,value\n";
+            ofs << "tick,time_s,key,value\n";
             ofs.flush();
         }
     }
@@ -116,4 +117,40 @@ void Logger::log(const std::string& subsystem,
     if (central_) central_.flush();
     auto it = per_node_.find(subsystem);
     if (it != per_node_.end() && it->second) it->second.flush();
+}
+
+// -----------------------------------------------------------------------------
+// Wide format: one row with multiple columns
+// -----------------------------------------------------------------------------
+void Logger::log_wide(const std::string& subsystem, int tick, double time,
+                      const std::vector<std::string>& cols,
+                      const std::vector<double>& vals) {
+    std::lock_guard<std::mutex> lock(mtx_);
+
+    const fs::path base = log_base_dir();
+    ensure_dir(base);
+
+    // Open per-subsystem CSV once
+    auto& out = per_node_[subsystem];
+    if (!out.is_open()) {
+        const fs::path node_path = base / (subsystem + ".csv");
+        out.open(node_path.string(), std::ios::out);
+        if (!out) {
+            warn_open_failure(node_path);
+            return;
+        }
+        // write header once: tick,time,<cols...>
+        out << "tick,time_s";
+        for (const auto& c : cols) out << ',' << c;
+        out << '\n';
+        out.flush();
+    }
+
+    // Write the row
+    out << tick << ',' << time;
+    for (size_t i = 0; i < cols.size(); ++i) {
+        out << ',' << (i < vals.size() ? vals[i] : 0.0);
+    }
+    out << '\n';
+    out.flush();
 }

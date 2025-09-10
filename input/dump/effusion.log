@@ -1,19 +1,36 @@
-Simulation starting on 4 MPI task(s), dt=60 s
-Mode = dual
-Dual-instance split: nWake=2, nEffusion=2
-SPARTA (20 Jan 2025)
-Running on 2 MPI task(s)
-SPARTA (20 Jan 2025)
-Running on 2 MPI task(s)
+
+seed        98765
+dimension   3
+global      gridcut 1.0e-1 comm/sort yes
+
+boundary    oo oo oo
+create_box  0 5e-1   0 5e-1   0 5e-1
 Created orthogonal box = (0 0 0) to (0.5 0.5 0.5)
-Created orthogonal box = (-0.25 -0.6 -0.6) to (1.35 0.6 0.6)
+create_grid 8 8 8
 WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
 Created 512 child grid cells
   CPU time = 0.000279345 secs
   create/ghost percent = 85.1363 14.8637
+balance_grid rcb part
 Balance grid migrated 256 cells
   CPU time = 0.000626288 secs
   reassign/sort/migrate/ghost percent = 42.1442 0.274474 14.6155 42.9659
+
+species     data/ar.species Ar
+mixture     mEff Ar vstream 800.0 0.0 0.0 temp 300.0
+global      fnum 7.07043e6
+collide     vss mEff data/ar.vss
+
+fix         fe emit/face mEff xlo
+
+region      wafer block 0.0 5.0e-5  0.0 5.0e-5  2.45e-5 2.55e-5
+
+# Particle hits dump in wafer region: select-ID must be a mixture ID
+dump        dw particle all 50 dump/wafer_hits.csv id x y z vx vy vz
+dump_modify dw region wafer append yes flush yes
+
+timestep    7.0e-9
+run         0
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 0 0 0
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -44,7 +61,7 @@ SurfColl occurs   = 0 (0K)
 Surf reactions    = 0 (0K)
 Collide attempts  = 0 (0K)
 Collide occurs    = 0 (0K)
-Gas reactions     = 0 (0K)
+Reactions         = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
@@ -57,25 +74,16 @@ Particle fraction colliding with boundary: 0
 Particle fraction exiting boundary: 0
 Surface-checks/particle/step: 0
 Surface-collisions/particle/step: 0
-Surface-reactions/particle/step: 0
+Surf-reactions/particle/step: 0
 Collision-attempts/particle/step: 0
 Collisions/particle/step: 0
-Gas-reactions/particle/step: 0
+Reactions/particle/step: 0
 
 Particles: 0 ave 0 max 0 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
-Cells:     256 ave 256 max 256 min
+Cells:      256 ave 256 max 256 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 GhostCell: 128 ave 128 max 128 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 EmptyCell: 0 ave 0 max 0 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
-WARNING: Could not acquire nearby ghost cells b/c grid partition is not clumped (../grid.cpp:472)
-Created 540000 child grid cells
-  CPU time = 0.0234952 secs
-  create/ghost percent = 85.5691 14.4309
-Balance grid migrated 266400 cells
-  CPU time = 0.0829475 secs
-  reassign/sort/migrate/ghost percent = 23.2698 1.61938 43.4879 31.6229
-Reading surface file ...
-ERROR on proc 0: Cannot open file data/surf/j5_cupola.surf (../read_surf.cpp:2264)

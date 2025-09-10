@@ -15,6 +15,9 @@ public:
 
 private:
     PowerBus* bus_;
-    double capacity_;   // maximum storage (Wh)
-    double charge_;     // current charge (Wh)
+    double capacity_;    // maximum storage (Wh)
+    double charge_;      // current charge (Wh)
+
+    // policy: how much we try to draw each tick to charge up
+    double request_per_tick_ = 5.0;  // matches your previous logs
 };

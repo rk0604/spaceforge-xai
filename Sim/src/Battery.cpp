@@ -1,46 +1,45 @@
 #include "Battery.hpp"
 #include "Logger.hpp"
 #include <algorithm>
-#include <iostream>
 
 Battery::Battery(double capacity)
     : Subsystem("Battery"),
+      bus_(nullptr),
       capacity_(capacity),
-      charge_(capacity / 2.0),  // start at 50% charge by default
-      bus_(nullptr) {}
+      charge_(capacity / 2.0) {}   // start ~50% as before
 
 void Battery::initialize() {
-    Logger::instance().log("Battery", 0, 0.0, {
-        {"status", 1},
-        {"initial_charge", charge_}
-    });
+    // Initial wide row with current charge; no extra per-key rows
+    Logger::instance().log_wide(
+        "Battery", 0, 0.0,
+        {"status","required","drawn","deficit","low_flag","charge"},
+        {1.0, 0.0, 0.0, 0.0, (charge_ < 0.2*capacity_) ? 1.0 : 0.0, charge_}
+    );
 }
 
 void Battery::tick(const TickContext& ctx) {
-    if (!bus_) return;
+    const double required = request_per_tick_;
 
-    // Request a small trickle to keep battery topped up
-    double required = std::min(5.0, capacity_ - charge_);
-    double drawn = bus_->drawPower(required, ctx);
+    double drawn = 0.0;
+    if (bus_) drawn = bus_->drawPower(required, ctx);
 
-    charge_ += drawn;
-    if (charge_ > capacity_) charge_ = capacity_;
+    const double deficit = std::max(0.0, required - drawn);
 
-    double deficit = required - drawn;
+    // Update state (simple charger: what we draw becomes stored energy)
+    charge_ = std::clamp(charge_ + drawn, 0.0, capacity_);
 
-    Logger::instance().log("Battery", ctx.tick_index, ctx.time, {
-        {"charge", charge_},
-        {"required", required},
-        {"drawn", drawn},
-        {"deficit", deficit},
-        {"low_flag", (charge_ < capacity_ * 0.2) ? 1 : 0}
-    });
+    const double low_flag = (charge_ < 0.2 * capacity_) ? 1.0 : 0.0;
+
+    // One wide row for this tick
+    Logger::instance().log_wide(
+        "Battery", ctx.tick_index, ctx.time,
+        {"status","required","drawn","deficit","low_flag","charge"},
+        {1.0, required, drawn, deficit, low_flag, charge_}
+    );
 }
 
 void Battery::shutdown() {
-    Logger::instance().log("Battery", -1, -1.0, {
-        {"status", 0}
-    });
+    // No -1 sentinel row (keeps file clean/consistent)
 }
 
 void Battery::setPowerBus(PowerBus* bus) {

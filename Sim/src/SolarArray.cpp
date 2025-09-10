@@ -1,7 +1,6 @@
 #include "SolarArray.hpp"
 #include "Logger.hpp"
 #include <cmath>
-#include <iostream>
 
 SolarArray::SolarArray(double efficiency, double base_input)
     : Subsystem("SolarArray"),
@@ -12,31 +11,34 @@ SolarArray::SolarArray(double efficiency, double base_input)
 
 void SolarArray::initialize() {
     last_output_ = 0.0;
-    Logger::instance().log("SolarArray", 0, 0.0, {
-        {"status", 1},
-        {"efficiency", efficiency_}
-    });
+    // Initial wide row, include efficiency so header is stable
+    Logger::instance().log_wide(
+        "SolarArray", 0, 0.0,
+        {"status","solar_input","output","efficiency"},
+        {1.0, 0.0, 0.0, efficiency_}
+    );
 }
 
 void SolarArray::tick(const TickContext& ctx) {
-    // Simple model: sinusoidal solar input
-    double solar_input = 1000.0 * std::fabs(std::sin(ctx.time));
-    last_output_ = solar_input * efficiency_;
+    // Simple diurnal-ish variation; keep your prior semantics:
+    // base_input scaled by a smooth periodic function of time
+    const double phase = 2.0 * M_PI * (ctx.time / (24.0 * 3600.0)); // daily cycle
+    const double solar_input = base_input_ * (0.6 + 0.4 * std::max(0.0, std::sin(phase)));
 
-    if (bus_) {
-        bus_->addPower(last_output_);
-    }
+    const double output = solar_input * efficiency_;
+    last_output_ = output;
 
-    Logger::instance().log("SolarArray", ctx.tick_index, ctx.time, {
-        {"solar_input", solar_input},
-        {"output", last_output_}
-    });
+    if (bus_) bus_->addPower(output);
+
+    Logger::instance().log_wide(
+        "SolarArray", ctx.tick_index, ctx.time,
+        {"status","solar_input","output","efficiency"},
+        {1.0, solar_input, output, efficiency_}
+    );
 }
 
 void SolarArray::shutdown() {
-    Logger::instance().log("SolarArray", -1, -1.0, {
-        {"status", 0}
-    });
+    // No -1 sentinel row (keeps file clean/consistent)
 }
 
 void SolarArray::setPowerBus(PowerBus* bus) {

@@ -38,6 +38,7 @@ set(SIMCORE_SOURCES
   src/SimulationEngine.cpp
   src/TickPhaseEngine.cpp
   src/Logger.cpp
+  src/SpartaDiag.cpp
   # Files that depend on SPARTA are only built when enabled:
 )
 

@@ -1,48 +1,50 @@
 #pragma once
-#include <string>
 #include <memory>
+#include <string>
+#include <filesystem>
 #include <mpi.h>
 
-class SpartaBridge;  // forward declaration
+#include "TickContext.hpp"   // ensures signature matches
+// forward declare to keep header light
+class SpartaBridge;
 
-// Thin façade around a single SPARTA instance.
-// - init() reads the deck once and keeps SPARTA alive
-// - runSteps(N) advances without re-reading the deck (issues "run N")
-// - markDirtyReload() -> next runIfDirtyOrAdvance() will clear+reload the deck
 class WakeChamber {
 public:
-  explicit WakeChamber(MPI_Comm comm);
-  ~WakeChamber();                                   // defined in .cpp
+    explicit WakeChamber(MPI_Comm comm, std::string label);
+    ~WakeChamber();
 
-  // Open SPARTA and read the deck once.
-  // Defaults resolve to:  <project>/input/in.wake
-  void init(const std::string& deck_basename = "in.wake",
-            const std::string& input_subdir  = "input");
+    void init(const std::string& deck_basename, const std::string& input_subdir);
+    void step(int nDefault);
+    void runSteps(int n);
+    void markDirtyReload();
+    bool runIfDirtyOrAdvance(int n);
+    void shutdown();
 
-  // Legacy convenience: advance by a default block of steps (no re-read).
-  // Uses runSteps() under the hood.
-  void step(int nDefault = 1000);
+    void setParameter(const std::string& name, double value);
 
-  // Close the SPARTA instance.
-  void shutdown();
-
-  // Persistent advance without re-reading the deck.
-  void runSteps(int n);
-
-  // Mark that a big change happened -> we must reload the deck next time.
-  void markDirtyReload();
-
-  // If dirty: clear+file(deck), else: run N. Returns true if it did something.
-  bool runIfDirtyOrAdvance(int n);
-
-  // Optional: inject parameters by writing an include file the deck reads.
-  void setParameter(const std::string& name, double value);
+    // per-engine-tick hook
+    void tick(const TickContext& ctx);
 
 private:
-  MPI_Comm                      comm_;
-  std::unique_ptr<SpartaBridge> sp_;
-  std::string                   deck_;
-  std::string                   input_subdir_;
-  bool                          initialized_ = false;
-  bool                          dirtyReload_ = false;
+    void logEvent_(double status, double ran_steps, double cum_steps,
+                   double reload, double mark_reload);
+
+private:
+    MPI_Comm comm_;
+    std::string label_;
+
+    std::unique_ptr<SpartaBridge> sp_{};
+
+    bool initialized_{false};
+    bool dirtyReload_{false};
+
+    int  cum_steps_{0};
+    int  last_run_steps_{0};
+    long long event_id_{0};
+
+    std::string deck_;
+    std::string input_subdir_;
+
+    // SPARTA diagnostic CSV that the deck writes every N steps
+    std::filesystem::path diag_path_ = std::filesystem::path("data") / "tmp" / "wake_diag.csv";
 };

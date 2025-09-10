@@ -15,7 +15,7 @@ public:
 
 private:
     PowerBus* bus_;
-    double efficiency_;     // fraction of solar input converted to power
-    double base_input_;     // baseline solar input (W)
-    double last_output_;    // last tick output
+    double efficiency_;   // fraction converted to power
+    double base_input_;   // baseline solar input (W)
+    double last_output_;  // last tick output (W)
 };

@@ -1,5 +1,6 @@
 #include "HeaterBank.hpp"
-#include "EffusionCell.hpp" // only if exists, otherwise forward is fine
+#include "EffusionCell.hpp"
+#include "Logger.hpp"
 
 HeaterBank::HeaterBank(double maxDraw)
 : Subsystem("HeaterBank"), maxDraw_(maxDraw) {}
@@ -12,7 +13,7 @@ void HeaterBank::setDemand(double watts) {
 void HeaterBank::setEffusionCell(EffusionCell* eff) { effusion_ = eff; }
 
 void HeaterBank::initialize() {
-    Logger::instance().log(name_, 0, 0.0, {{"status", 1}});
+    // No file row here – keep logs per-tick only
 }
 
 void HeaterBank::tick(const TickContext& ctx) {
@@ -24,23 +25,19 @@ void HeaterBank::tick(const TickContext& ctx) {
         requested = std::min(demand_, maxDraw_);
     }
 
-
-
     double granted = bus_->drawPower(requested, ctx);
     lastConsumed_ = granted;
 
-    // only apply heat if effusion cell exists
     if (effusion_) {
-        double energyJoules = granted * ctx.dt;
-        effusion_->applyHeat(energyJoules, ctx.dt);
+        effusion_->applyHeat(granted, ctx.dt); // pass power (W)
     }
 
-    Logger::instance().log(name_, ctx.tick_index, ctx.time, {
-        {"requested", requested},
-        {"granted", granted}
-    });
+    // One wide row per tick with a fixed schema
+    Logger::instance().log_wide(name_, ctx.tick_index, ctx.time,
+        {"requested","granted"},
+        {requested, granted});
 }
 
 void HeaterBank::shutdown() {
-    Logger::instance().log(name_, -1, -1.0, {{"status", 0}});
+    // No file row here
 }

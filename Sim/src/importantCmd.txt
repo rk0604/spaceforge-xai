@@ -180,3 +180,15 @@ env -u DISPLAY -u XAUTHORITY mpirun -np 4 ./build/Sim/sim \
   --couple-every 10 --sparta-block 200 --oversubscribe | tee run.log
 
 
+use this command to run 
+env -u DISPLAY -u XAUTHORITY mpirun -np 4 ./build/Sim/sim   --mode dual --split 2   --wake-deck in.wake --eff-deck in.effusion   --input-subdir input   --couple-every 10 --sparta-block 200 --oversubscribe | tee run.log
+
+# run for 500 rows log creation
+env -u DISPLAY -u XAUTHORITY mpirun -np 4 ./build/Sim/sim \
+  --mode dual --split 2 \
+  --wake-deck in.wake --eff-deck in.effusion \
+  --input-subdir input \
+  --dt 60 --couple-every 1 --nticks 500 \
+  --sparta-block 200 --oversubscribe | tee run.log
+
+build using cmake --build build -j

@@ -1,13 +1,17 @@
 # Effusion cell (Ar) — fixed
+
+# Ensure output dirs relative to SPARTA CWD
+shell       mkdir -p data/tmp
 shell       mkdir -p dump
-log         dump/effusion.log screen yes
+# 'log' supports optional 'append' only
+log         dump/effusion.log
 
 seed        98765
 dimension   3
-global      gridcut 1.0e-5 comm/sort yes
+global      gridcut 1.0e-1 comm/sort yes
 
 boundary    oo oo oo
-create_box  0 5e-5   0 5e-5   0 5e-5
+create_box  0 5e-1   0 5e-1   0 5e-1
 create_grid 8 8 8
 balance_grid rcb part
 
@@ -20,9 +24,32 @@ fix         fe emit/face mEff xlo
 
 region      wafer block 0.0 5.0e-5  0.0 5.0e-5  2.45e-5 2.55e-5
 
-# LITERAL frequency (no variables) — avoids 'Invalid dump frequency'
-dump        dw particle 50 dump/wafer_hits.csv id x y z
+# Particle hits dump in wafer region: select-ID must be a mixture ID
+dump        dw particle all 50 dump/wafer_hits.csv id x y z vx vy vz
 dump_modify dw region wafer append yes flush yes
 
 timestep    7.0e-9
 run         0
+
+# ===== diagnostics to CSV (effusion) =====
+variable    diag_file string "data/tmp/effusion_diag.csv"
+
+# On-screen stats (with temperature from compute)
+stats       100
+compute     temp temp
+stats_style step cpu np nattempt ncoll c_temp
+
+# Time/step variables
+variable    t equal time
+variable    s equal step
+
+# Domain-averaged number density for this mixture
+compute     gNrho grid all mEff nrho
+compute     nrho_avg reduce ave c_gNrho[*]
+
+# Variables for CSV
+variable    T equal c_temp
+variable    R equal c_nrho_avg
+
+# ONE LINE (no backslash continuation)
+fix         fcsv print 100 "$s,$t,$T,$R" file ${diag_file} screen no title "step,time,temp_K,density_m3"

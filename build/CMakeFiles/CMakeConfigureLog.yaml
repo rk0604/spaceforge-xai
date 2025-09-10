@@ -317,3 +317,40 @@ events:
         
       exitCode: 0
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_b2db1/fast
+        gmake[1]: Entering directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_b2db1.dir/build.make CMakeFiles/cmTC_b2db1.dir/build
+        gmake[2]: Entering directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b'
+        Building CXX object CMakeFiles/cmTC_b2db1.dir/test_mpi.cpp.o
+        /usr/bin/mpicxx   -std=gnu++17 -o CMakeFiles/cmTC_b2db1.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b/test_mpi.cpp
+        Linking CXX executable cmTC_b2db1
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_b2db1.dir/link.txt --verbose=1
+        /usr/bin/mpicxx CMakeFiles/cmTC_b2db1.dir/test_mpi.cpp.o -o cmTC_b2db1 
+        gmake[2]: Leaving directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b'
+        gmake[1]: Leaving directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vdIp4b'
+        
+      exitCode: 0
+...

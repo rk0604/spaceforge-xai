@@ -1,21 +1,28 @@
 #pragma once
-#include <fstream>
-#include <string>
 #include <mutex>
 #include <map>
-#include <memory>
+#include <string>
+#include <fstream>
+#include <vector>   
 
 class Logger {
 public:
     static Logger& instance();
+    ~Logger();
 
+    // Tall/long format: one row per key
     void log(const std::string& subsystem,
              int tick, double time,
              const std::map<std::string, double>& values);
 
+    // Wide format: one row per call with multiple columns
+    void log_wide(const std::string& subsystem,
+                  int tick, double time,
+                  const std::vector<std::string>& columns,
+                  const std::vector<double>& values);
+
 private:
     Logger() = default;
-    ~Logger();
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
