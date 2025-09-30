@@ -1,0 +1,132 @@
+################################################################################
+# in.wake — Wake chamber (Argon) — debug-fast, SPARTA 20 Jan 2025
+################################################################################
+shell               mkdir -p data/tmp
+shell               mkdir -p dump
+log                 dump/wake.log
+
+# ---- app files (driver expects these) ----
+variable            diag_file   string "data/tmp/wake_diag.csv"
+variable            wafer_hits  string "dump/wafer_hits.csv"
+variable            shield_dump string "dump/shield_geom.csv"
+variable            wafer_dump  string "dump/wafer_geom.csv"
+
+# ---- basics ----
+seed                12345
+dimension           3
+global              gridcut 1.0e-5 comm/sort yes
+
+# ---- domain & grid ----
+boundary            oo oo oo
+create_box          -0.55 1.35   -0.60 0.60   -0.60 0.60
+create_grid         60 24 24
+balance_grid        rcb part
+
+# ---- grid group for wake probe ----
+region              wake_probe block 0.90 1.10  -0.20 0.20  -0.20 0.20
+group               wake_grid grid region wake_probe one
+
+# ---- gas, mixture, collision model ----
+species             data/ar.species Ar
+mixture             air Ar nrho 5.0e12 vstream -7500.0 0.0 0.0 temp 800.0
+global              fnum 1.0e12
+collide             vss air data/ar.vss
+
+# ---- geometry (shield + wafer) ----
+variable            rotY     equal 180.0
+variable            surfdir  string "surf"
+read_surf           ${surfdir}/cupola.surf       group shield origin 0 0 0 rotate ${rotY} 0 1 0 trans 0 0 0
+read_surf           ${surfdir}/wafer_300mm.surf  group wafer  origin 0 0 0 rotate 0 0 0 1  trans 1.0 0 0
+
+surf_collide        sc_shield diffuse 273.15 1.0
+surf_collide        sc_wafer  vanish
+surf_modify         shield collide sc_shield
+surf_modify         wafer  collide sc_wafer
+
+dump                dshield surf shield 200 ${shield_dump} id v1x v1y v1z v2x v2y v2z v3x v3y v3z
+dump_modify         dshield append yes flush yes
+dump                dwafer_geom surf wafer 200 ${wafer_dump} id v1x v1y v1z v2x v2y v2z v3x v3y v3z
+dump_modify         dwafer_geom append yes flush yes
+
+# ---- timestep & inlet ----
+timestep            1.0e-5
+compute             temp temp
+
+# narrow yz band on the +x face to throttle particles
+region              inlet_band block INF INF  -0.20 0.20  -0.20 0.20
+fix                 in emit/face air xhi region inlet_band
+
+# ---- quick warmup ----
+stats               200
+stats_style         step time dt np nattempt ncoll c_temp f_in[1]
+run                 500
+
+# -------------------- Diagnostics (robust) --------------------
+variable            s  equal step
+variable            t  equal time
+variable            T  equal c_temp
+
+compute             gNrho_all   grid all        air nrho
+compute             R_all       reduce ave      c_gNrho_all[*]
+
+compute             gNrho_wake  grid wake_grid  air nrho
+compute             R_wake      reduce ave      c_gNrho_wake[*]
+
+# compute reduce with a single input → GLOBAL SCALAR (no [1])
+variable            Rfree   equal c_R_all
+variable            Rwake   equal c_R_wake
+variable            ratio   equal c_R_wake/(c_R_all+1.0e-30)
+variable            deficit equal c_R_all - c_R_wake
+
+# One line; only ${var} expansions
+fix                 fcsv print 200 "${s},${t},${Rfree},${Rwake},${ratio},${deficit},${T}" file ${diag_file} screen no title "step,time,free_nrho,wake_nrho,wake_to_free,deficit,temp_K"
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# in.effusion — Effusion cell (Argon) — debug-fast, SPARTA 20 Jan 2025
+shell       mkdir -p data/tmp
+shell       mkdir -p dump
+log         dump/effusion.log
+
+# ---- basics ----
+seed        98765
+dimension   3
+global      gridcut 1.0e-1 comm/sort yes
+
+# ---- domain & grid ----
+boundary    oo oo oo
+create_box  0 5e-1   0 5e-1   0 5e-1
+create_grid 8 8 8
+balance_grid rcb part
+
+# ---- gas, mixture, collision model ----
+species     data/ar.species Ar
+# bump density a notch and add directed stream into +x to ensure emission
+mixture     mEff Ar nrho 5.0e13 vstream 1500.0 0.0 0.0 temp 800.0
+global      fnum 1.0e11
+collide     vss mEff data/ar.vss
+
+# ---- inlet on -x face, slender yz slit ----
+region      inlet_yz block INF INF   0.24 0.26   0.24 0.26
+fix         fe emit/face mEff xlo region inlet_yz
+
+# ---- timestep, temp compute, warmup ----
+timestep    1.0e-5
+compute     temp temp
+stats       200
+stats_style step time dt np nattempt ncoll c_temp f_fe[1]
+run         500
+
+# ---- diagnostics ----
+variable    diag_file string "data/tmp/effusion_diag.csv"
+
+variable    s equal step
+variable    t equal time
+variable    T equal c_temp
+
+compute     gNrho grid all mEff nrho
+compute     Rcmp  reduce ave c_gNrho[*]
+variable    R equal c_Rcmp
+
+# One line; only ${var} expansions
+fix         fcsv print 200 "${s},${t},${T},${R}" file ${diag_file} screen no title "step,time,temp_K,density_m3"

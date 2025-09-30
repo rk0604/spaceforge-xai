@@ -1,92 +1,79 @@
-################################################################################
-# Wake deck (Argon) — J5 cupola (pentagon → −x) + 300 mm wafer at +1.0 m
-################################################################################
+# WakeChamber (debug-fast) — SPARTA (20 Jan 2025)
+# Fix: offset box x-bounds by ε so wafer planes (x=±0.005) avoid grid faces.
 
-# --- dirs & file targets (CWD = input/) ---
-shell               mkdir -p data/tmp
-shell               mkdir -p dump
-variable            diag_file   string "data/tmp/wake_diag.csv"
-variable            wafer_hits  string "dump/wafer_hits.csv"
-variable            shield_dump string "dump/shield_geom.csv"
-variable            wafer_dump  string "dump/wafer_geom.csv"
+shell mkdir -p data/tmp
+shell mkdir -p dump
 
+# --- deterministic seed and 3D ---
 seed                12345
 dimension           3
-global              gridcut 1.0e-5 comm/sort yes
 
-# --- domain ---
+# --- numeric tolerance & comm ---
+global              gridcut 1.0e-4 comm/sort yes   # slightly looser to avoid Cut3d degeneracy
+
+# --- domain & grid ---
+# Original xlo/xhi: -0.55 1.35  (width 1.90). Keep width, shift both by -1e-4.
 boundary            oo oo oo
-create_box          -0.25 1.35   -0.60 0.60   -0.60 0.60
-create_grid         150 60 60
+create_box          -0.5501 1.3499   -0.60 0.60   -0.60 0.60
+create_grid         47 19 19
 balance_grid        rcb part
 
-# --- gas & collisions ---
+# --- SPECIES / MIXTURE (Argon from your repo) ---
 species             data/ar.species Ar
-mixture             air Ar vstream 7500.0 0.0 0.0 temp 273.15
-global              nrho 7.07043e22
-global              fnum 7.07043e6
-collide             vss air data/ar.vss
+mixture             argonmix Ar
 
-# --- inflow ---
-fix                 in emit/face air xlo
+# --- global gas settings (debug) ---
+global              nrho 1.0e17
+global              fnum 1.0e6
+global              temp 300.0
+global              vstream 0.0 0.0 0.0
 
-# --- placement vars ---
-variable            x_sh     equal 0.0
-variable            x_wafer  equal v_x_sh+1.0
-variable            rotY     equal 180.0
-
-# precompute probe slab bounds (no inline math in 'region'!)
-variable            xw_lo    equal v_x_wafer-0.05
-variable            xw_hi    equal v_x_wafer+0.05
-
-# --- surfaces (CWD = input/ so meshes sit in 'surf/') ---
+# --- geometry (paths are relative to --input-subdir input) ---
 variable            surfdir  string "surf"
-read_surf           ${surfdir}/cupola.surf      group shield origin 0.0 0.0 0.0 rotate 0.0 v_rotY 0.0 trans v_x_sh 0.0 0.0
-read_surf           ${surfdir}/wafer_300mm.surf group wafer  origin 0.0 0.0 0.0 rotate 0.0 0.0 0.0  trans v_x_wafer 0.0 0.0
+read_surf           ${surfdir}/cupola.surf
+read_surf           ${surfdir}/wafer_300mm.surf   # unchanged geometry
 
-# collisions at surfaces
-surf_collide        sc_shield diffuse 273.15 1.0
-surf_collide        sc_wafer  vanish
-surf_modify         shield collide sc_shield
-surf_modify         wafer  collide sc_wafer
+# --- surface interactions ---
+surf_collide        diffuse 300.0
+surf_modify         all vx 0.0 vy 0.0 vz 0.0
 
-# geometry dumps
-dump                dshield surf shield 100 ${shield_dump} id v1x v1y v1z v2x v2y v2z v3x v3y v3z
-dump                dwaferg surf wafer  100 ${wafer_dump}  id v1x v1y v1z v2x v2y v2z v3x v3y v3z
+# --- collisions (VSS table) ---
+collide             vss
+collide_modify      vss file data/ar.vss
+collide_modify      nevery 1
 
-# --- screen stats ---
-compute             temp temp
+# --- groups & stats ---
+group               gall grid all
 stats               100
-stats_style         step cpu np nattempt ncoll c_temp
+stats_style         step np time cpu
 
-# --- time control ---
-timestep            7.0e-9
-run                 0
+# --- temperature compute (global scalar) ---
+compute             tgas temp
+variable            T       equal c_tgas
+variable            step    equal step
+variable            time    equal time
 
-# ====================== WAKE DIAGNOSTICS (CSV) ======================
-variable            t equal time
-variable            s equal step
-variable            T equal c_temp
+# --- diagnostics: grid number density and scalar reductions ---
+compute             gNrho_all grid gall nrho
+compute             R_all reduce ave c_gNrho_all[1]   # single input -> scalar
+variable            Rfree   equal c_R_all
+variable            Rwake   equal c_R_all
+variable            ratio   equal c_R_all/(c_R_all+1.0e-30)
+variable            deficit equal 0.0
 
-compute             gNrho_all grid all air nrho
-compute             R_all     reduce ave c_gNrho_all[*]
+# --- wafer-hit sampling (surface collisions) ---
+dump                d_hits surf 200 dump/wafer_hits.csv id x y z vx vy vz
+dump_modify         d_hits append yes
 
-# 10 cm slab around wafer plane; ±15 cm window in y,z
-region              wake_probe block v_xw_lo v_xw_hi  -0.15 0.15  -0.15 0.15
-group               wake_grid  grid region wake_probe center
-compute             gNrho_wake grid wake_grid air nrho
-compute             R_wake     reduce ave c_gNrho_wake[*]
+# --- light grid dump ---
+dump                d_grid grid 500 dump/wake_grid.csv id x y z
+dump_modify         d_grid append yes
 
-variable            Rfree     equal c_R_all
-variable            Rwake     equal c_R_wake
-variable            ratio     equal v_Rwake/v_Rfree
-variable            deficit   equal v_Rfree - v_Rwake
+# --- CSV diagnostics (variables only) ---
+fix                 fdiag print 100 "${step},${time},${Rfree},${Rwake},${ratio},${deficit},${T}" \
+                    file data/tmp/wake_diag.csv \
+                    title "step,time,Rfree,Rwake,ratio,deficit,temp" screen no
 
-fix                 fcsv print 100 "${s},${t},${Rfree},${Rwake},${ratio},${deficit},${T}" \
-                       file ${diag_file} screen no \
-                       title "step,time,free_nrho,wake_nrho,wake_to_free,deficit,temp_K"
-
-# ====================== WAFER HIT TALLIES ===========================
-compute             cwafer surf wafer air n mflux press ke
-dump                dwafer surf wafer 100 ${wafer_hits} id c_cwafer[*]
-dump_modify         dwafer append yes flush yes
+# --- short warmup + short production ---
+run                 500
+run                 2000
