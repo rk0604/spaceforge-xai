@@ -1,0 +1,4 @@
+# Species data
+
+# ID  Molwt(amu)   Molmass(kg)     RotDof  RotRel  VibDof  VibRel  VibTemp(K)  wt   charge
+O     16.00        2.66E-26        0       0.0     0       0.0     0.0         1.0  0.0

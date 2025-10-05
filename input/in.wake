@@ -1,79 +1,68 @@
-# WakeChamber (debug-fast) — SPARTA (20 Jan 2025)
-# Fix: offset box x-bounds by ε so wafer planes (x=±0.005) avoid grid faces.
+# --- LEO wake test with wafer disk + CSV tallies (front / wake / full) ---
 
-shell mkdir -p data/tmp
-shell mkdir -p dump
+units              si
+seed               12345
+dimension          3
+boundary           o o o
 
-# --- deterministic seed and 3D ---
-seed                12345
-dimension           3
+# SPARTA's internal step (independent of your C++ --dt)
+timestep           1.0e-5
 
-# --- numeric tolerance & comm ---
-global              gridcut 1.0e-4 comm/sort yes   # slightly looser to avoid Cut3d degeneracy
+# Domain: flow +x; wafer (yz-plate) centered near x=0
+create_box         -0.5 1.0   -0.5 0.5   -0.5 0.5
+create_grid        60 30 30
 
-# --- domain & grid ---
-# Original xlo/xhi: -0.55 1.35  (width 1.90). Keep width, shift both by -1e-4.
-boundary            oo oo oo
-create_box          -0.5501 1.3499   -0.60 0.60   -0.60 0.60
-create_grid         47 19 19
-balance_grid        rcb part
+# Gas & flow (free-molecular for now)
+species            data/o.species O
+mixture            leo O temp 800.0 vstream 7500.0 0.0 0.0
+collide            none
 
-# --- SPECIES / MIXTURE (Argon from your repo) ---
-species             data/ar.species Ar
-mixture             argonmix Ar
+# Surface mesh + collision model (specular reflection)
+read_surf          surf/wafer_300mm.surf
+surf_collide       sc1 specular
+surf_modify        all collide sc1
 
-# --- global gas settings (debug) ---
-global              nrho 1.0e17
-global              fnum 1.0e6
-global              temp 300.0
-global              vstream 0.0 0.0 0.0
+# Continuous inflow from xlo (turn off per-species counting to allow n>0)
+fix                in emit/face leo xlo nevery 1 n 500 perspecies no
+# (Alt: density-based inflow)  # fix in emit/face leo xlo nevery 1 nrho 1.0e16
 
-# --- geometry (paths are relative to --input-subdir input) ---
-variable            surfdir  string "surf"
-read_surf           ${surfdir}/cupola.surf
-read_surf           ${surfdir}/wafer_300mm.surf   # unchanged geometry
+# ------------------------
+# Regions and matching GRID GROUPS (use center-of-cell inclusion)
+# ------------------------
+region             front  block  -0.45 -0.05   -0.25  0.25   -0.25  0.25
+region             wakeR  block   0.05  0.80   -0.20  0.20   -0.20  0.20
+group              gFront grid region front center
+group              gWake  grid region wakeR center
+# built-in group "all" covers the whole domain
 
-# --- surface interactions ---
-surf_collide        diffuse 300.0
-surf_modify         all vx 0.0 vy 0.0 vz 0.0
+# ------------------------
+# Per-cell diagnostics -> CSV in ../data/raw/
+# Average every ${tevery} steps, then dump those averages.
+# ------------------------
+variable           tevery equal 100
 
-# --- collisions (VSS table) ---
-collide             vss
-collide_modify      vss file data/ar.vss
-collide_modify      nevery 1
+# FRONT region
+compute            cFront grid        gFront leo nrho u v w
+compute            tFront thermal/grid gFront leo temp press
+fix                fFront  ave/grid   gFront ${tevery} 1 ${tevery}  c_cFront[*] c_tFront[*]
+dump               dFront  grid       gFront ${tevery} ../data/raw/wake_front.csv  id f_fFront[*]
+dump_modify        dFront  append yes  format float %20.10g
 
-# --- groups & stats ---
-group               gall grid all
-stats               100
-stats_style         step np time cpu
+# WAKE region
+compute            cWake  grid        gWake  leo nrho u v w
+compute            tWake  thermal/grid gWake  leo temp press
+fix                fWake  ave/grid    gWake  ${tevery} 1 ${tevery}  c_cWake[*]  c_tWake[*]
+dump               dWake  grid        gWake  ${tevery} ../data/raw/wake_wake.csv  id f_fWake[*]
+dump_modify        dWake  append yes  format float %20.10g
 
-# --- temperature compute (global scalar) ---
-compute             tgas temp
-variable            T       equal c_tgas
-variable            step    equal step
-variable            time    equal time
+# FULL domain
+compute            cFull  grid        all    leo nrho u v w
+compute            tFull  thermal/grid all    leo temp press
+fix                fFull  ave/grid    all    ${tevery} 1 ${tevery}  c_cFull[*] c_tFull[*]
+dump               dFull  grid        all    ${tevery} ../data/raw/wake_full.csv  id f_fFull[*]
+dump_modify        dFull  append yes  format float %20.10g
 
-# --- diagnostics: grid number density and scalar reductions ---
-compute             gNrho_all grid gall nrho
-compute             R_all reduce ave c_gNrho_all[1]   # single input -> scalar
-variable            Rfree   equal c_R_all
-variable            Rwake   equal c_R_all
-variable            ratio   equal c_R_all/(c_R_all+1.0e-30)
-variable            deficit equal 0.0
-
-# --- wafer-hit sampling (surface collisions) ---
-dump                d_hits surf 200 dump/wafer_hits.csv id x y z vx vy vz
-dump_modify         d_hits append yes
-
-# --- light grid dump ---
-dump                d_grid grid 500 dump/wake_grid.csv id x y z
-dump_modify         d_grid append yes
-
-# --- CSV diagnostics (variables only) ---
-fix                 fdiag print 100 "${step},${time},${Rfree},${Rwake},${ratio},${deficit},${T}" \
-                    file data/tmp/wake_diag.csv \
-                    title "step,time,Rfree,Rwake,ratio,deficit,temp" screen no
-
-# --- short warmup + short production ---
-run                 500
-run                 2000
+# Run control
+stats              100
+variable           block equal 1000
+run                ${block}

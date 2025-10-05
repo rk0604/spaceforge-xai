@@ -1,79 +1,19 @@
-# EffusionCell (debug-fast) — SPARTA (20 Jan 2025)
-# Fix: offset box x-bounds by ε so wafer planes (x=±0.005) avoid grid faces.
+# minimal effusion sandbox (no surfaces / no dumps)
+units              si
+seed               2025
+dimension          3
+boundary           o o o
 
-shell mkdir -p data/tmp
-shell mkdir -p dump
+create_box         -0.25 0.25  -0.25 0.25  -0.5 0.5
+create_grid        10 10 20
 
-# --- deterministic seed and 3D ---
-seed                54321
-dimension           3
+species            data/ar.species Ar
+mixture            jet Ar temp 300.0 vstream 0.0 0.0 300.0
+collide            none
 
-# --- numeric tolerance & comm ---
-global              gridcut 1.0e-4 comm/sort yes   # match wake deck
+create_particles   jet n 15000
 
-# --- domain & grid ---
-# Original xlo/xhi: -0.55 1.35. Shift both by -1e-4 to de-align grid planes from wafer.
-boundary            oo oo oo
-create_box          -0.5501 1.3499   -0.60 0.60   -0.60 0.60
-create_grid         47 19 19
-balance_grid        rcb part
+stats              100
 
-# --- SPECIES / MIXTURE (Argon from your repo) ---
-species             data/ar.species Ar
-mixture             argonmix Ar
-
-# --- tune to guarantee Np > 0 quickly (debug) ---
-global              nrho 5.0e18            # ensure emission
-global              fnum 1.0e5             # moderate weighting
-global              temp 1000.0            # hot source
-global              vstream 0.0 0.0 400.0  # axial stream toward +Z
-
-# --- geometry (paths are relative to --input-subdir input) ---
-variable            surfdir  string "surf"
-read_surf           ${surfdir}/cupola.surf
-read_surf           ${surfdir}/wafer_300mm.surf   # unchanged geometry
-
-# --- surface interactions ---
-surf_collide        diffuse 300.0
-surf_modify         all vx 0.0 vy 0.0 vz 0.0
-
-# --- source: emit from zlo face; flux set by mixture + globals above ---
-fix                 source emit/face argonmix zlo
-
-# --- collisions (VSS table) ---
-collide             vss
-collide_modify      vss file data/ar.vss
-collide_modify      nevery 1
-
-# --- stats & temperature ---
-stats               100
-stats_style         step np time cpu
-compute             tgas temp
-variable            T       equal c_tgas
-variable            step    equal step
-variable            time    equal time
-
-# --- grid diagnostics (use all cells) ---
-group               gall grid all
-compute             gNrho_all grid gall nrho
-compute             R_all reduce ave c_gNrho_all[1]
-variable            Rfree   equal c_R_all
-variable            Rwake   equal c_R_all
-variable            ratio   equal c_R_all/(c_R_all+1.0e-30)
-variable            deficit equal 0.0
-
-# --- wafer hits + simple grid dump ---
-dump                d_hits surf 200 dump/eff_wafer_hits.csv id x y z vx vy vz
-dump_modify         d_hits append yes
-
-dump                d_grid grid 500 dump/eff_grid.csv id x y z
-dump_modify         d_grid append yes
-
-# --- CSV diagnostics (variables only) ---
-fix                 fdiag print 100 "${step},${time},${Rfree},${Rwake},${ratio},${deficit},${T}" \
-                    file data/tmp/effusion_diag.csv \
-                    title "step,time,Rfree,Rwake,ratio,deficit,temp" screen no
-
-# --- short warmup + short production ---
-run                 300
-run                 1200
+variable           block equal 2000
+run                ${block}

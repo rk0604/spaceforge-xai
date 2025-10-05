@@ -1,0 +1,89 @@
+SPARTA (20 Jan 2025)
+Running on 2 MPI task(s)
+# --- LEO wake: compact region & domain mean pressures per outer block ---
+
+units              si
+seed               12345
+dimension          3
+boundary           o o o
+timestep           1.0e-5
+
+# Domain: flow +x; wafer (yz-plate) centered near x=0
+create_box         -0.5 1.0   -0.5 0.5   -0.5 0.5
+Created orthogonal box = (-0.5 -0.5 -0.5) to (1 0.5 0.5)
+create_grid        60 30 30
+Created 54000 child grid cells
+  CPU time = 0.0109006 secs
+  create/ghost percent = 24.3581 75.6419
+
+# Gas & flow (free-molecular)
+species            data/o.species O
+mixture            leo O temp 800.0 vstream 7500.0 0.0 0.0
+collide            none
+
+# Wafer surface and specular reflection
+read_surf          surf/wafer_300mm.surf
+  20 triangles
+  -0.005 0.005 xlo xhi
+  -0.15 0.15 ylo yhi
+  -0.129904 0.129904 zlo zhi
+  0.01 min triangle edge length
+  0.00075 min triangle area
+  128 0 = cells overlapping surfs, overlap cells with unmarked corner pts
+  53872 0 128 = cells outside/inside/overlapping surfs
+  128 = surf cells with 1,2,etc splits
+  1.49942 1.49942 = cell-wise and global flow volume
+  CPU time = 0.00989598 secs
+  read/check/sort/surf2grid/ghost/inout/particle percent = 5.17704 0.469241 5.42695 33.0395 55.8873 23.6323 0.00352668
+  surf2grid time = 0.00326959 secs
+  map/comm1/comm2/comm3/comm4/split percent = 29.0436 0.766397 32.4362 4.66062 4.51189 16.9711
+surf_collide       sc1 specular
+surf_modify        all collide sc1
+
+# Inflow from xlo (disable per-species counting)
+fix                in emit/face leo xlo nevery 1 n 500 perspecies no
+
+# Regions (center-of-cell) and grid groups
+region             front  block  -0.45 -0.05   -0.25  0.25   -0.25  0.25
+region             wakeR  block   0.05  0.80   -0.20  0.20   -0.20  0.20
+group              gFront grid region front center
+0 initial grid cell count in group gFront
+4096 final grid cell count in group gFront
+group              gWake  grid region wakeR center
+0 initial grid cell count in group gWake
+4320 final grid cell count in group gWake
+# built-in group "all" = whole domain
+
+# ---- Cadence aligned to outer harness ----
+variable           block   equal 1000                 # match --sparta-block
+variable           tick    equal floor(step/${block})
+variable           tick    equal floor(step/1000)
+variable           time_s  equal time                 # seconds
+
+# ---- Per-cell thermo, then spatial reduce to scalars (Pa) ----
+compute            tFront  thermal/grid gFront leo temp press
+compute            tWake   thermal/grid gWake  leo temp press
+compute            tFull   thermal/grid all    leo temp press
+
+# Spatial means over the selected grid groups (one scalar each)
+compute            pFront  reduce/grid gFront ave c_tFront[2]
+ERROR: Unrecognized compute style (../modify.cpp:452)
+1
+Particle fraction communicated: 0
+Particle fraction colliding with boundary: 0
+Particle fraction exiting boundary: 1
+Surface-checks/particle/step: 0
+Surface-collisions/particle/step: 0
+Surf-reactions/particle/step: 0
+Collision-attempts/particle/step: 0
+Collisions/particle/step: 0
+Reactions/particle/step: 0
+
+Particles: 0 ave 0 max 0 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+Cells:      1000 ave 1000 max 1000 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+GhostCell: 1000 ave 1000 max 1000 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
+EmptyCell: 0 ave 0 max 0 min
+Histogram: 2 0 0 0 0 0 0 0 0 0
