@@ -1,68 +1,134 @@
-# --- LEO wake test with wafer disk + CSV tallies (front / wake / full) ---
+# --- LEO wake: one-line CSV per outer block (no per-cell dumps) ---
+# Columns:
+#   tick,time_s,
+#   p_front_Pa, p_wake_Pa, p_full_Pa,
+#   p_frontPt_Pa, p_gapPt_Pa, p_farPt_Pa,
+#   p_gapSlice_Pa
+#
+# Probes/regions:
+#   front_shield : upstream volume in front of cupola (region average)
+#   wake_zone    : downstream shadow through wafer plane (region average)
+#   front_probe  : small box in front of cupola (point-like)
+#   gap_probe    : small box ~midway between cupola flat face (~x≈0) and wafer (x=1.0)
+#   far_probe    : small box near xlo (free-stream baseline)
+#   gap_slice    : thin slab around x≈0.50, larger y/z for a stable area-average
 
 units              si
 seed               12345
 dimension          3
 boundary           o o o
-
-# SPARTA's internal step (independent of your C++ --dt)
 timestep           1.0e-5
 
-# Domain: flow +x; wafer (yz-plate) centered near x=0
-create_box         -0.5 1.0   -0.5 0.5   -0.5 0.5
-create_grid        60 30 30
+# Domain: flow +x; convex cupola upstream (opening at ~x=0), wafer center plane at x=1.0
+create_box         -1.2 1.2   -0.5 0.5   -0.5 0.5
 
-# Gas & flow (free-molecular for now)
+# Grid spacing ~0.025 in x
+create_grid        96 30 30
+
+# Gas & flow (free-molecular baseline). Flow hits convex shield first.
 species            data/o.species O
 mixture            leo O temp 800.0 vstream 7500.0 0.0 0.0
-collide            none
+collide            none     # keep wake as deep shadow unless you enable collisions (see end)
 
-# Surface mesh + collision model (specular reflection)
+# ----------------------------
+# Surfaces (already posed in .surf files)
+# ----------------------------
 read_surf          surf/wafer_300mm.surf
+read_surf          surf/cupola.surf
 surf_collide       sc1 specular
 surf_modify        all collide sc1
 
-# Continuous inflow from xlo (turn off per-species counting to allow n>0)
-fix                in emit/face leo xlo nevery 1 n 500 perspecies no
-# (Alt: density-based inflow)  # fix in emit/face leo xlo nevery 1 nrho 1.0e16
+# ----------------------------
+# Inflow (raise particle statistics)
+# ----------------------------
+# Start at 5000; increase to 10000–20000 if probes are still sparse.
+fix                in emit/face leo xlo nevery 1 n 1000 perspecies no
 
-# ------------------------
-# Regions and matching GRID GROUPS (use center-of-cell inclusion)
-# ------------------------
-region             front  block  -0.45 -0.05   -0.25  0.25   -0.25  0.25
-region             wakeR  block   0.05  0.80   -0.20  0.20   -0.20  0.20
-group              gFront grid region front center
-group              gWake  grid region wakeR center
-# built-in group "all" covers the whole domain
+# ----------------------------
+# Regions and grid groups (volumetric)
+# ----------------------------
+region             front_shield  block  -0.90  -0.20    -0.25  0.25    -0.25  0.25
+region             wake_zone     block   0.05   1.10    -0.20  0.20    -0.20  0.20
+group              gFront grid region front_shield center
+group              gWake  grid region wake_zone    center
+# "all" = whole domain
 
-# ------------------------
-# Per-cell diagnostics -> CSV in ../data/raw/
-# Average every ${tevery} steps, then dump those averages.
-# ------------------------
-variable           tevery equal 100
+# ----------------------------
+# Point-like probes (wider to cut zeros)
+# ----------------------------
+# Front probe: around x≈-0.7875; widen y/z to ±0.10
+region             front_probe  block  -0.80  -0.78    -0.10  0.10    -0.10  0.10
+group              gFrontPt     grid region front_probe center
 
-# FRONT region
-compute            cFront grid        gFront leo nrho u v w
-compute            tFront thermal/grid gFront leo temp press
-fix                fFront  ave/grid   gFront ${tevery} 1 ${tevery}  c_cFront[*] c_tFront[*]
-dump               dFront  grid       gFront ${tevery} ../data/raw/wake_front.csv  id f_fFront[*]
-dump_modify        dFront  append yes  format float %20.10g
+# Gap probe: around x≈0.50; widen y/z to ±0.10
+region             gap_probe    block   0.475  0.525   -0.10  0.10    -0.10  0.10
+group              gGapPt       grid region gap_probe   center
 
-# WAKE region
-compute            cWake  grid        gWake  leo nrho u v w
-compute            tWake  thermal/grid gWake  leo temp press
-fix                fWake  ave/grid    gWake  ${tevery} 1 ${tevery}  c_cWake[*]  c_tWake[*]
-dump               dWake  grid        gWake  ${tevery} ../data/raw/wake_wake.csv  id f_fWake[*]
-dump_modify        dWake  append yes  format float %20.10g
+# Far-upstream probe near xlo; widen y/z to ±0.10
+region             far_probe    block  -1.170 -1.140   -0.10  0.10    -0.10  0.10
+group              gFarPt       grid region far_probe   center
 
-# FULL domain
-compute            cFull  grid        all    leo nrho u v w
-compute            tFull  thermal/grid all    leo temp press
-fix                fFull  ave/grid    all    ${tevery} 1 ${tevery}  c_cFull[*] c_tFull[*]
-dump               dFull  grid        all    ${tevery} ../data/raw/wake_full.csv  id f_fFull[*]
-dump_modify        dFull  append yes  format float %20.10g
+# ----------------------------
+# Gap midplane slice (area-averaged pressure near x≈0.50)
+# ----------------------------
+region             gap_slice    block   0.45   0.55    -0.20  0.20    -0.20  0.20
+group              gGapSlice    grid region gap_slice center
 
-# Run control
-stats              100
-variable           block equal 1000
+# ----------------------------
+# Cadence aligned to outer harness
+# ----------------------------
+variable           block   equal 1000                     # match --sparta-block
+variable           tick    equal floor(step/${block})
+variable           time_s  equal time
+
+# ----------------------------
+# Per-cell thermo -> spatial means (Pa)
+# ----------------------------
+compute            tFront     thermal/grid gFront     leo temp press
+compute            tWake      thermal/grid gWake      leo temp press
+compute            tFull      thermal/grid all        leo temp press
+compute            pFront     reduce ave c_tFront[2]
+compute            pWake      reduce ave c_tWake[2]
+compute            pFull      reduce ave c_tFull[2]
+
+# Probes & slice
+compute            tFrontPt   thermal/grid gFrontPt   leo temp press
+compute            tGapPt     thermal/grid gGapPt     leo temp press
+compute            tFarPt     thermal/grid gFarPt     leo temp press
+compute            tGapSlice  thermal/grid gGapSlice  leo temp press
+
+compute            pFrontPt   reduce ave c_tFrontPt[2]
+compute            pGapPt     reduce ave c_tGapPt[2]
+compute            pFarPt     reduce ave c_tFarPt[2]
+compute            pGapSlice  reduce ave c_tGapSlice[2]
+
+# ----------------------------
+# Variables to print
+# ----------------------------
+variable           P_FRONT       equal c_pFront
+variable           P_WAKE        equal c_pWake
+variable           P_FULL        equal c_pFull
+variable           P_FRONT_PT    equal c_pFrontPt
+variable           P_GAP_PT      equal c_pGapPt
+variable           P_FAR_PT      equal c_pFarPt
+variable           P_GAP_SLICE   equal c_pGapSlice
+
+# ----------------------------
+# CSV header (once per SPARTA invocation)
+# ----------------------------
+print "tick,time_s,p_front_Pa,p_wake_Pa,p_domain_Pa,p_frontPt_Pa,p_gapPt_Pa,p_farPt_Pa,p_gap_shield_wafer_Pa" append ../data/raw/wake_data.csv screen no
+
+# One CSV line every block (instantaneous)
+fix                out print ${block} "${tick},${time_s},${P_FRONT},${P_WAKE},${P_FULL},${P_FRONT_PT},${P_GAP_PT},${P_FAR_PT},${P_GAP_SLICE}" append ../data/raw/wake_data.csv screen no
+
+# Light stats; run one outer block (the harness loops blocks)
+stats              ${block}
 run                ${block}
+
+# ----------------------------
+# (Optional) Enable collisions to physically backfill the wake (UNCOMMENT to use)
+# Example VSS (you must provide O–O model params consistent with your case):
+# ----------------------------
+# collide           vss
+# collide_modify    mixture leo
+# # Provide appropriate VSS/VHS parameters for O (reference diameter, omega, Tref, etc.).

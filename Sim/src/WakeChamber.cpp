@@ -70,6 +70,12 @@ double& last_nrho_ref()    { static double v = 0.0; return v; }
 // Baseline n_infinity for density ratio; captured from first valid reading
 double& n_inf_ref()        { static double v = 0.0; return v; }
 
+// ---- NEW: remembered SPARTA steps per outer tick (default 1000) ----
+int& block_steps_ref() {
+    static int v = 1000;   // default if caller never supplies --sparta-block
+    return v;
+}
+
 } // namespace
 
 
@@ -106,7 +112,13 @@ void WakeChamber::init(const std::string& deck_basename,
 
 void WakeChamber::step(int nDefault) {
     if (!initialized_) throw std::runtime_error("WakeChamber::init() not called");
-    if (nDefault > 0) runSteps(nDefault);
+
+    // ---- NEW: remember the first positive nDefault (i.e., --sparta-block) ----
+    int& bs = block_steps_ref();
+    if (nDefault > 0) bs = nDefault;
+
+    // Always advance by the remembered block size once per outer tick
+    if (bs > 0) runSteps(bs);
 }
 
 void WakeChamber::runSteps(int n) {

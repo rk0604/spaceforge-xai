@@ -3,16 +3,16 @@ Mode = dual
 Dual-instance split: nWake=2, nEffusion=2
 SPARTA (20 Jan 2025)
 Running on 2 MPI task(s)
-Created orthogonal box = (-0.25 -0.25 -0.5) to (0.25 0.25 0.5)
-Created 2000 child grid cells
-  CPU time = 0.000507697 secs
-  create/ghost percent = 38.0871 61.9129
 SPARTA (20 Jan 2025)
 Running on 2 MPI task(s)
+Created orthogonal box = (-0.25 -0.25 -0.5) to (0.25 0.25 0.5)
+Created orthogonal box = (-1.2 -0.5 -0.5) to (1.2 0.5 0.5)
+Created 2000 child grid cells
+  CPU time = 0.000620219 secs
+  create/ghost percent = 39.0033 60.9967
 Creating particles ...
-Created orthogonal box = (-0.5 -0.5 -0.5) to (1 0.5 0.5)
 Created 15000 particles
-  CPU time = 0.000882137 secs
+  CPU time = 0.000979559 secs
 Memory usage per proc in Mbytes:
   particles (ave,min,max) = 1.5625 1.5625 1.5625
   grid      (ave,min,max) = 1.51379 1.51379 1.51379
@@ -20,38 +20,38 @@ Memory usage per proc in Mbytes:
   total     (ave,min,max) = 3.07629 3.07629 3.07629
 Step CPU Np 
        0            0    15000 
-     100  0.001540809        0 
-     200  0.001597559        0 
-     300  0.001650354        0 
-     400  0.001704768        0 
-     500  0.001758545        0 
-     600  0.001813245        0 
-     700  0.001865832        0 
-     800  0.001919278        0 
-     900  0.001973037        0 
-    1000  0.002025344        0 
-    1100   0.00207784        0 
-    1200  0.002131041        0 
-    1300  0.002184718        0 
-    1400  0.002242605        0 
-    1500  0.002296271        0 
-    1600  0.002349784        0 
-    1700  0.002404395        0 
-    1800  0.002458612        0 
-    1900  0.002512319        0 
-    2000  0.002565549        0 
-Loop time of 0.00256789 on 2 procs for 2000 steps with 0 particles
+     100  0.001639244        0 
+     200  0.001698375        0 
+     300  0.001752692        0 
+     400  0.001815181        0 
+     500  0.001873116        0 
+     600  0.002012179        0 
+     700  0.002074359        0 
+     800  0.002142358        0 
+     900   0.00219507        0 
+    1000  0.002245078        0 
+    1100  0.002297414        0 
+    1200  0.002345623        0 
+    1300  0.002394979        0 
+    1400  0.002446129        0 
+    1500   0.00249604        0 
+    1600  0.002545782        0 
+    1700  0.002595906        0 
+    1800  0.002647688        0 
+    1900  0.002695644        0 
+    2000  0.002745352        0 
+Loop time of 0.00274716 on 2 procs for 2000 steps with 0 particles
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Move    | 0.00097621 | 0.001265   | 0.0015539  |   0.8 | 49.26
+Move    | 0.00098596 | 0.0012976  | 0.0016093  |   0.9 | 47.24
 Coll    | 0          | 0          | 0          |   0.0 |  0.00
 Sort    | 0          | 0          | 0          |   0.0 |  0.00
-Comm    | 0.00094144 | 0.0012284  | 0.0015154  |   0.8 | 47.84
+Comm    | 0.001078   | 0.0013803  | 0.0016826  |   0.8 | 50.24
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
-Output  | 2.2641e-05 | 3.3511e-05 | 4.4381e-05 |   0.0 |  1.30
-Other   |            | 4.094e-05  |            |       |  1.59
+Output  | 2.0037e-05 | 3.2883e-05 | 4.5728e-05 |   0.0 |  1.20
+Other   |            | 3.635e-05  |            |       |  1.32
 
 Particle moves    = 15000 (15K)
 Cells touched     = 139897 (0.14M)
@@ -67,7 +67,7 @@ Gas reactions     = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
-Particle-moves/CPUsec/proc: 2.92068e+06
+Particle-moves/CPUsec/proc: 2.73009e+06
 Particle-moves/step: 7.5
 Cell-touches/particle/step: 9.32647
 Particle comm iterations/step: 1
@@ -89,26 +89,52 @@ GhostCell: 1000 ave 1000 max 1000 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
 EmptyCell: 0 ave 0 max 0 min
 Histogram: 2 0 0 0 0 0 0 0 0 0
-Created 54000 child grid cells
-  CPU time = 0.0109006 secs
-  create/ghost percent = 24.3581 75.6419
+Created 86400 child grid cells
+  CPU time = 0.0171034 secs
+  create/ghost percent = 18.0674 81.9326
 Reading surface file ...
   20 triangles
-  -0.005 0.005 xlo xhi
+  0.395 0.405 xlo xhi
   -0.15 0.15 ylo yhi
   -0.129904 0.129904 zlo zhi
   0.01 min triangle edge length
   0.00075 min triangle area
   128 0 = cells overlapping surfs, overlap cells with unmarked corner pts
-  53872 0 128 = cells outside/inside/overlapping surfs
+  10 tiny edges removed
+  86272 0 128 = cells outside/inside/overlapping surfs
   128 = surf cells with 1,2,etc splits
-  1.4994154328519 1.49941543285244 = cell-wise and global flow volume
-  CPU time = 0.00989598 secs
-  read/check/sort/surf2grid/ghost/inout/particle percent = 5.17704 0.469241 5.42695 33.0395 55.8873 23.6323 0.00352668
-  surf2grid time = 0.00326959 secs
-  map/comm1/comm2/comm3/comm4/split percent = 29.0436 0.766397 32.4362 4.66062 4.51189 16.9711
+  2.39941543285061 2.39941543285244 = cell-wise and global flow volume
+  CPU time = 0.0150884 secs
+  read/check/sort/surf2grid/ghost/inout/particle percent = 2.41908 0.32521 4.84434 32.5629 59.8485 30.4827 0.00169667
+  surf2grid time = 0.00491322 secs
+  map/comm1/comm2/comm3/comm4/split percent = 34.0959 0.405559 33.7669 2.89212 3.65402 12.2321
+Reading surface file ...
+  10 triangles
+  -0.357 -1e-06 xlo xhi
+  -0.485039 0.485039 ylo yhi
+  -0.461299 0.461299 zlo zhi
+  0.51 min triangle edge length
+  0.123685 min triangle area
+  1918 0 = cells overlapping surfs, overlap cells with unmarked corner pts
+  22 tiny edges removed
+  82888 1594 1918 = cells outside/inside/overlapping surfs
+  1844 74 = surf cells with 1,2,etc splits
+  2.32582312039511 2.32582312039683 = cell-wise and global flow volume
+  CPU time = 0.016094 secs
+  read/check/sort/surf2grid/ghost/inout/particle percent = 1.87735 0.232552 3.15065 44.3751 50.3643 25.6717 0.0015658
+  surf2grid time = 0.00714175 secs
+  map/comm1/comm2/comm3/comm4/split percent = 25.8112 0.115336 18.7773 2.41206 2.76635 41.6245
 0 initial grid cell count in group gFront
-4096 final grid cell count in group gFront
+7168 final grid cell count in group gFront
 0 initial grid cell count in group gWake
-4320 final grid cell count in group gWake
-ERROR: Unrecognized compute style (../modify.cpp:452)
+6048 final grid cell count in group gWake
+0 initial grid cell count in group gFrontPt
+36 final grid cell count in group gFrontPt
+0 initial grid cell count in group gGapPt
+72 final grid cell count in group gGapPt
+0 initial grid cell count in group gFarPt
+36 final grid cell count in group gFarPt
+0 initial grid cell count in group gGapSlice
+576 final grid cell count in group gGapSlice
+emit/face calibration: N_real/step=903000000, N_emit_raw=903, N_emit_int=903
+ERROR: Illegal fix emit/face command (../fix_emit_face.cpp:1164)

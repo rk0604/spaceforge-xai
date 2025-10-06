@@ -1,185 +1,86 @@
-# WakeChamber — SPARTA (20 Jan 2025)
-# Robust fix: de-align grid + micro-rotate & shift wafer at runtime (move_surf).
-# Also dump the transformed wafer so we can verify it is no longer axis-aligned.
+# --- LEO wake: one-line CSV per outer block (no per-cell dumps) ---
+# Columns: tick,time_s,p_front_Pa,p_wake_Pa,p_full_Pa
 
-shell mkdir -p data/tmp
-shell mkdir -p dump
+units              si
+seed               12345
+dimension          3
+boundary           o o o
+timestep           1.0e-5
 
-# --- deterministic seed and 3D ---
-seed                12345
-dimension           3
+# Domain: flow +x; wafer near x=0, cupola upstream (pre-shifted mesh)
+# Expand xlo so pre-shifted cupola (x ~ [-0.9626, -0.04]) sits fully inside box
+create_box         -1.2 1.0   -0.5 0.5   -0.5 0.5
 
-# --- numeric tolerance & comm ---
-global              gridcut 1.0e-4 comm/sort yes
+# Keep the same cell size (~0.025) by scaling nx from 60 -> 88 (since Lx: 1.5 -> 2.2)
+create_grid        88 30 30
 
-# --- domain & grid (Plan C: de-align all three axes) ---
-boundary            oo oo oo
-create_box          -0.55007 1.34993   -0.60009 0.60011   -0.60011 0.60009
-create_grid         49 21 21
-balance_grid        rcb part
+# Gas & flow (free-molecular)
+species            data/o.species O
+mixture            leo O temp 800.0 vstream 7500.0 0.0 0.0
+collide            none
 
-# --- SPECIES / MIXTURE (Argon) ---
-species             data/ar.species Ar
-mixture             argonmix Ar
+# ----------------------------
+# Surfaces: Wafer + Upstream Cupola Shield (cupola.surf already pre-shifted)
+# ----------------------------
+read_surf          surf/wafer_300mm.surf
+read_surf          surf/cupola.surf
 
-# --- global gas settings (debug) ---
-global              nrho 1.0e17
-global              fnum 1.0e6
-global              temp 300.0
-global              vstream 0.0 0.0 0.0
+# Collision model (specular for both)
+surf_collide       sc1 specular
+surf_modify        all collide sc1
 
-# --- geometry (paths are relative to --input-subdir input) ---
-variable            surfdir  string "surf"
+# IMPORTANT: Do NOT translate the cupola here; it is already shifted in the .surf file
+# (Remove any previous 'surf_modify latest translate ...' line)
 
-# Cupola (give it its own group; optional but tidy)
-read_surf           ${surfdir}/cupola.surf group cupola
+# ----------------------------
+# Inflow from xlo
+# ----------------------------
+fix                in emit/face leo xlo nevery 1 n 500 perspecies no
 
-# Wafer: read into group "wafer" (no transforms here)
-read_surf           ${surfdir}/wafer_300mm.surf group wafer
+# ----------------------------
+# Regions (center-of-cell) and grid groups
+# ----------------------------
+# These regions are still defined around the wafer; adjust later if you want to
+# sample right in front of the shield instead.
+region             front  block  -0.45 -0.05   -0.25  0.25   -0.25  0.25
+region             wakeR  block   0.05  0.80   -0.20  0.20   -0.20  0.20
+group              gFront grid region front center
+group              gWake  grid region wakeR center
+# built-in "all" = whole domain
 
-# NOW apply transforms robustly (Plan A, runtime):
-#  1) tiny yaw about z (+0.1°) to break x/y coplanarity
-#  2) tiny tilt about x (+0.05°) to kill z-plane coincidences
-#  3) micro-translate to decorrelate any lingering edges
-# Use connect yes to preserve watertightness after move (safe for a single object).
-move_surf           wafer rotate 0.1  0 0 1   0 0 0  connect yes
-move_surf           wafer rotate 0.05 1 0 0   0 0 0  connect yes
-move_surf           wafer trans  2.0e-4 1.0e-4 1.0e-4 connect yes
+# ----------------------------
+# Cadence aligned to the outer harness
+# ----------------------------
+variable           block   equal 1000           # match --sparta-block
+variable           tick    equal floor(step/${block})
+variable           time_s  equal time
 
-# Optional: write the post-transform wafer to verify it's no longer axis-aligned
-write_surf          dump/wafer_wake_aftermove.surfs
+# ----------------------------
+# Per-cell thermo -> spatial means (Pa)
+# ----------------------------
+compute            tFront  thermal/grid gFront leo temp press
+compute            tWake   thermal/grid gWake  leo temp press
+compute            tFull   thermal/grid all    leo temp press
 
-# --- surface interactions ---
-surf_collide        diffuse 300.0
-surf_modify         all collide diffuse
+compute            pFront  reduce ave c_tFront[2]
+compute            pWake   reduce ave c_tWake[2]
+compute            pFull   reduce ave c_tFull[2]
 
-# --- collisions (VSS table) ---
-collide             vss
-collide_modify      vss file data/ar.vss
-collide_modify      nevery 1
+# ----------------------------
+# Variables to print
+# ----------------------------
+variable           P_FRONT equal c_pFront
+variable           P_WAKE  equal c_pWake
+variable           P_FULL  equal c_pFull
 
-# --- groups & stats ---
-group               gall grid all
-stats               100
-stats_style         step np time cpu
+# ----------------------------
+# CSV header (once per SPARTA invocation)
+# ----------------------------
+print "tick,time_s,p_front_Pa,p_wake_Pa,p_full_Pa" append ../data/raw/wake_data.csv screen no
 
-# --- temperature compute (global scalar) ---
-compute             tgas temp
-variable            T       equal c_tgas
-variable            step    equal step
-variable            time    equal time
+# One CSV line every block; append to keep file stable across runs
+fix                out print ${block} "${tick},${time_s},${P_FRONT},${P_WAKE},${P_FULL}" append ../data/raw/wake_data.csv screen no
 
-# --- diagnostics: grid number density and scalar reductions ---
-compute             gNrho_all grid gall nrho
-compute             R_all reduce ave c_gNrho_all[1]
-variable            Rfree   equal c_R_all
-variable            Rwake   equal c_R_all
-variable            ratio   equal c_R_all/(c_R_all+1.0e-30)
-variable            deficit equal 0.0
-
-# --- wafer-hit sampling (surface collisions) ---
-dump                d_hits surf 200 dump/wafer_hits.csv id x y z vx vy vz
-dump_modify         d_hits append yes
-
-# --- light grid dump ---
-dump                d_grid grid 500 dump/wake_grid.csv id x y z
-dump_modify         d_grid append yes
-
-# --- CSV diagnostics (variables only) ---
-fix                 fdiag print 100 "${step},${time},${Rfree},${Rwake},${ratio},${deficit},${T}" \
-                    file data/tmp/wake_diag.csv \
-                    title "step,time,Rfree,Rwake,ratio,deficit,temp" screen no
-
-# --- short warmup + short production (OK with your driver) ---
-run                 500
-run                 2000
-
-
--------------------------------------------------------------------------------------------------------------------
-
-# EffusionCell — SPARTA (20 Jan 2025)
-# Robust fix: same wafer transform workflow as wake; keep de-aligned grid.
-
-shell mkdir -p data/tmp
-shell mkdir -p dump
-
-# --- deterministic seed and 3D ---
-seed                54321
-dimension           3
-
-# --- numeric tolerance & comm ---
-global              gridcut 1.0e-4 comm/sort yes
-
-# --- domain & grid (Plan C: de-align all three axes) ---
-boundary            oo oo oo
-create_box          -0.55007 1.34993   -0.60009 0.60011   -0.60011 0.60009
-create_grid         49 21 21
-balance_grid        rcb part
-
-# --- SPECIES / MIXTURE (Argon) ---
-species             data/ar.species Ar
-mixture             argonmix Ar
-
-# --- hot source settings (debug-fast) ---
-global              nrho 5.0e18
-global              fnum 1.0e5
-global              temp 1000.0
-global              vstream 0.0 0.0 400.0
-
-# --- geometry ---
-variable            surfdir  string "surf"
-read_surf           ${surfdir}/cupola.surf group cupola
-read_surf           ${surfdir}/wafer_300mm.surf group wafer
-
-# Apply identical robust transforms as in wake:
-move_surf           wafer rotate 0.1  0 0 1   0 0 0  connect yes
-move_surf           wafer rotate 0.05 1 0 0   0 0 0  connect yes
-move_surf           wafer trans  2.0e-4 1.0e-4 1.0e-4 connect yes
-
-# Optional: write the post-transform wafer to verify geometry
-write_surf          dump/wafer_eff_aftermove.surfs
-
-# --- surface interactions ---
-surf_collide        diffuse 300.0
-surf_modify         all collide diffuse
-
-# --- source: emit from zlo face; flux set by mixture + globals above ---
-fix                 source emit/face argonmix zlo
-
-# --- collisions (VSS table) ---
-collide             vss
-collide_modify      vss file data/ar.vss
-collide_modify      nevery 1
-
-# --- stats & temperature ---
-stats               100
-stats_style         step np time cpu
-compute             tgas temp
-variable            T       equal c_tgas
-variable            step    equal step
-variable            time    equal time
-
-# --- grid diagnostics (use all cells) ---
-group               gall grid all
-compute             gNrho_all grid gall nrho
-compute             R_all reduce ave c_gNrho_all[1]
-variable            Rfree   equal c_R_all
-variable            Rwake   equal c_R_all
-variable            ratio   equal c_R_all/(c_R_all+1.0e-30)
-variable            deficit equal 0.0
-
-# --- wafer hits + simple grid dump ---
-dump                d_hits surf 200 dump/eff_wafer_hits.csv id x y z vx vy vz
-dump_modify         d_hits append yes
-
-dump                d_grid grid 500 dump/eff_grid.csv id x y z
-dump_modify         d_grid append yes
-
-# --- CSV diagnostics (variables only) ---
-fix                 fdiag print 100 "${step},${time},${Rfree},${Rwake},${ratio},${deficit},${T}" \
-                    file data/tmp/effusion_diag.csv \
-                    title "step,time,Rfree,Rwake,ratio,deficit,temp" screen no
-
-# --- short warmup + short production ---
-run                 300
-run                 1200
+# Light stats; run one outer block (the harness loops blocks)
+stats              ${block}
+run                ${block}
