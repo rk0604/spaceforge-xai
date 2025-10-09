@@ -42,7 +42,7 @@ surf_modify        all collide sc1
 # Inflow (raise particle statistics)
 # ----------------------------
 # Start at 5000; increase to 10000–20000 if probes are still sparse.
-fix                in emit/face leo xlo nevery 1 n 1000 perspecies no
+fix                in emit/face leo xlo nevery 1 n 15000 perspecies no
 
 # ----------------------------
 # Regions and grid groups (volumetric)
