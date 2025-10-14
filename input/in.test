@@ -1,0 +1,10 @@
+units si
+dimension 3
+boundary o o o
+create_box -1 1 -1 1 -1 1
+create_grid 40 40 40
+read_surf surf/cupola.surf
+surf_collide sc1 specular
+surf_modify all collide sc1
+fix scheck all surf/gridcheck off
+run 0

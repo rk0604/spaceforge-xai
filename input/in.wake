@@ -1,17 +1,9 @@
-# --- LEO wake: one-line CSV per outer block (no per-cell dumps) ---
-# Columns:
-#   tick,time_s,
-#   p_front_Pa, p_wake_Pa, p_full_Pa,
-#   p_frontPt_Pa, p_gapPt_Pa, p_farPt_Pa,
-#   p_gapSlice_Pa
+# --- LEO wake: three-probe CSV with block-mean time-averaging ---
+# CSV columns:
+#   tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr
 #
-# Probes/regions:
-#   front_shield : upstream volume in front of cupola (region average)
-#   wake_zone    : downstream shadow through wafer plane (region average)
-#   front_probe  : small box in front of cupola (point-like)
-#   gap_probe    : small box ~midway between cupola flat face (~x≈0) and wafer (x=1.0)
-#   far_probe    : small box near xlo (free-stream baseline)
-#   gap_slice    : thin slab around x≈0.50, larger y/z for a stable area-average
+# Geometry/grid SURFACES UNCHANGED.
+# Wake probe is POST-WAFER (downstream), off-axis penumbra.
 
 units              si
 seed               12345
@@ -19,116 +11,151 @@ dimension          3
 boundary           o o o
 timestep           1.0e-5
 
-# Domain: flow +x; convex cupola upstream (opening at ~x=0), wafer center plane at x=1.0
-create_box         -1.2 1.2   -0.5 0.5   -0.5 0.5
+# ------------------------------------------------------------------
+# Domain & grid (UNCHANGED)
+# ------------------------------------------------------------------
+create_box        -1.2  1.8   -0.70  0.70   -0.70  0.70
+create_grid        120  42     42
 
-# Grid spacing ~0.025 in x
-create_grid        96 30 30
+# ------------------------------------------------------------------
+# Gas & flow (DSMC with VSS)  [Option B layout]
+# ------------------------------------------------------------------
+# Load all species present (O, He, N2) from o.species
+species            data/o.species O He N2
 
-# Gas & flow (free-molecular baseline). Flow hits convex shield first.
-species            data/o.species O
-mixture            leo O temp 800.0 vstream 7500.0 0.0 0.0
-collide            none     # keep wake as deep shadow unless you enable collisions (see end)
+# Thermodynamic/flow settings
+variable           Tgas          equal 800.0
 
-# ----------------------------
-# Surfaces (already posed in .surf files)
-# ----------------------------
+# One "collision" mixture that lists ALL species (used by collide & computes)
+mixture            mixAll O He N2 temp ${Tgas} vstream 7500.0 0.0 0.0
+collide            vss mixAll data/o.vss   # your edited O/He/N2 VSS file
+
+# Per-species "emit" mixtures (ONE species each)
+mixture            mixO   O   temp ${Tgas} vstream 7500.0 0.0 0.0
+mixture            mixHe  He  temp ${Tgas} vstream 7500.0 0.0 0.0
+mixture            mixN2  N2  temp ${Tgas} vstream 7500.0 0.0 0.0
+
+# ------------------------------------------------------------------
+# Surfaces (specular)
+# ------------------------------------------------------------------
 read_surf          surf/wafer_300mm.surf
 read_surf          surf/cupola.surf
 surf_collide       sc1 specular
 surf_modify        all collide sc1
 
-# ----------------------------
-# Inflow (raise particle statistics)
-# ----------------------------
-# Start at 5000; increase to 10000–20000 if probes are still sparse.
-fix                in emit/face leo xlo nevery 1 n 15000 perspecies no
+# ------------------------------------------------------------------
+# Inflow (CALIBRATED to target Torr)
+# ------------------------------------------------------------------
+variable           kB            equal 1.380649e-23
+variable           Torr2Pa       equal 133.32236842105263
+variable           Pa2Torr       equal 7.500616827e-3
 
-# ----------------------------
-# Regions and grid groups (volumetric)
-# ----------------------------
-region             front_shield  block  -0.90  -0.20    -0.25  0.25    -0.25  0.25
-region             wake_zone     block   0.05   1.10    -0.20  0.20    -0.20  0.20
-group              gFront grid region front_shield center
-group              gWake  grid region wake_zone    center
-# "all" = whole domain
+# <<< set your ambient target in Torr >>>
+variable           pTorrTarget   equal 1.0e-7
 
-# ----------------------------
-# Point-like probes (wider to cut zeros)
-# ----------------------------
-# Front probe: around x≈-0.7875; widen y/z to ±0.10
-region             front_probe  block  -0.80  -0.78    -0.10  0.10    -0.10  0.10
-group              gFrontPt     grid region front_probe center
+# Total freestream (Pa, density)
+variable           pInf          equal v_Torr2Pa*v_pTorrTarget
+variable           nInf          equal v_pInf/(v_kB*v_Tgas)
 
-# Gap probe: around x≈0.50; widen y/z to ±0.10
-region             gap_probe    block   0.475  0.525   -0.10  0.10    -0.10  0.10
-group              gGapPt       grid region gap_probe   center
+# 300 km LEO number fractions (example daytime)
+variable           f_O           equal 0.90
+variable           f_He          equal 0.07
+variable           f_N2          equal 0.03
 
-# Far-upstream probe near xlo; widen y/z to ±0.10
-region             far_probe    block  -1.170 -1.140   -0.10  0.10    -0.10  0.10
-group              gFarPt       grid region far_probe   center
+# Per-species number densities (sum to nInf)
+variable           nO            equal v_nInf*v_f_O
+variable           nHe           equal v_nInf*v_f_He
+variable           nN2           equal v_nInf*v_f_N2
 
-# ----------------------------
-# Gap midplane slice (area-averaged pressure near x≈0.50)
-# ----------------------------
-region             gap_slice    block   0.45   0.55    -0.20  0.20    -0.20  0.20
-group              gGapSlice    grid region gap_slice center
+print "diag:pInf_Torr=${pTorrTarget}" screen yes
+print "diag:pInf_Pa=${pInf}"          screen yes
+print "diag:nInf_m^-3=${nInf}"        screen yes
+print "diag:nO=${nO}  nHe=${nHe}  nN2=${nN2}" screen yes
 
-# ----------------------------
-# Cadence aligned to outer harness
-# ----------------------------
-variable           block   equal 1000                     # match --sparta-block
+# Macro weighting: raise for speed, lower for noise
+variable           FNUM          equal 2.5e10
+global             fnum ${FNUM}
+
+# Apply densities to each emit mixture (use eager expansion for this build)
+mixture            mixO  nrho ${nO}
+mixture            mixHe nrho ${nHe}
+mixture            mixN2 nrho ${nN2}
+
+# Emit all species at xlo (together they realize the total nInf)
+fix                emitO  emit/face mixO  xlo
+fix                emitHe emit/face mixHe xlo
+fix                emitN2 emit/face mixN2 xlo
+
+# ------------------------------------------------------------------
+# Probes (front / wake / freestream)  [UNCHANGED FROM YOUR DECK]
+# ------------------------------------------------------------------
+region   probe_front block  -0.95  -0.70   -0.25  0.25   -0.25  0.25
+group    gFrontPt      grid   region probe_front one
+
+region   probe_wake    block   0.55   1.00    0.10   0.28   -0.25   0.25
+group    gWakePt       grid    region probe_wake one
+
+region   probe_free    block  -1.20  -1.00   -0.25  0.25   -0.25  0.25
+group    gFreePt       grid    region probe_free one
+
+# ------------------------------------------------------------------
+# Cadence
+# ------------------------------------------------------------------
+variable           block   equal 1000
 variable           tick    equal floor(step/${block})
-variable           time_s  equal time
+variable           time_s  equal step*dt
 
-# ----------------------------
-# Per-cell thermo -> spatial means (Pa)
-# ----------------------------
-compute            tFront     thermal/grid gFront     leo temp press
-compute            tWake      thermal/grid gWake      leo temp press
-compute            tFull      thermal/grid all        leo temp press
-compute            pFront     reduce ave c_tFront[2]
-compute            pWake      reduce ave c_tWake[2]
-compute            pFull      reduce ave c_tFull[2]
-
-# Probes & slice
-compute            tFrontPt   thermal/grid gFrontPt   leo temp press
-compute            tGapPt     thermal/grid gGapPt     leo temp press
-compute            tFarPt     thermal/grid gFarPt     leo temp press
-compute            tGapSlice  thermal/grid gGapSlice  leo temp press
+# ------------------------------------------------------------------
+# Per-probe thermodynamics (pressure = n k_B T) via mixAll
+# ------------------------------------------------------------------
+compute            tFrontPt   thermal/grid gFrontPt   mixAll temp press
+compute            tWakePt    thermal/grid gWakePt    mixAll temp press
+compute            tFreePt    thermal/grid gFreePt    mixAll temp press
 
 compute            pFrontPt   reduce ave c_tFrontPt[2]
-compute            pGapPt     reduce ave c_tGapPt[2]
-compute            pFarPt     reduce ave c_tFarPt[2]
-compute            pGapSlice  reduce ave c_tGapSlice[2]
+compute            pWakePt    reduce ave c_tWakePt[2]
+compute            pFreePt    reduce ave c_tFreePt[2]
 
-# ----------------------------
-# Variables to print
-# ----------------------------
-variable           P_FRONT       equal c_pFront
-variable           P_WAKE        equal c_pWake
-variable           P_FULL        equal c_pFull
-variable           P_FRONT_PT    equal c_pFrontPt
-variable           P_GAP_PT      equal c_pGapPt
-variable           P_FAR_PT      equal c_pFarPt
-variable           P_GAP_SLICE   equal c_pGapSlice
+# Initialize + warm-up
+run                0
+run                400
 
-# ----------------------------
-# CSV header (once per SPARTA invocation)
-# ----------------------------
-print "tick,time_s,p_front_Pa,p_wake_Pa,p_domain_Pa,p_frontPt_Pa,p_gapPt_Pa,p_farPt_Pa,p_gap_shield_wafer_Pa" append ../data/raw/wake_data.csv screen no
+# Quick upstream diagnostic after warm-up (screen only)
+variable           pFree_nowPa   equal c_pFreePt
+variable           pFree_nowTorr equal v_Pa2Torr*v_pFree_nowPa
+print              "diag:pFree_now_Pa=${pFree_nowPa}, pFree_now_Torr=${pFree_nowTorr}" screen yes
 
-# One CSV line every block (instantaneous)
-fix                out print ${block} "${tick},${time_s},${P_FRONT},${P_WAKE},${P_FULL},${P_FRONT_PT},${P_GAP_PT},${P_FAR_PT},${P_GAP_SLICE}" append ../data/raw/wake_data.csv screen no
+# ------------------------------------------------------------------
+# Time-averaging: sample EVERY step across each block
+# ------------------------------------------------------------------
+fix                avgFront ave/time 1 ${block} ${block} c_pFrontPt
+fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
+fix                avgFree  ave/time 1 ${block} ${block} c_pFreePt
 
-# Light stats; run one outer block (the harness loops blocks)
+# Expose block-mean pressures (scalar form on this build)
+variable           P_FRONT       equal f_avgFront
+variable           P_WAKE        equal f_avgWake
+variable           P_FREE        equal f_avgFree
+
+# Convert to Torr for output
+variable           P_FRONT_Torr  equal v_Pa2Torr*v_P_FRONT
+variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
+variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
+
+# ------------------------------------------------------------------
+# CSV header + one row per outer block (Torr)
+# ------------------------------------------------------------------
+print "tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr" append ../data/raw/wake_3probes.csv screen no
+fix                out print ${block} "${tick},${time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr}" append ../data/raw/wake_3probes.csv screen no
+
+# ------------------------------------------------------------------
+# Run one outer block (your harness may loop externally)
+# ------------------------------------------------------------------
 stats              ${block}
 run                ${block}
 
-# ----------------------------
-# (Optional) Enable collisions to physically backfill the wake (UNCOMMENT to use)
-# Example VSS (you must provide O–O model params consistent with your case):
-# ----------------------------
-# collide           vss
-# collide_modify    mixture leo
-# # Provide appropriate VSS/VHS parameters for O (reference diameter, omega, Tref, etc.).
+# ------------------------------------------------------------------
+# Tuning:
+# - If p_free still low, try pTorrTarget = 3e-7 to match a specific WSF segment.
+# - For speed: raise FNUM (e.g., 1e11–1e12); averaging smooths noise.
+# - Keep mixture names unique to avoid cross-instance overrides.
