@@ -213,3 +213,13 @@ env -u DISPLAY -u XAUTHORITY mpirun -np 4 ./build/Sim/sim \
 
 scp via powershell:
 scp rvk22@crayon.cs.rutgers.edu:~/spaceforge-xai.zip $HOME\Downloads\
+
+use more cores:
+env -u DISPLAY -u XAUTHORITY OMP_NUM_THREADS=1 \
+mpirun --bind-to core --map-by core --report-bindings -np 20 \
+  ./build/Sim/sim --mode dual --split 2 \
+  --wake-deck in.wake --eff-deck in.effusion --input-subdir input \
+  --dt 60 --couple-every 1 --nticks 50 --sparta-block 1000 | tee run.log
+
+run without in.effusion
+mpirun -np 20 ./build/Sim/sim --mode single --wake-deck in.wake --input-subdir input --dt 60 --nticks 50 --sparta-block 5000

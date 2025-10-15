@@ -1,9 +1,6 @@
 # --- LEO wake: three-probe CSV with block-mean time-averaging ---
-# CSV columns:
-#   tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr
-#
-# Geometry/grid SURFACES UNCHANGED.
-# Wake probe is POST-WAFER (downstream), off-axis penumbra.
+# Runs as a single SPARTA instance (no effusion half, no coupling).
+# CSV columns: tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr
 
 units              si
 seed               12345
@@ -12,105 +9,102 @@ boundary           o o o
 timestep           1.0e-5
 
 # ------------------------------------------------------------------
-# Domain & grid (UNCHANGED)
+# Domain & grid  (moderate grid; no global gridcut)
 # ------------------------------------------------------------------
-create_box        -1.2  1.8   -0.70  0.70   -0.70  0.70
-create_grid        120  42     42
+create_box         -13.0  32.0    -12.5  12.5    -10.0  10.0
+create_grid        96     56       40
 
 # ------------------------------------------------------------------
-# Gas & flow (DSMC with VSS)  [Option B layout]
+# Gas & flow (DSMC with VSS)  -- same physics
 # ------------------------------------------------------------------
-# Load all species present (O, He, N2) from o.species
-species            data/o.species O He N2
-
-# Thermodynamic/flow settings
+species            data/o.species O
 variable           Tgas          equal 800.0
-
-# One "collision" mixture that lists ALL species (used by collide & computes)
-mixture            mixAll O He N2 temp ${Tgas} vstream 7500.0 0.0 0.0
-collide            vss mixAll data/o.vss   # your edited O/He/N2 VSS file
-
-# Per-species "emit" mixtures (ONE species each)
-mixture            mixO   O   temp ${Tgas} vstream 7500.0 0.0 0.0
-mixture            mixHe  He  temp ${Tgas} vstream 7500.0 0.0 0.0
-mixture            mixN2  N2  temp ${Tgas} vstream 7500.0 0.0 0.0
+mixture            mixWake O temp ${Tgas} vstream 7500.0 0.0 0.0
+collide            vss mixWake data/o.vss
 
 # ------------------------------------------------------------------
 # Surfaces (specular)
 # ------------------------------------------------------------------
-read_surf          surf/wafer_300mm.surf
 read_surf          surf/cupola.surf
 surf_collide       sc1 specular
 surf_modify        all collide sc1
 
+# Cupola bounding box (centroid-based grouping of its triangles)
+region rCupola block  -2.9  1.7   -6.1  6.1   -6.4  6.4
+group  cupGrp  surf   clear
+group  cupGrp  surf   region rCupola center
+
 # ------------------------------------------------------------------
-# Inflow (CALIBRATED to target Torr)
+# Inflow (calibrated to target Torr)
 # ------------------------------------------------------------------
 variable           kB            equal 1.380649e-23
 variable           Torr2Pa       equal 133.32236842105263
 variable           Pa2Torr       equal 7.500616827e-3
 
-# <<< set your ambient target in Torr >>>
 variable           pTorrTarget   equal 1.0e-7
-
-# Total freestream (Pa, density)
 variable           pInf          equal v_Torr2Pa*v_pTorrTarget
-variable           nInf          equal v_pInf/(v_kB*v_Tgas)
-
-# 300 km LEO number fractions (example daytime)
-variable           f_O           equal 0.90
-variable           f_He          equal 0.07
-variable           f_N2          equal 0.03
-
-# Per-species number densities (sum to nInf)
-variable           nO            equal v_nInf*v_f_O
-variable           nHe           equal v_nInf*v_f_He
-variable           nN2           equal v_nInf*v_f_N2
+variable           nInf          equal ${pInf}/(${kB}*${Tgas})
 
 print "diag:pInf_Torr=${pTorrTarget}" screen yes
 print "diag:pInf_Pa=${pInf}"          screen yes
 print "diag:nInf_m^-3=${nInf}"        screen yes
-print "diag:nO=${nO}  nHe=${nHe}  nN2=${nN2}" screen yes
 
-# Macro weighting: raise for speed, lower for noise
-variable           FNUM          equal 2.5e10
+# Macro weighting (raised to prevent particle explosion; physics unchanged)
+variable           FNUM          equal 1.0e13
 global             fnum ${FNUM}
 
-# Apply densities to each emit mixture (use eager expansion for this build)
-mixture            mixO  nrho ${nO}
-mixture            mixHe nrho ${nHe}
-mixture            mixN2 nrho ${nN2}
-
-# Emit all species at xlo (together they realize the total nInf)
-fix                emitO  emit/face mixO  xlo
-fix                emitHe emit/face mixHe xlo
-fix                emitN2 emit/face mixN2 xlo
+# Inlet at xlo for freestream
+mixture            mixWake nrho ${nInf}
+fix                in emit/face mixWake xlo
 
 # ------------------------------------------------------------------
-# Probes (front / wake / freestream)  [UNCHANGED FROM YOUR DECK]
+# Cupola outgassing: DISABLED
 # ------------------------------------------------------------------
-region   probe_front block  -0.95  -0.70   -0.25  0.25   -0.25  0.25
-group    gFrontPt      grid   region probe_front one
+# variable           Gcup           equal 0.078811435
+# variable           kGauge         equal 2.63e-21             # Torr·cm^2·s per molecule (~300 K)
+# variable           Pcup_Torr      equal 1.0e-12              # desired added wake pressure
+# variable           Qcup_cm2s      equal ${Pcup_Torr}/(${kGauge}*${Gcup})
+# variable           Qcup_m2s       equal ${Qcup_cm2s}*1.0e4   # to 1/m^2/s
+# variable           Tsurf          equal 300.0
+# variable           pi             equal 3.141592653589793
+# variable           mO             equal 2.66e-26              # kg (from data/o.species)
+# variable           cbar           equal sqrt(8.0*${kB}*${Tsurf}/(${pi}*${mO}))
+# variable           nrho_cup       equal 4.0*${Qcup_m2s}/${cbar}
+# print "diag: Cupola cbar(m/s)=${cbar}, nrho_cup(#/m^3)=${nrho_cup}" screen yes
+# print "diag: Cupola outgas Q (cm^-2 s^-1) = ${Qcup_cm2s}"         screen yes
+# print "diag: Cupola outgas Q (m^-2 s^-1)  = ${Qcup_m2s}"          screen yes
+# mixture            mixCup  O  temp ${Tsurf}  vstream 0.0 0.0 0.0
+# mixture            mixCup  nrho ${nrho_cup}
+# fix                cup_emit  emit/surf  mixCup  cupGrp  normal yes
 
-region   probe_wake    block   0.55   1.00    0.10   0.28   -0.25   0.25
-group    gWakePt       grid    region probe_wake one
+# ------------------------------------------------------------------
+# Probes (front / wake / freestream) – adjusted placements & sizes
+# ------------------------------------------------------------------
+# Front: same location, larger, extended upstream so it stays clear of cupola
+region   probe_front   block  -7.0  -3.2   -2.60  2.60   -2.60  2.60
+group    gFrontPt      grid    region probe_front one
 
-region   probe_free    block  -1.20  -1.00   -0.25  0.25   -0.25  0.25
+# Wake: moved downstream near x ≈ +15 m and enlarged
+region   probe_wake    block   14.5   15.5   -2.60  2.60   -2.60  2.60
+group    gWakePt       grid    region probe_wake  one
+
+# Free: at same x-range as wake, higher in +z and larger
+region   probe_free    block   14.5   15.5   -0.60  0.60    6.50   8.50
 group    gFreePt       grid    region probe_free one
 
 # ------------------------------------------------------------------
 # Cadence
 # ------------------------------------------------------------------
-variable           block   equal 1000
+variable           block   equal 2500
 variable           tick    equal floor(step/${block})
 variable           time_s  equal step*dt
 
 # ------------------------------------------------------------------
-# Per-probe thermodynamics (pressure = n k_B T) via mixAll
+# Per-probe thermodynamics (pressure = n k_B T)
 # ------------------------------------------------------------------
-compute            tFrontPt   thermal/grid gFrontPt   mixAll temp press
-compute            tWakePt    thermal/grid gWakePt    mixAll temp press
-compute            tFreePt    thermal/grid gFreePt    mixAll temp press
+compute            tFrontPt   thermal/grid gFrontPt   mixWake temp press
+compute            tWakePt    thermal/grid gWakePt    mixWake temp press
+compute            tFreePt    thermal/grid gFreePt    mixWake temp press
 
 compute            pFrontPt   reduce ave c_tFrontPt[2]
 compute            pWakePt    reduce ave c_tWakePt[2]
@@ -126,36 +120,25 @@ variable           pFree_nowTorr equal v_Pa2Torr*v_pFree_nowPa
 print              "diag:pFree_now_Pa=${pFree_nowPa}, pFree_now_Torr=${pFree_nowTorr}" screen yes
 
 # ------------------------------------------------------------------
-# Time-averaging: sample EVERY step across each block
+# Time-averaging across each block
 # ------------------------------------------------------------------
 fix                avgFront ave/time 1 ${block} ${block} c_pFrontPt
 fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
 fix                avgFree  ave/time 1 ${block} ${block} c_pFreePt
 
-# Expose block-mean pressures (scalar form on this build)
 variable           P_FRONT       equal f_avgFront
 variable           P_WAKE        equal f_avgWake
 variable           P_FREE        equal f_avgFree
 
-# Convert to Torr for output
 variable           P_FRONT_Torr  equal v_Pa2Torr*v_P_FRONT
 variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 
-# ------------------------------------------------------------------
-# CSV header + one row per outer block (Torr)
-# ------------------------------------------------------------------
 print "tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr" append ../data/raw/wake_3probes.csv screen no
 fix                out print ${block} "${tick},${time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr}" append ../data/raw/wake_3probes.csv screen no
 
 # ------------------------------------------------------------------
-# Run one outer block (your harness may loop externally)
+# One outer block (harness may loop externally)
 # ------------------------------------------------------------------
 stats              ${block}
 run                ${block}
-
-# ------------------------------------------------------------------
-# Tuning:
-# - If p_free still low, try pTorrTarget = 3e-7 to match a specific WSF segment.
-# - For speed: raise FNUM (e.g., 1e11–1e12); averaging smooths noise.
-# - Keep mixture names unique to avoid cross-instance overrides.
