@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 view_cupola_surf.py — Minimal SPARTA .surf Triangles viewer (format B).
+python3 viewCupola.py cupola.surf --save
 Usage:
   python view_cupola_surf.py /path/to/cupola.surf [--save]
 If --save is given, saves PNGs for a few preset angles next to the .surf file.

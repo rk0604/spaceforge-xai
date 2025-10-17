@@ -1,3 +1,4 @@
 tick,time_s,status,available_added,total_draw_request,total_granted,remaining_power
 0,0,1,0,0,0,0
 1,60,1,120.349,0,0,120.349
+2,120,1,120.698,155,120.349,120.698
