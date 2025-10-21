@@ -1,4 +1,2 @@
 tick,time_s,status,required,drawn,deficit,low_flag,charge
 0,0,1,0,0,0,0,500
-1,60,1,5,5,0,0,505
-2,120,1,5,5,0,0,510

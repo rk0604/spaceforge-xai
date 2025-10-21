@@ -1,86 +1,25 @@
-# --- LEO wake: one-line CSV per outer block (no per-cell dumps) ---
-# Columns: tick,time_s,p_front_Pa,p_wake_Pa,p_full_Pa
+Here’s all **8 realism improvements** summarized compactly:
 
-units              si
-seed               12345
-dimension          3
-boundary           o o o
-timestep           1.0e-5
+1. **Diurnal Variation:**
+   Use continuous sinusoidal outgassing (1×–10×) with ¼-orbit phase lag, not step-wise toggles.
 
-# Domain: flow +x; wafer near x=0, cupola upstream (pre-shifted mesh)
-# Expand xlo so pre-shifted cupola (x ~ [-0.9626, -0.04]) sits fully inside box
-create_box         -1.2 1.0   -0.5 0.5   -0.5 0.5
+2. **Outgassing Rate Magnitude:**
+   Base flux on measured WSF rates (10⁹–10¹³ cm⁻² s⁻¹); optionally decay with orbit (bake-out).
 
-# Keep the same cell size (~0.025) by scaling nx from 60 -> 88 (since Lx: 1.5 -> 2.2)
-create_grid        88 30 30
+3. **Thermal Coupling:**
+   Add temperature lag between shield and chassis; use separate `Tsurf` variables per region.
 
-# Gas & flow (free-molecular)
-species            data/o.species O
-mixture            leo O temp 800.0 vstream 7500.0 0.0 0.0
-collide            none
+4. **Gauge Outgassing:**
+   Add internal gauge offset term (P_{meas}=P_{true}+αe^{β(T-300)}) to model sensor heating effects.
 
-# ----------------------------
-# Surfaces: Wafer + Upstream Cupola Shield (cupola.surf already pre-shifted)
-# ----------------------------
-read_surf          surf/wafer_300mm.surf
-read_surf          surf/cupola.surf
+5. **Wake Geometry & Reflections:**
+   Make cupola surfaces partly diffuse (`diffuse 0.1`) and add a small re-emission source near the nozzle.
 
-# Collision model (specular for both)
-surf_collide       sc1 specular
-surf_modify        all collide sc1
+6. **Orbit & Environment:**
+   Vary ambient pressure sinusoidally (~2× day/night) and modulate `vstream` 7500 m/s ± 5 %.
 
-# IMPORTANT: Do NOT translate the cupola here; it is already shifted in the .surf file
-# (Remove any previous 'surf_modify latest translate ...' line)
+7. **Long-Term Conditioning:**
+   Introduce orbit-to-orbit exponential decay `bake_factor=exp(-io/10)` to simulate surface cleanup.
 
-# ----------------------------
-# Inflow from xlo
-# ----------------------------
-fix                in emit/face leo xlo nevery 1 n 500 perspecies no
-
-# ----------------------------
-# Regions (center-of-cell) and grid groups
-# ----------------------------
-# These regions are still defined around the wafer; adjust later if you want to
-# sample right in front of the shield instead.
-region             front  block  -0.45 -0.05   -0.25  0.25   -0.25  0.25
-region             wakeR  block   0.05  0.80   -0.20  0.20   -0.20  0.20
-group              gFront grid region front center
-group              gWake  grid region wakeR center
-# built-in "all" = whole domain
-
-# ----------------------------
-# Cadence aligned to the outer harness
-# ----------------------------
-variable           block   equal 1000           # match --sparta-block
-variable           tick    equal floor(step/${block})
-variable           time_s  equal time
-
-# ----------------------------
-# Per-cell thermo -> spatial means (Pa)
-# ----------------------------
-compute            tFront  thermal/grid gFront leo temp press
-compute            tWake   thermal/grid gWake  leo temp press
-compute            tFull   thermal/grid all    leo temp press
-
-compute            pFront  reduce ave c_tFront[2]
-compute            pWake   reduce ave c_tWake[2]
-compute            pFull   reduce ave c_tFull[2]
-
-# ----------------------------
-# Variables to print
-# ----------------------------
-variable           P_FRONT equal c_pFront
-variable           P_WAKE  equal c_pWake
-variable           P_FULL  equal c_pFull
-
-# ----------------------------
-# CSV header (once per SPARTA invocation)
-# ----------------------------
-print "tick,time_s,p_front_Pa,p_wake_Pa,p_full_Pa" append ../data/raw/wake_data.csv screen no
-
-# One CSV line every block; append to keep file stable across runs
-fix                out print ${block} "${tick},${time_s},${P_FRONT},${P_WAKE},${P_FULL}" append ../data/raw/wake_data.csv screen no
-
-# Light stats; run one outer block (the harness loops blocks)
-stats              ${block}
-run                ${block}
+8. **Data Cadence:**
+   Record every 15–30 s (≈ 188–376 rows/orbit) for smoother thermal waveform, then downsample to 1 min if needed.

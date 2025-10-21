@@ -1,6 +1,6 @@
-# --- LEO wake + pencil-beam MBE orifice: four-probe CSV (block-mean) ---
+# --- LEO wake + pencil-beam MBE orifice: four-probe CSV (1 row/minute) ---
 # CSV columns:
-#   tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr
+#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr
 
 units              si
 seed               12345
@@ -9,8 +9,7 @@ boundary           o o o
 timestep           1.0e-5
 
 # ------------------------------------------------------------------
-# Domain & grid (shortened extents per request)
-#   x: [-13, 12],  y: [-5, 5],  z: [-5, 5]
+# Domain & grid
 # ------------------------------------------------------------------
 create_box         -13.0  12.0    -5.0  5.0    -5.0  5.0
 create_grid        96     56       40
@@ -24,36 +23,31 @@ mixture            mixWake O temp ${Tgas} vstream 7500.0 0.0 0.0
 collide            vss mixWake data/o.vss
 
 # ------------------------------------------------------------------
-# Surfaces (specular) + groups
+# Surfaces + groups
 # ------------------------------------------------------------------
-# Cupola geometry
-read_surf          surf/cupola.surf
+read_surf          surf/cupola.surf                 # Cupola
+read_surf          surf/mbe_orifice_10mm.surf       # 10 mm orifice (+x)
+read_surf          surf/wafer_300mm.surf trans 3.6 0.0 0.0   # Wafer -> x+3.6 m
 
-# 10 mm orifice disk for MBE pencil beam (normal +x, at x≈1.611 m)
-read_surf          surf/mbe_orifice_10mm.surf
-
-# Wafer translated downstream into wake (Dx = +3.6 m)
-# Original wafer x-range: [0.395, 0.405] -> new: [3.995, 4.005] m
-read_surf          surf/wafer_300mm.surf trans 3.6 0.0 0.0
-
-# Cupola all-triangle group (tightened to fit new domain bounds)
 region rCupola block  -2.9  1.61095   -5.0  5.0   -5.0  5.0
 group  cupGrp  surf   clear
 group  cupGrp  surf   region rCupola center
 
-# Group: orifice triangles only (tight block around the tiny disk)
 region rNozzle block  1.61215 1.61225  -0.0062 0.0062  -0.0062 0.0062
 group  mbeNozzleGrp surf clear
 group  mbeNozzleGrp surf region rNozzle center
 
-# Optional wafer group
 region rWafer  block   3.95  4.05   -0.16  0.16   -0.14  0.14
 group  waferGrp surf   clear
 group  waferGrp surf   region rWafer center
 
-# All surfaces specular
-surf_collide       sc1 specular
-surf_modify        all collide sc1
+# ------------------------------------------------------------------
+# Reflections: cupola 10% diffuse ONLY; wafer+nozzle specular
+# ------------------------------------------------------------------
+surf_collide       sc_spec specular
+surf_collide       sc_diff diffuse 300.0 0.9      # 10% diffuse at 300 K
+surf_modify        all     collide sc_spec
+surf_modify        cupGrp  collide sc_diff
 
 # ------------------------------------------------------------------
 # Unit helpers & constants
@@ -64,13 +58,10 @@ variable           Pa2Torr       equal 7.500616827e-3
 variable           pi            equal 3.141592653589793
 variable           mO            equal 2.66e-26
 
-# ------------------------------------------------------------------
 # Freestream inflow (target ambient)
-# ------------------------------------------------------------------
 variable           pTorrTarget   equal 1.0e-7
 variable           pInf          equal v_Torr2Pa*v_pTorrTarget
 variable           nInf          equal ${pInf}/(${kB}*${Tgas})
-
 print "diag:pInf_Torr=${pTorrTarget}" screen yes
 print "diag:pInf_Pa=${pInf}"          screen yes
 print "diag:nInf_m^-3=${nInf}"        screen yes
@@ -84,7 +75,7 @@ mixture            mixWake nrho ${nInf}
 fix                in emit/face mixWake xlo
 
 # ------------------------------------------------------------------
-# Cupola outgassing: thermal Maxwellian at 300 K (all cupola)
+# Cupola outgassing (300 K) using WSF-style flux target
 # ------------------------------------------------------------------
 variable           Gcup           equal 0.078811435
 variable           kGauge         equal 2.63e-21
@@ -93,17 +84,13 @@ variable           Qcup_cm2s      equal ${Pcup_Torr}/(${kGauge}*${Gcup})
 variable           Qcup_m2s       equal ${Qcup_cm2s}*1.0e4
 
 variable           Tsurf          equal 300.0
-
-# flux = (1/4) n cbar  => n = 4*flux/cbar
 variable           cbar_cup       equal sqrt(8.0*${kB}*${Tsurf}/(${pi}*${mO}))
 variable           nrho_cup       equal 4.0*${Qcup_m2s}/${cbar_cup}
-
 print "diag: Cupola cbar(m/s)=${cbar_cup}, nrho_cup(#/m^3)=${nrho_cup}" screen yes
-print "diag: Cupola outgas Q (cm^-2 s^-1) = ${Qcup_cm2s}"         screen yes
-print "diag: Cupola outgas Q (m^-2 s^-1)  = ${Qcup_m2s}"          screen yes
-print "diag: Cupola target wake add (Torr)= ${Pcup_Torr}"         screen yes
+print "diag: Cupola outgas Q (cm^-2 s^-1) = ${Qcup_cm2s}" screen yes
+print "diag: Cupola outgas Q (m^-2 s^-1)  = ${Qcup_m2s}"  screen yes
+print "diag: Cupola target wake add (Torr)= ${Pcup_Torr}" screen yes
 
-# Emit thermal O from the entire cupola (background outgassing)
 mixture            mixCup  O  temp ${Tsurf}
 mixture            mixCup  nrho ${nrho_cup}
 fix                cup_emit  emit/surf  mixCup  cupGrp  normal yes
@@ -112,39 +99,23 @@ variable           emit_tot  equal f_cup_emit[2]
 print "diag: cup_emit_now=${emit_now}, cup_emit_tot=${emit_tot}" screen yes
 
 # ------------------------------------------------------------------
-# Pencil-beam MBE from 10 mm orifice (Lambertian effusion)
+# Lambertian effusion (MBE)
 # ------------------------------------------------------------------
-# Geometry references
-variable           x_orif        equal 1.6122         # m (orifice front-face x)
-variable           x_wafer       equal 4.000          # m (wafer center x after trans)
-variable           d_orif_wafer  equal ${x_wafer}-${x_orif}  # ~2.389 m
-
-# Orifice size (10 mm diameter)
-variable           D_orif        equal 0.010          # m
-variable           R_orif        equal 0.5*${D_orif}  # 0.005 m
+variable           x_orif        equal 1.6122
+variable           x_wafer       equal 4.000
+variable           d_orif_wafer  equal ${x_wafer}-${x_orif}
+variable           D_orif        equal 0.010
+variable           R_orif        equal 0.5*${D_orif}
 variable           A_orif        equal ${pi}*${R_orif}*${R_orif}
-
-# Beam temperature (Knudsen-cell like) and mean speed
-variable           Tbeam         equal 1200.0         # K
+variable           Tbeam         equal 1200.0
 variable           cbar_beam     equal sqrt(8.0*${kB}*${Tbeam}/(${pi}*${mO}))
-
-# Target wafer-center flux (typical MBE growth-range)
-variable           Fwafer_cm2s   equal 1.0e14         # #/(cm^2 s)
-variable           Fwafer_m2s    equal ${Fwafer_cm2s}*1.0e4  # to #/(m^2 s)
-
-# Lambertian (Knudsen) point-on-axis: F_wafer ≈ (Q/π) * (A_orif / d^2)
+variable           Fwafer_cm2s   equal 1.0e14
+variable           Fwafer_m2s    equal ${Fwafer_cm2s}*1.0e4
 variable           Qmbe_m2s      equal ${Fwafer_m2s}*${pi}*${d_orif_wafer}*${d_orif_wafer}/${A_orif}
-
-# Effusive relation Q = 1/4 * n * cbar  -> n = 4Q / cbar
 variable           nrho_mbe      equal 4.0*${Qmbe_m2s}/${cbar_beam}
-
-# Source mixture: pure O, thermal effusion; NO drift (vstream omitted)
 mixture            mixMBE O temp ${Tbeam}
 mixture            mixMBE nrho ${nrho_mbe}
-
-# Emit from the tiny orifice only, along the triangle normals (normal +x)
 fix                mbe_emit emit/surf mixMBE mbeNozzleGrp normal yes
-
 print "diag: MBE orifice @x=${x_orif} m, D=${D_orif} m, A=${A_orif} m^2" screen yes
 print "diag: target F_wafer_center=${Fwafer_cm2s} cm^-2 s^-1, d=${d_orif_wafer} m" screen yes
 print "diag: computed Q_orifice=${Qmbe_m2s} #/m^2/s, cbar=${cbar_beam} m/s, n_mbe=${nrho_mbe} #/m^3" screen yes
@@ -152,42 +123,37 @@ print "diag: computed Q_orifice=${Qmbe_m2s} #/m^2/s, cbar=${cbar_beam} m/s, n_mb
 # ------------------------------------------------------------------
 # Probes (front / wake / freestream / gap)
 # ------------------------------------------------------------------
-# Front probe unchanged
 region   probe_front   block  -7.0  -3.2   -2.60  2.60   -2.60  2.60
 group    gFrontPt      grid    region probe_front one
-
-# Wake probe resized to match cupola decagon dimensions in y & z:
-#   decagon width_y ≈ 2*1.462853806757 = 2.925707613514 m
-#   decagon height_z ≈ 3.076271185655 m  (centered about z=0 here)
-# Moved to be 7.0 m downstream of wafer center -> x_center = 4.0 + 7.0 = 11.0 m
-# Keep 1.0 m thickness in x like before: [10.5, 11.5]
 region   probe_wake    block   10.5  11.5   -1.462853806757  1.462853806757   -1.538135592828  1.538135592828
 group    gWakePt       grid    region probe_wake  one
-
-# Freestream probe moved directly above new wake x-location and lowered so bottom z=2.0 (top capped at 5.0 within domain)
 region   probe_free    block   10.5  11.5   -0.60  0.60    2.00   5.00
 group    gFreePt       grid    region probe_free one
-
-# Gap probe (between orifice and wafer) unchanged
-region   probe_gap     block    2.0    3.7    -3.0    3.0    -3.0    3.0
+region   probe_gap     block   2.255  3.445   -2.1   2.1   -2.1   2.1
 group    gGapPt        grid     region probe_gap one
 
 # ------------------------------------------------------------------
-# Cadence
+# Cadence & times: 1 CSV row/min, 94 rows/orbit
 # ------------------------------------------------------------------
-variable           block   equal 2500
+variable           block   equal 2500           # steps per print/average
 variable           tick    equal floor(step/${block})
 variable           time_s  equal step*dt
+variable           orbit_blocks    equal 94
+variable           day_frac        equal 0.50
+variable           n_orbits        equal 20
+variable           orbit_real_s    equal 5640.0
+variable           t_block_s       equal ${block}*dt
+variable           orbit_sim_s     equal ${orbit_blocks}*${t_block_s}
+variable           time_scale      equal ${orbit_real_s}/${orbit_sim_s}
+variable           phys_time_s     equal step*dt*${time_scale}
 
 # ------------------------------------------------------------------
-# Per-probe thermodynamics (pressure = n k_B T)
-# Includes O from freestream, cup outgassing, and MBE.
+# Thermo computes (pressure = n k_B T)
 # ------------------------------------------------------------------
 compute            tFrontPt   thermal/grid gFrontPt   mixWake temp press
 compute            tWakePt    thermal/grid gWakePt    mixWake temp press
 compute            tFreePt    thermal/grid gFreePt    mixWake temp press
 compute            tGapPt     thermal/grid gGapPt     mixWake temp press
-
 compute            pFrontPt   reduce ave c_tFrontPt[2]
 compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
@@ -196,14 +162,12 @@ compute            pGapPt     reduce ave c_tGapPt[2]
 # Initialize + warm-up
 run                0
 run                400
-
-# Quick upstream diagnostic after warm-up (screen only)
 variable           pFree_nowPa   equal c_pFreePt
 variable           pFree_nowTorr equal v_Pa2Torr*v_pFree_nowPa
 print              "diag:pFree_now_Pa=${pFree_nowPa}, pFree_now_Torr=${pFree_nowTorr}" screen yes
 
 # ------------------------------------------------------------------
-# Time-averaging across each block
+# Averaging per minute (per block)
 # ------------------------------------------------------------------
 fix                avgFront ave/time 1 ${block} ${block} c_pFrontPt
 fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
@@ -220,12 +184,34 @@ variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
 
-# Output CSV (4 probes)
-print "tick,time_s,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr" append ../data/raw/wake_4probes.csv screen no
-fix                out print ${block} "${tick},${time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr}" append ../data/raw/wake_4probes.csv screen no
+# CSV header + output (one line per minute)
+print "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr" append ../data/raw/wake_4probes.csv screen no
+fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr}" append ../data/raw/wake_4probes.csv screen no
 
 # ------------------------------------------------------------------
-# One outer block (harness may loop externally)
+# Diurnal toggling for cupola outgassing
 # ------------------------------------------------------------------
 stats              ${block}
-run                ${block}
+variable           cup_day_scale   equal 10.0
+variable           cup_night_scale equal 1.0
+
+# define loop var BEFORE label
+variable           io loop ${n_orbits}
+label              orbit_loop
+
+  # --- DAY (first 94*day_frac rows) ---
+  unfix   cup_emit
+  mixture mixCup nrho ${nrho_cup}*${cup_day_scale}
+  fix     cup_emit emit/surf mixCup cupGrp normal yes
+  variable steps_day   equal ceil(${block}*${orbit_blocks}*${day_frac})
+  run     ${steps_day}
+
+  # --- NIGHT (remaining rows) ---
+  unfix   cup_emit
+  mixture mixCup nrho ${nrho_cup}*${cup_night_scale}
+  fix     cup_emit emit/surf mixCup cupGrp normal yes
+  variable steps_night equal ceil(${block}*${orbit_blocks}*(1.0-${day_frac}))
+  run     ${steps_night}
+
+next io
+jump SELF orbit_loop
