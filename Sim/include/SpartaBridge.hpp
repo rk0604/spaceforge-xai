@@ -4,6 +4,7 @@
 
 class SpartaBridge {
 public:
+  // Opens SPARTA with CUDA/Kokkos enabled (1 GPU) and logs to log.capi
   explicit SpartaBridge(MPI_Comm comm = MPI_COMM_WORLD);
   ~SpartaBridge();
 
@@ -11,13 +12,12 @@ public:
   void runDeck(const std::string& deck_basename,
                const std::string& input_subdir = "input");
 
-  // Add these declarations
+  // Convenience wrappers
   void command(const char* cmd);
-  void runSteps(int n);   // convenience: issues "run N"
-  void clear();           // convenience: issues "clear"
-
+  void runSteps(int n);
+  void clear();
 
 private:
-  void* spa_ = nullptr;
+  void*    spa_  = nullptr;
   MPI_Comm comm_;
 };

@@ -1,0 +1,36 @@
+execve("/usr/bin/mpirun", ["mpirun", "-np", "1", "./build/Sim/sim", "--mode", "dual", "--split", "1", "--wake-deck", "/common/home/rvk22/spaceforge-xa"..., "--eff-deck", "/common/home/rvk22/spaceforge-xa"..., "--input-subdir", "input", "--dt", "60", "--couple-every", "1", "--nticks", "1", "--sparta-block", "1"], 0x7ffd08f22350 /* 50 vars */) = 0
+Authorization required, but no authorization protocol specified
+
+strace: Process 1128541 attached
+Authorization required, but no authorization protocol specified
+
+strace: Process 1128542 attached
+strace: Process 1128543 attached
+[pid 1128543] execve("./build/Sim/sim", ["./build/Sim/sim", "--mode", "dual", "--split", "1", "--wake-deck", "/common/home/rvk22/spaceforge-xa"..., "--eff-deck", "/common/home/rvk22/spaceforge-xa"..., "--input-subdir", "input", "--dt", "60", "--couple-every", "1", "--nticks", "1", "--sparta-block", "1"], 0x56858b4908b0 /* 99 vars */) = 0
+strace: Process 1128544 attached
+strace: Process 1128545 attached
+Authorization required, but no authorization protocol specified
+
+Simulation starting on 1 MPI task(s), dt=60 s
+Mode = dual
+Dual-instance split: nWake=1, nEffusion=0
+SPARTA (20 Jan 2025)
+ERROR: Cannot use -kokkos on without KOKKOS installed (../sparta.cpp:381)
+[pid 1128545] +++ exited with 0 +++
+[pid 1128544] +++ exited with 0 +++
+[pid 1128543] +++ exited with 1 +++
+[pid 1128537] --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=1128543, si_uid=92421, si_status=1, si_utime=1 /* 0.01 s */, si_stime=5 /* 0.05 s */} ---
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[61854,1],0]
+  Exit code:    1
+--------------------------------------------------------------------------
+[pid 1128541] +++ exited with 0 +++
+[pid 1128542] +++ exited with 0 +++
++++ exited with 1 +++

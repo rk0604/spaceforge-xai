@@ -1,6 +1,6 @@
 # --- LEO wake + pencil-beam MBE orifice: four-probe CSV (1 row/minute) ---
-# CSV columns:
-#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr
+# CSV columns (from fix out title):
+#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s
 
 units              si
 seed               12345
@@ -17,10 +17,13 @@ create_grid        96     56       40
 # ------------------------------------------------------------------
 # Gas & flow (DSMC with VSS)
 # ------------------------------------------------------------------
-species            data/o.species O
+species  data/o.species O N2 He H2O
 variable           Tgas          equal 800.0
-mixture            mixWake O temp ${Tgas} vstream 7500.0 0.0 0.0
-collide            vss mixWake data/o.vss
+mixture  mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
+
+# Superset mixture for collisions & computes (includes H2O)
+mixture  mixAll  O N2 He H2O
+collide  vss mixAll data/o.vss
 
 # ------------------------------------------------------------------
 # Surfaces + groups
@@ -45,7 +48,7 @@ group  waferGrp surf   region rWafer center
 # Reflections: cupola 10% diffuse ONLY; wafer+nozzle specular
 # ------------------------------------------------------------------
 surf_collide       sc_spec specular
-surf_collide       sc_diff diffuse 300.0 0.9      # 10% diffuse at 300 K
+surf_collide       sc_diff diffuse 300.0 0.9
 surf_modify        all     collide sc_spec
 surf_modify        cupGrp  collide sc_diff
 
@@ -57,6 +60,7 @@ variable           Torr2Pa       equal 133.32236842105263
 variable           Pa2Torr       equal 7.500616827e-3
 variable           pi            equal 3.141592653589793
 variable           mO            equal 2.66e-26
+variable           mH2O          equal 2.9915e-26
 
 # Freestream inflow (target ambient)
 variable           pTorrTarget   equal 1.0e-7
@@ -75,7 +79,7 @@ mixture            mixWake nrho ${nInf}
 fix                in emit/face mixWake xlo
 
 # ------------------------------------------------------------------
-# Cupola outgassing (300 K) using WSF-style flux target
+# Cupola outgassing (300 K) using WSF-style flux target (H2O)
 # ------------------------------------------------------------------
 variable           Gcup           equal 0.078811435
 variable           kGauge         equal 2.63e-21
@@ -84,14 +88,14 @@ variable           Qcup_cm2s      equal ${Pcup_Torr}/(${kGauge}*${Gcup})
 variable           Qcup_m2s       equal ${Qcup_cm2s}*1.0e4
 
 variable           Tsurf          equal 300.0
-variable           cbar_cup       equal sqrt(8.0*${kB}*${Tsurf}/(${pi}*${mO}))
+variable           cbar_cup       equal sqrt(8.0*${kB}*${Tsurf}/(${pi}*${mH2O}))
 variable           nrho_cup       equal 4.0*${Qcup_m2s}/${cbar_cup}
 print "diag: Cupola cbar(m/s)=${cbar_cup}, nrho_cup(#/m^3)=${nrho_cup}" screen yes
 print "diag: Cupola outgas Q (cm^-2 s^-1) = ${Qcup_cm2s}" screen yes
 print "diag: Cupola outgas Q (m^-2 s^-1)  = ${Qcup_m2s}"  screen yes
 print "diag: Cupola target wake add (Torr)= ${Pcup_Torr}" screen yes
 
-mixture            mixCup  O  temp ${Tsurf}
+mixture            mixCup  H2O  temp ${Tsurf}
 mixture            mixCup  nrho ${nrho_cup}
 fix                cup_emit  emit/surf  mixCup  cupGrp  normal yes
 variable           emit_now  equal f_cup_emit[1]
@@ -99,7 +103,7 @@ variable           emit_tot  equal f_cup_emit[2]
 print "diag: cup_emit_now=${emit_now}, cup_emit_tot=${emit_tot}" screen yes
 
 # ------------------------------------------------------------------
-# Lambertian effusion (MBE)
+# Lambertian effusion (MBE) -- keep as O
 # ------------------------------------------------------------------
 variable           x_orif        equal 1.6122
 variable           x_wafer       equal 4.000
@@ -125,21 +129,24 @@ print "diag: computed Q_orifice=${Qmbe_m2s} #/m^2/s, cbar=${cbar_beam} m/s, n_mb
 # ------------------------------------------------------------------
 region   probe_front   block  -7.0  -3.2   -2.60  2.60   -2.60  2.60
 group    gFrontPt      grid    region probe_front one
+
 region   probe_wake    block   10.5  11.5   -1.462853806757  1.462853806757   -1.538135592828  1.538135592828
 group    gWakePt       grid    region probe_wake  one
+
 region   probe_free    block   10.5  11.5   -0.60  0.60    2.00   5.00
 group    gFreePt       grid    region probe_free one
-region   probe_gap     block   2.255  3.445   -2.1   2.1   -2.1   2.1
-group    gGapPt        grid     region probe_gap one
+
+# NEW wake-probe gap region (your updated dimensions)
+region   probe_gap  block  2.255  3.445   -1.65   1.65   -1.994642674   1.305357326
+group    gGapPt     grid   region probe_gap one
 
 # ------------------------------------------------------------------
 # Cadence & times: 1 CSV row/min, 94 rows/orbit
 # ------------------------------------------------------------------
-variable           block   equal 2500           # steps per print/average
+variable           block   equal 2500
 variable           tick    equal floor(step/${block})
 variable           time_s  equal step*dt
 variable           orbit_blocks    equal 94
-variable           day_frac        equal 0.50
 variable           n_orbits        equal 20
 variable           orbit_real_s    equal 5640.0
 variable           t_block_s       equal ${block}*dt
@@ -148,12 +155,12 @@ variable           time_scale      equal ${orbit_real_s}/${orbit_sim_s}
 variable           phys_time_s     equal step*dt*${time_scale}
 
 # ------------------------------------------------------------------
-# Thermo computes (pressure = n k_B T)
+# Thermo computes (pressure = n k_B T)  --> include H2O via mixAll
 # ------------------------------------------------------------------
-compute            tFrontPt   thermal/grid gFrontPt   mixWake temp press
-compute            tWakePt    thermal/grid gWakePt    mixWake temp press
-compute            tFreePt    thermal/grid gFreePt    mixWake temp press
-compute            tGapPt     thermal/grid gGapPt     mixWake temp press
+compute            tFrontPt   thermal/grid gFrontPt   mixAll temp press
+compute            tWakePt    thermal/grid gWakePt    mixAll temp press
+compute            tFreePt    thermal/grid gFreePt    mixAll temp press
+compute            tGapPt     thermal/grid gGapPt     mixAll temp press
 compute            pFrontPt   reduce ave c_tFrontPt[2]
 compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
@@ -184,34 +191,54 @@ variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
 
-# CSV header + output (one line per minute)
-print "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr" append ../data/raw/wake_4probes.csv screen no
-fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr}" append ../data/raw/wake_4probes.csv screen no
+# ------------------------------------------------------------------
+# Cupola emission diagnostics aligned to block cadence
+# ------------------------------------------------------------------
+fix                avgCupEmit  ave/time 1 ${block} ${block} f_cup_emit[1]
+variable           CUP_EMIT_macro_per_step equal f_avgCupEmit
+variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNUM}/dt
+
+# Ensure cup_scale exists before first use by fix out
+variable           cup_scale equal 1.0
 
 # ------------------------------------------------------------------
-# Diurnal toggling for cupola outgassing
+# CSV output (one line per minute), header via title, true append
+# (LEAVE UNCHANGED AS REQUESTED)
+# ------------------------------------------------------------------
+fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" file ../data/raw/wake_4probes.csv screen no append ../data/raw/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
+
+# ------------------------------------------------------------------
+# Sinusoidal modulation of cupola outgassing over a 94-min orbit
 # ------------------------------------------------------------------
 stats              ${block}
-variable           cup_day_scale   equal 10.0
-variable           cup_night_scale equal 1.0
 
-# define loop var BEFORE label
+# user-tunable knobs
+variable           cup_amp_scale   equal 0.50
+variable           cup_base_scale  equal 1.00
+variable           phase0          equal 0.0
+
+# outer loop over orbits
 variable           io loop ${n_orbits}
 label              orbit_loop
 
-  # --- DAY (first 94*day_frac rows) ---
-  unfix   cup_emit
-  mixture mixCup nrho ${nrho_cup}*${cup_day_scale}
-  fix     cup_emit emit/surf mixCup cupGrp normal yes
-  variable steps_day   equal ceil(${block}*${orbit_blocks}*${day_frac})
-  run     ${steps_day}
+  # inner loop: one iteration per "minute" (block)
+  variable         j loop ${orbit_blocks}
+  label            block_loop
 
-  # --- NIGHT (remaining rows) ---
-  unfix   cup_emit
-  mixture mixCup nrho ${nrho_cup}*${cup_night_scale}
-  fix     cup_emit emit/surf mixCup cupGrp normal yes
-  variable steps_night equal ceil(${block}*${orbit_blocks}*(1.0-${day_frac}))
-  run     ${steps_night}
+    # compute sinusoidal scale for this block
+    variable       phase     equal 2.0*${pi}*(${j}-1.0)/${orbit_blocks}+${phase0}
+    variable       cup_scale equal ${cup_base_scale}+${cup_amp_scale}*sin(${phase})
+
+    # re-issue cupola emitter at updated density (H2O)
+    unfix          cup_emit
+    mixture        mixCup nrho ${nrho_cup}*${cup_scale}
+    fix            cup_emit emit/surf mixCup cupGrp normal yes
+
+    # advance exactly one averaging block
+    run            ${block}
+
+  next             j
+  jump             SELF block_loop
 
 next io
 jump SELF orbit_loop
