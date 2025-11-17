@@ -347,3 +347,74 @@ events:
         
       exitCode: 0
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: "-I/common/home/rvk22/opt/sparta/build-gpu/src/include"
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_7d59a/fast
+        gmake[1]: Entering directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_7d59a.dir/build.make CMakeFiles/cmTC_7d59a.dir/build
+        gmake[2]: Entering directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC'
+        Building CXX object CMakeFiles/cmTC_7d59a.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/common/home/rvk22/opt/sparta/build-gpu/src/include  -std=gnu++17 -o CMakeFiles/cmTC_7d59a.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC/test_mpi.cpp
+        Linking CXX executable cmTC_7d59a
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_7d59a.dir/link.txt --verbose=1
+        /usr/bin/c++ -I/common/home/rvk22/opt/sparta/build-gpu/src/include  CMakeFiles/cmTC_7d59a.dir/test_mpi.cpp.o -o cmTC_7d59a  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so 
+        gmake[2]: Leaving directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC'
+        gmake[1]: Leaving directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ICkwEC'
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: "-I/common/home/rvk22/opt/sparta/build-gpu/src/include"
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_d59fa/fast
+        gmake[1]: Entering directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe'
+        /usr/bin/gmake  -f CMakeFiles/cmTC_d59fa.dir/build.make CMakeFiles/cmTC_d59fa.dir/build
+        gmake[2]: Entering directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe'
+        Building CXX object CMakeFiles/cmTC_d59fa.dir/test_mpi.cpp.o
+        /usr/bin/c++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -I/common/home/rvk22/opt/sparta/build-gpu/src/include  -std=gnu++17 -o CMakeFiles/cmTC_d59fa.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe/test_mpi.cpp
+        Linking CXX executable cmTC_d59fa
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_d59fa.dir/link.txt --verbose=1
+        /usr/bin/c++ -I/common/home/rvk22/opt/sparta/build-gpu/src/include  CMakeFiles/cmTC_d59fa.dir/test_mpi.cpp.o -o cmTC_d59fa  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so 
+        gmake[2]: Leaving directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe'
+        gmake[1]: Leaving directory '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4H0lVe'
+        
+      exitCode: 0
+...

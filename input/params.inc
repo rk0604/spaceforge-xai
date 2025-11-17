@@ -1,1 +1,1 @@
-variable cell_temp_K equal 310.029
+variable Fwafer_cm2s equal 0

@@ -62,22 +62,9 @@ variable           pi            equal 3.141592653589793
 variable           mO            equal 2.66e-26
 variable           mH2O          equal 2.9915e-26
 
-# ------------------------------------------------------------------
-# User-tunable knobs with defaults (overridable via -var ...)
-#   -var pTorrTarget  <Torr>
-#   -var Pcup_Torr    <Torr>
-#   -var Fwafer_cm2s  <cm^-2 s^-1>
-#   -var runID        <label>
-# ------------------------------------------------------------------
-variable           pTorrTarget   index 1.0e-7
-variable           Pcup_Torr     index 9.0e-9
-variable           Fwafer_cm2s   index 1.0e14
-variable           runID         index run_default
-
-# ------------------------------------------------------------------
 # Freestream inflow (target ambient)
-# ------------------------------------------------------------------
-variable           pInf          equal ${Torr2Pa}*${pTorrTarget}
+variable           pTorrTarget   equal 1.0e-7
+variable           pInf          equal v_Torr2Pa*v_pTorrTarget
 variable           nInf          equal ${pInf}/(${kB}*${Tgas})
 print "diag:pInf_Torr=${pTorrTarget}" screen yes
 print "diag:pInf_Pa=${pInf}"          screen yes
@@ -96,7 +83,7 @@ fix                in emit/face mixWake xlo
 # ------------------------------------------------------------------
 variable           Gcup           equal 0.078811435
 variable           kGauge         equal 2.63e-21
-
+variable           Pcup_Torr      equal 9.0e-9
 variable           Qcup_cm2s      equal ${Pcup_Torr}/(${kGauge}*${Gcup})
 variable           Qcup_m2s       equal ${Qcup_cm2s}*1.0e4
 
@@ -126,7 +113,7 @@ variable           R_orif        equal 0.5*${D_orif}
 variable           A_orif        equal ${pi}*${R_orif}*${R_orif}
 variable           Tbeam         equal 1200.0
 variable           cbar_beam     equal sqrt(8.0*${kB}*${Tbeam}/(${pi}*${mO}))
-
+variable           Fwafer_cm2s   equal 1.0e14
 variable           Fwafer_m2s    equal ${Fwafer_cm2s}*1.0e4
 variable           Qmbe_m2s      equal ${Fwafer_m2s}*${pi}*${d_orif_wafer}*${d_orif_wafer}/${A_orif}
 variable           nrho_mbe      equal 4.0*${Qmbe_m2s}/${cbar_beam}
@@ -216,20 +203,19 @@ variable           cup_scale equal 1.0
 
 # ------------------------------------------------------------------
 # CSV output (one line per minute), header via title, true append
-#   Writes to ../data/raw/${runID}/wake_4probes.csv relative to input dir
+# (LEAVE UNCHANGED AS REQUESTED)
 # ------------------------------------------------------------------
-fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" file ../data/raw/${runID}/wake_4probes.csv screen no append ../data/raw/${runID}/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
+fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" file ../data/raw/wake_4probes.csv screen no append ../data/raw/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
 
 # ------------------------------------------------------------------
 # Sinusoidal modulation of cupola outgassing over a 94-min orbit
-# cup_amp_scale, cup_base_scale, phase0 are still passed via -var,
-# but if not provided, SPARTA uses whatever defaults you set here.
 # ------------------------------------------------------------------
 stats              ${block}
 
-variable           cup_amp_scale   index 0.50
-variable           cup_base_scale  index 1.00
-variable           phase0          index 0.0
+# user-tunable knobs
+variable           cup_amp_scale   equal 0.50
+variable           cup_base_scale  equal 1.00
+variable           phase0          equal 0.0
 
 # outer loop over orbits
 variable           io loop ${n_orbits}

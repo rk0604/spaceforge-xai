@@ -1,7 +1,0 @@
-Simulation starting on 20 MPI task(s), dt=60 s
-Mode = dual
-Dual-instance split: nWake=2, nEffusion=18
-SPARTA (20 Jan 2025)
-ERROR: Cannot use -kokkos on without KOKKOS installed (../sparta.cpp:381)
-SPARTA (20 Jan 2025)
-ERROR: Cannot use -kokkos on without KOKKOS installed (../sparta.cpp:381)

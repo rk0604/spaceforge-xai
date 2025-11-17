@@ -62,28 +62,17 @@ variable           pi            equal 3.141592653589793
 variable           mO            equal 2.66e-26
 variable           mH2O          equal 2.9915e-26
 
-# ------------------------------------------------------------------
-# User-tunable knobs with defaults (overridable via -var ...)
-#   -var pTorrTarget  <Torr>
-#   -var Pcup_Torr    <Torr>
-#   -var Fwafer_cm2s  <cm^-2 s^-1>
-#   -var runID        <label>
-# ------------------------------------------------------------------
-variable           pTorrTarget   index 1.0e-7
-variable           Pcup_Torr     index 9.0e-9
-variable           Fwafer_cm2s   index 1.0e14
-variable           runID         index run_default
-
-# ------------------------------------------------------------------
 # Freestream inflow (target ambient)
-# ------------------------------------------------------------------
-variable           pInf          equal ${Torr2Pa}*${pTorrTarget}
+variable           pTorrTarget   equal 1.0e-7
+variable           pInf          equal v_Torr2Pa*v_pTorrTarget
 variable           nInf          equal ${pInf}/(${kB}*${Tgas})
 print "diag:pInf_Torr=${pTorrTarget}" screen yes
 print "diag:pInf_Pa=${pInf}"          screen yes
 print "diag:nInf_m^-3=${nInf}"        screen yes
 
-# Macro weighting
+# ------------------------------------------------------------------
+# Macro weighting (GPU-tuned)
+# ------------------------------------------------------------------
 variable           FNUM          equal 1.0e15
 global             fnum ${FNUM}
 
@@ -96,20 +85,21 @@ fix                in emit/face mixWake xlo
 # ------------------------------------------------------------------
 variable           Gcup           equal 0.078811435
 variable           kGauge         equal 2.63e-21
-
+variable           Pcup_Torr      equal 9.0e-9
 variable           Qcup_cm2s      equal ${Pcup_Torr}/(${kGauge}*${Gcup})
 variable           Qcup_m2s       equal ${Qcup_cm2s}*1.0e4
 
 variable           Tsurf          equal 300.0
 variable           cbar_cup       equal sqrt(8.0*${kB}*${Tsurf}/(${pi}*${mH2O}))
-variable           nrho_cup       equal 4.0*${Qcup_m2s}/${cbar_cup}
-print "diag: Cupola cbar(m/s)=${cbar_cup}, nrho_cup(#/m^3)=${nrho_cup}" screen yes
+variable           nrho_cup_base  equal 4.0*${Qcup_m2s}/${cbar_cup}
+print "diag: Cupola cbar(m/s)=${cbar_cup}, nrho_cup_base(#/m^3)=${nrho_cup_base}" screen yes
 print "diag: Cupola outgas Q (cm^-2 s^-1) = ${Qcup_cm2s}" screen yes
 print "diag: Cupola outgas Q (m^-2 s^-1)  = ${Qcup_m2s}"  screen yes
 print "diag: Cupola target wake add (Torr)= ${Pcup_Torr}" screen yes
 
+# Initial cupola mixture (scaled later each block)
 mixture            mixCup  H2O  temp ${Tsurf}
-mixture            mixCup  nrho ${nrho_cup}
+mixture            mixCup  nrho ${nrho_cup_base}
 fix                cup_emit  emit/surf  mixCup  cupGrp  normal yes
 variable           emit_now  equal f_cup_emit[1]
 variable           emit_tot  equal f_cup_emit[2]
@@ -126,7 +116,7 @@ variable           R_orif        equal 0.5*${D_orif}
 variable           A_orif        equal ${pi}*${R_orif}*${R_orif}
 variable           Tbeam         equal 1200.0
 variable           cbar_beam     equal sqrt(8.0*${kB}*${Tbeam}/(${pi}*${mO}))
-
+variable           Fwafer_cm2s   equal 1.0e14
 variable           Fwafer_m2s    equal ${Fwafer_cm2s}*1.0e4
 variable           Qmbe_m2s      equal ${Fwafer_m2s}*${pi}*${d_orif_wafer}*${d_orif_wafer}/${A_orif}
 variable           nrho_mbe      equal 4.0*${Qmbe_m2s}/${cbar_beam}
@@ -149,16 +139,15 @@ group    gWakePt       grid    region probe_wake  one
 region   probe_free    block   10.5  11.5   -0.60  0.60    2.00   5.00
 group    gFreePt       grid    region probe_free one
 
-# NEW wake-probe gap region (your updated dimensions)
 region   probe_gap  block  2.255  3.445   -1.65   1.65   -1.994642674   1.305357326
 group    gGapPt     grid   region probe_gap one
 
 # ------------------------------------------------------------------
 # Cadence & times: 1 CSV row/min, 94 rows/orbit
 # ------------------------------------------------------------------
-variable           block   equal 2500
-variable           tick    equal floor(step/${block})
-variable           time_s  equal step*dt
+variable           block           equal 2500
+variable           tick            equal floor(step/${block})
+variable           time_s          equal step*dt
 variable           orbit_blocks    equal 94
 variable           n_orbits        equal 20
 variable           orbit_real_s    equal 5640.0
@@ -166,9 +155,10 @@ variable           t_block_s       equal ${block}*dt
 variable           orbit_sim_s     equal ${orbit_blocks}*${t_block_s}
 variable           time_scale      equal ${orbit_real_s}/${orbit_sim_s}
 variable           phys_time_s     equal step*dt*${time_scale}
+variable           total_steps     equal ${n_orbits}*${orbit_blocks}*${block}
 
 # ------------------------------------------------------------------
-# Thermo computes (pressure = n k_B T)  --> include H2O via mixAll
+# Thermo computes (pressure = n k_B T)
 # ------------------------------------------------------------------
 compute            tFrontPt   thermal/grid gFrontPt   mixAll temp press
 compute            tWakePt    thermal/grid gWakePt    mixAll temp press
@@ -179,7 +169,22 @@ compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
 compute            pGapPt     reduce ave c_tGapPt[2]
 
-# Initialize + warm-up
+# --- Instantaneous pressures in Pa and Torr (no ave/time) ---
+variable           P_FRONT_Pa  equal c_pFrontPt
+variable           P_WAKE_Pa   equal c_pWakePt
+variable           P_FREE_Pa   equal c_pFreePt
+variable           P_GAP_Pa    equal c_pGapPt
+
+variable           P_FRONT_Torr  equal v_Pa2Torr*v_P_FRONT_Pa
+variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE_Pa
+variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE_Pa
+variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP_Pa
+
+# Cupola emission diagnostics (using the same emit/surf fix)
+variable           CUP_EMIT_macro_per_step equal f_cup_emit[1]
+variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNUM}/dt
+
+# Initialize + warm-up (one-time)
 run                0
 run                400
 variable           pFree_nowPa   equal c_pFreePt
@@ -187,72 +192,36 @@ variable           pFree_nowTorr equal v_Pa2Torr*v_pFree_nowPa
 print              "diag:pFree_now_Pa=${pFree_nowPa}, pFree_now_Torr=${pFree_nowTorr}" screen yes
 
 # ------------------------------------------------------------------
-# Averaging per minute (per block)
+# Initialize cup_scale before first use
 # ------------------------------------------------------------------
-fix                avgFront ave/time 1 ${block} ${block} c_pFrontPt
-fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
-fix                avgFree  ave/time 1 ${block} ${block} c_pFreePt
-fix                avgGap   ave/time 1 ${block} ${block} c_pGapPt
-
-variable           P_FRONT       equal f_avgFront
-variable           P_WAKE        equal f_avgWake
-variable           P_FREE        equal f_avgFree
-variable           P_GAP         equal f_avgGap
-
-variable           P_FRONT_Torr  equal v_Pa2Torr*v_P_FRONT
-variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
-variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
-variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
-
-# ------------------------------------------------------------------
-# Cupola emission diagnostics aligned to block cadence
-# ------------------------------------------------------------------
-fix                avgCupEmit  ave/time 1 ${block} ${block} f_cup_emit[1]
-variable           CUP_EMIT_macro_per_step equal f_avgCupEmit
-variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNUM}/dt
-
-# Ensure cup_scale exists before first use by fix out
-variable           cup_scale equal 1.0
+variable           cup_amp_scale   equal 0.50
+variable           cup_base_scale  equal 1.00
+variable           phase0          equal 0.0
+variable           cup_scale       equal 1.0
 
 # ------------------------------------------------------------------
 # CSV output (one line per minute), header via title, true append
-#   Writes to ../data/raw/${runID}/wake_4probes.csv relative to input dir
 # ------------------------------------------------------------------
-fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" file ../data/raw/${runID}/wake_4probes.csv screen no append ../data/raw/${runID}/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
+fix out print ${block} &
+  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" &
+  file wake_probes.csv screen no title &
+  "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
+
 
 # ------------------------------------------------------------------
-# Sinusoidal modulation of cupola outgassing over a 94-min orbit
-# cup_amp_scale, cup_base_scale, phase0 are still passed via -var,
-# but if not provided, SPARTA uses whatever defaults you set here.
+# Fewer syncs: single long run with per-block updates via 'every'
 # ------------------------------------------------------------------
 stats              ${block}
 
-variable           cup_amp_scale   index 0.50
-variable           cup_base_scale  index 1.00
-variable           phase0          index 0.0
+# block_idx = floor(step / block)  (0,1,2,...)
+# j cycles from 1..orbit_blocks using modulo
+variable           block_idx   equal floor(step/${block})
+variable           j           equal 1.0 + v_block_idx - ${orbit_blocks}*floor(v_block_idx/${orbit_blocks})
+variable           phase       equal 6.283185307179586*(v_j-1.0)/${orbit_blocks}+${phase0}
+variable           cup_scale   equal v_cup_base_scale+v_cup_amp_scale*sin(v_phase)
 
-# outer loop over orbits
-variable           io loop ${n_orbits}
-label              orbit_loop
-
-  # inner loop: one iteration per "minute" (block)
-  variable         j loop ${orbit_blocks}
-  label            block_loop
-
-    # compute sinusoidal scale for this block
-    variable       phase     equal 2.0*${pi}*(${j}-1.0)/${orbit_blocks}+${phase0}
-    variable       cup_scale equal ${cup_base_scale}+${cup_amp_scale}*sin(${phase})
-
-    # re-issue cupola emitter at updated density (H2O)
-    unfix          cup_emit
-    mixture        mixCup nrho ${nrho_cup}*${cup_scale}
-    fix            cup_emit emit/surf mixCup cupGrp normal yes
-
-    # advance exactly one averaging block
-    run            ${block}
-
-  next             j
-  jump             SELF block_loop
-
-next io
-jump SELF orbit_loop
+run ${total_steps} every ${block} "
+  unfix cup_emit
+  mixture mixCup nrho ${nrho_cup_base}*v_cup_scale
+  fix cup_emit emit/surf mixCup cupGrp normal yes
+"

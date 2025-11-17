@@ -192,7 +192,7 @@ CMAKE_TAPI:FILEPATH=CMAKE_TAPI-NOTFOUND
 // Studio IDE projects all commands are done without /nologo.
 CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 
-//Enable SPARTA coupling
+//Enable in-process SPARTA coupling (requires SPARTA headers/lib)
 ENABLE_SPARTA:BOOL=ON
 
 //Executable for running MPI programs.
@@ -251,8 +251,17 @@ PKG_CONFIG_ARGN:STRING=
 //pkg-config executable
 PKG_CONFIG_EXECUTABLE:FILEPATH=/usr/bin/pkg-config
 
-//No help, variable specified on the command line.
-SPARTA_DIR:UNINITIALIZED=/common/home/rvk22/opt/sparta/build-gpu/src
+//SPARTA source/build root (has src/, libsparta*.a)
+SPARTA_DIR:PATH=/common/home/rvk22/opt/sparta/build-gpu/src
+
+//Value Computed by CMake
+SpaceForgeSim_BINARY_DIR:STATIC=/common/home/rvk22/spaceforge-xai/build/Sim
+
+//Value Computed by CMake
+SpaceForgeSim_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+SpaceForgeSim_SOURCE_DIR:STATIC=/common/home/rvk22/spaceforge-xai/Sim
 
 //Value Computed by CMake
 SpaceForge_BINARY_DIR:STATIC=/common/home/rvk22/spaceforge-xai/build

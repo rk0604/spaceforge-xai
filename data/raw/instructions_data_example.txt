@@ -1,0 +1,56 @@
+# Run Metadata — `test_low_alt_400km_v1`
+
+**Run ID:** `test_low_alt_400km_v1`  
+**Directory:** `data/raw/test_low_alt_400km_v1/`  
+**Local Time:** `2025-11-16 21:15`   
+
+---
+
+## 1. Simulation Configuration (High-Level)
+
+| Setting                     | Value                          |
+|-----------------------------|--------------------------------|
+| Simulation mode (`--mode`) | `wake`                         |
+| ENABLE_SPARTA              | `ON`                           |
+| GPU mode (`GPU`)           | `OFF`                          |
+| MPI ranks (`NP`)           | `1`                            |
+| Wake deck (`WAKE_DECK`)    | `in.wake_harness`              |
+| Input subdir               | `/home/rvk22/spaceforge-xai/input` |
+
+**Purpose of this run (1–3 sentences):**  
+Low-altitude wake case at ~400 km, using the harness-coupled wake deck (`in.wake_harness`).  
+The goal is to test higher ambient pressure, sinusoidal cupola outgassing, and confirm the harness↔SPARTA coupling loop over 500 ticks.
+
+---
+
+## 2. Orbit & Environment Parameters (passed to SPARTA via -var)
+
+| Variable        | Meaning                                      | Value    |
+|-----------------|----------------------------------------------|----------|
+| `PTORR_TARGET`  | Freestream ambient pressure [Torr]           | `3.0e-7` |
+| `PCUP_TORR`     | Added wake pressure at cupola [Torr]         | `9.0e-9` |
+| `FWAfer_CM2S`   | Wafer-center flux [cm⁻² s⁻¹]                 | `1.0e14` |
+| `CUP_BASE_SCALE`| Base outgassing scale                        | `1.0`    |
+| `CUP_AMP_SCALE` | Outgassing sinusoidal amplitude              | `0.50`   |
+| `CUP_PHASE0`    | Phase offset (radians)                       | `0.0`    |
+
+**Additional physical parameters:**  
+- Altitude: `400 km`  
+- Temperature (nominal gas temp in deck): `800 K`  
+- Velocity (freestream stream velocity): `7500 m/s`  
+- Notes: Vehicle orientation and geometry as in baseline CPU-optimized wake deck; no geometry changes for this run.
+
+---
+
+## 3. Harness Timing / Coupling Configuration
+
+| Parameter      | Description                               | Value |
+|----------------|-------------------------------------------|-------|
+| `nticks`       | Total harness ticks                       | `500` |
+| `dt`           | Seconds of physical time per tick         | `0.1` |
+| `sparta_block` | Ticks between SPARTA calls                | `250` |
+| `couple_every` | Frequency of C++↔SPARTA coupling (ticks)  | `10`  |
+
+**Extra CLI flags used:**
+```bash
+--nticks 500 --sparta-block 250 --log-every 10

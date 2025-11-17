@@ -1,6 +1,6 @@
-# --- LEO wake + pencil-beam MBE orifice: four-probe CSV (1 row/minute) ---
+# --- LEO wake + pencil-beam MBE orifice: four-probe CSV (harness-driven) ---
 # CSV columns (from fix out title):
-#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s
+#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s,mbe_active
 
 units              si
 seed               12345
@@ -63,7 +63,7 @@ variable           mO            equal 2.66e-26
 variable           mH2O          equal 2.9915e-26
 
 # ------------------------------------------------------------------
-# User-tunable knobs with defaults (overridable via -var ...)
+# User-tunable knobs with defaults (overridable via -var ... from run.sh)
 #   -var pTorrTarget  <Torr>
 #   -var Pcup_Torr    <Torr>
 #   -var Fwafer_cm2s  <cm^-2 s^-1>
@@ -149,23 +149,22 @@ group    gWakePt       grid    region probe_wake  one
 region   probe_free    block   10.5  11.5   -0.60  0.60    2.00   5.00
 group    gFreePt       grid    region probe_free one
 
-# NEW wake-probe gap region (your updated dimensions)
+# NEW wake-probe gap region
 region   probe_gap  block  2.255  3.445   -1.65   1.65   -1.994642674   1.305357326
 group    gGapPt     grid   region probe_gap one
 
 # ------------------------------------------------------------------
-# Cadence & times: 1 CSV row/min, 94 rows/orbit
+# Cadence & times: 1 CSV row/min, 94 rows/orbit (used only for scaling)
 # ------------------------------------------------------------------
-variable           block   equal 2500
-variable           tick    equal floor(step/${block})
-variable           time_s  equal step*dt
-variable           orbit_blocks    equal 94
-variable           n_orbits        equal 20
-variable           orbit_real_s    equal 5640.0
-variable           t_block_s       equal ${block}*dt
-variable           orbit_sim_s     equal ${orbit_blocks}*${t_block_s}
-variable           time_scale      equal ${orbit_real_s}/${orbit_sim_s}
-variable           phys_time_s     equal step*dt*${time_scale}
+variable           block          equal 2500
+variable           tick           equal floor(step/${block})
+variable           time_s         equal step*dt
+variable           orbit_blocks   equal 94
+variable           orbit_real_s   equal 5640.0
+variable           t_block_s      equal ${block}*dt
+variable           orbit_sim_s    equal ${orbit_blocks}*${t_block_s}
+variable           time_scale     equal ${orbit_real_s}/${orbit_sim_s}
+variable           phys_time_s    equal step*dt*${time_scale}
 
 # ------------------------------------------------------------------
 # Thermo computes (pressure = n k_B T)  --> include H2O via mixAll
@@ -179,9 +178,9 @@ compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
 compute            pGapPt     reduce ave c_tGapPt[2]
 
-# Initialize + warm-up
+# Initialize (0 steps) so everything is defined; no warm-up run here.
 run                0
-run                400
+
 variable           pFree_nowPa   equal c_pFreePt
 variable           pFree_nowTorr equal v_Pa2Torr*v_pFree_nowPa
 print              "diag:pFree_now_Pa=${pFree_nowPa}, pFree_now_Torr=${pFree_nowTorr}" screen yes
@@ -211,48 +210,26 @@ fix                avgCupEmit  ave/time 1 ${block} ${block} f_cup_emit[1]
 variable           CUP_EMIT_macro_per_step equal f_avgCupEmit
 variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNUM}/dt
 
-# Ensure cup_scale exists before first use by fix out
+# External coupling knob: cup_scale (default 1.0; C++ can override via set var)
 variable           cup_scale equal 1.0
 
-# ------------------------------------------------------------------
-# CSV output (one line per minute), header via title, true append
-#   Writes to ../data/raw/${runID}/wake_4probes.csv relative to input dir
-# ------------------------------------------------------------------
-fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" file ../data/raw/${runID}/wake_4probes.csv screen no append ../data/raw/${runID}/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
+# NEW: MBE activity flag (0 = off, 1 = on), to be driven by C++ harness
+variable           mbe_active index 0
 
 # ------------------------------------------------------------------
-# Sinusoidal modulation of cupola outgassing over a 94-min orbit
-# cup_amp_scale, cup_base_scale, phase0 are still passed via -var,
-# but if not provided, SPARTA uses whatever defaults you set here.
+# CSV output (one line per block).
+# Header will be written by the C++ harness; SPARTA only appends data rows.
+# ------------------------------------------------------------------
+print "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s,mbe_active" \
+      file ../data/raw/${runID}/wake_4probes.csv screen no
+      
+fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${mbe_active}" file ../data/raw/${runID}/wake_4probes.csv
+
+# ------------------------------------------------------------------
+# Keep stats every block; ACTUAL stepping is driven by C++ harness,
+# which will call 'run ${maxSteps}' through SpartaBridge.
 # ------------------------------------------------------------------
 stats              ${block}
 
-variable           cup_amp_scale   index 0.50
-variable           cup_base_scale  index 1.00
-variable           phase0          index 0.0
-
-# outer loop over orbits
-variable           io loop ${n_orbits}
-label              orbit_loop
-
-  # inner loop: one iteration per "minute" (block)
-  variable         j loop ${orbit_blocks}
-  label            block_loop
-
-    # compute sinusoidal scale for this block
-    variable       phase     equal 2.0*${pi}*(${j}-1.0)/${orbit_blocks}+${phase0}
-    variable       cup_scale equal ${cup_base_scale}+${cup_amp_scale}*sin(${phase})
-
-    # re-issue cupola emitter at updated density (H2O)
-    unfix          cup_emit
-    mixture        mixCup nrho ${nrho_cup}*${cup_scale}
-    fix            cup_emit emit/surf mixCup cupGrp normal yes
-
-    # advance exactly one averaging block
-    run            ${block}
-
-  next             j
-  jump             SELF block_loop
-
-next io
-jump SELF orbit_loop
+# Harness-controlled step count; default 0 so a bare spa_ run does nothing.
+variable           maxSteps index 0
