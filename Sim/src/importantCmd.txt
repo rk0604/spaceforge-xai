@@ -254,8 +254,14 @@ cd ~/spaceforge-xai
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 
-nvcc location
+nvcc location --------------------------
 export PATH=/usr/local/cuda-12.6/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-12.6/lib64:$LD_LIBRARY_PATH
+# make nvcc visible to nvcc wrapper
+export NVCC=/usr/local/cuda-12.6/bin/nvcc
+export PATH=/usr/local/cuda-12.6/bin:$PATH
+export CUDA_HOME=/usr/local/cuda-12.6
+
 
 simple run to test gpu usage with in.wake 
 export SPARTA_BUILD="$HOME/opt/sparta/build-gpu"
@@ -276,4 +282,94 @@ mpirun -np 2 \
   env CUDA_VISIBLE_DEVICES=0,1 \
   "$SPARTA_BUILD/src/spa_" -in in.collide -k on g 1 -sf kk
 
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# WORKING GPU BUILD COMMANDS RUN FROM HOME ~
+# --- toolchain env ---
+export NVCC=/usr/local/cuda-12.6/bin/nvcc
+export PATH=/usr/local/cuda-12.6/bin:$PATH
+export CUDA_HOME=/usr/local/cuda-12.6
+export NVCC_WRAPPER_DEFAULT_COMPILER=$(which g++)
+
+# --- paths ---
+export SPARTA_ROOT="$HOME/opt/sparta"
+export SPARTA_BUILD="$SPARTA_ROOT/build-gpu"
+export NVCC_WRAPPER="$SPARTA_ROOT/lib/kokkos/bin/nvcc_wrapper"
+
+# sanity
+ls -l "$SPARTA_ROOT/cmake/CMakeLists.txt"
+ls -l "$NVCC_WRAPPER"
+
+# fresh build dir
+rm -rf "$SPARTA_BUILD"
+
+# ---- CONFIGURE (source dir is .../sparta/cmake) ----
+cmake -S "$SPARTA_ROOT/cmake" -B "$SPARTA_BUILD" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_COMPILER="$NVCC" \
+  -DCMAKE_CXX_COMPILER="$NVCC_WRAPPER" \
+  -DCMAKE_CUDA_ARCHITECTURES=86 \
+  -DBUILD_KOKKOS=ON \
+  -DPKG_KOKKOS=ON \
+  -DPKG_FFT=ON \
+  -DFFT=KISS \
+  -DFFT_KOKKOS=KISS \
+  -DKokkos_ENABLE_CUDA=ON \
+  -DKokkos_ENABLE_SERIAL=ON \
+  -DKokkos_ENABLE_OPENMP=OFF
+
+# ---- BUILD (keep parallelism low to avoid OOM) ----
+cmake --build "$SPARTA_BUILD" -j4
+
+# verify binary exists
+ls -l "$SPARTA_BUILD/src/spa_"
+
+AND build and run command below-------------------------------------------------------------------------------------------------------------
+# 0) point to the GPU build you just made
+export SPARTA_BUILD="$HOME/opt/sparta/build-gpu"
+SPA="$SPARTA_BUILD/src/spa_"
+
+# 1) sanity checks
+echo "SPA = $SPA"
+ls -l "$SPA"         # should show -rwx... spa_
+test -x "$SPA" || echo "ERROR: spa_ missing or not executable"
+
+# 2) run your deck (absolute path; no spaces/typos)
+`cd "$HOME/spaceforge-xai/input"
+env -u DISPLAY -u XAUTHORITY CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 \
+mpirun -np 1 "$SPA" -in in.wake -k on g 1 -sf kk | tee run_spa.log`
+
+----------------------------------------------------------------------
+run for fnum 13
+1) CPU
+cd ~/spaceforge-xai/input
+env -u DISPLAY -u XAUTHORITY OMP_NUM_THREADS=8 \
+mpirun -np 1 "$HOME/opt/sparta/build-gpu/src/spa_" -in in.wake   # no “-k on g 1 -sf kk”
+
+2) GPU
+rvk22@crayon:~/spaceforge-xai/input$ 
+env -u DISPLAY -u XAUTHORITY CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 \
+mpirun -np 1 "$HOME/opt/sparta/build-gpu/src/spa_"   -in in.wake -k on g 1 -sf kk | tee ~/spaceforge-xai/Sim/build/run_spa_gpu.log
+
+fnumm: 13
+cpu = 26s per 1k steps CPU
+GPU = 34s per 1k steps GPU 
+
+fnum: 12
+cpu = 182s per 1k steps
+gpu = 240s per 1k steps
+ - GPu(new in.wake optimized for gpu) = 150s per 1k steps
+
+scale to use 2 GPUs
+cd ~/spaceforge-xai/input
+env -u DISPLAY -u XAUTHORITY CUDA_VISIBLE_DEVICES=0,1 OMP_NUM_THREADS=1 \
+mpirun -np 2 "$HOME/opt/sparta/build-gpu/src/spa_" -in in.wake -k on g 2 -sf kk
+
+# CPU (Kokkos on CPU) - apples to apples with gpu 
+env -u DISPLAY -u XAUTHORITY \
+OMP_NUM_THREADS=8 \
+mpirun -np 1 "$SPA" -in in.wake -k on g 0 -sf kk \
+| tee ~/spaceforge-xai/Sim/build/run_cpu_kokkos_8t.log
+
+
+# build with the right architecture
 

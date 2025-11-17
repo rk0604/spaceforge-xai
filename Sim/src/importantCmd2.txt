@@ -1,0 +1,85 @@
+Run sparta alone
+cd ~/opt/sparta/src
+
+# Clear all Makefile package selections (what CMake is asking for)
+make no-all
+
+# (Recommended) also clean old object files & build dirs
+make clean-all   # this may take a little while
+
+cd ~/opt
+
+# --- CUDA toolchain env ---
+export NVCC=/usr/local/cuda-12.6/bin/nvcc
+export PATH=/usr/local/cuda-12.6/bin:$PATH
+export CUDA_HOME=/usr/local/cuda-12.6
+export NVCC_WRAPPER_DEFAULT_COMPILER=$(which g++)
+
+# --- SPARTA paths ---
+export SPARTA_ROOT="$HOME/opt/sparta"
+export SPARTA_BUILD="$SPARTA_ROOT/build-gpu"
+export NVCC_WRAPPER="$SPARTA_ROOT/lib/kokkos/bin/nvcc_wrapper"
+
+# sanity (should still exist)
+ls -l "$SPARTA_ROOT/cmake/CMakeLists.txt"
+ls -l "$NVCC_WRAPPER"
+
+# fresh build dir
+rm -rf "$SPARTA_BUILD"
+
+# ---- CONFIGURE ----
+cmake -S "$SPARTA_ROOT/cmake" -B "$SPARTA_BUILD" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_COMPILER="$NVCC" \
+  -DCMAKE_CXX_COMPILER="$NVCC_WRAPPER" \
+  -DCMAKE_CUDA_ARCHITECTURES=86 \
+  -DBUILD_KOKKOS=ON \
+  -DPKG_KOKKOS=ON \
+  -DPKG_FFT=ON \
+  -DFFT=KISS \
+  -DFFT_KOKKOS=KISS \
+  -DKokkos_ENABLE_CUDA=ON \
+  -DKokkos_ENABLE_SERIAL=ON \
+  -DKokkos_ENABLE_OPENMP=OFF
+
+# ---- BUILD ----
+cmake --build "$SPARTA_BUILD" -j 8
+
+
+cd ~/spaceforge-xai/input 
+
+env -u DISPLAY -u XAUTHORITY CUDA_VISIBLE_DEVICES=0 OMP_NUM_THREADS=1 \
+mpirun -np 1 "$HOME/opt/sparta/build-gpu/src/spa_" \
+  -in in.wake -k on g 1 -sf kk \
+| tee ~/spaceforge-xai/Sim/build/run_spa_gpu.log
+
+
+fnumm: 13
+cpu = 26s per 1k steps CPU
+GPU = 34s per 1k steps GPU 
+
+fnum: 12
+cpu = 182s per 1k steps
+gpu = 240s per 1k steps
+ - GPu(new in.wake optimized for gpu) = 150s per 1k steps
+
+
+ # ----------------- in.wake variable input commands
+cd ~/spaceforge-xai/Sim
+RUN_ID=test_low_alt PTORR_TARGET=3.0e-7 ENABLE_SPARTA=ON MODE=wake GPU=OFF ./run.sh
+# or just omit GPU entirely; default is OFF
+
+
+## run power mode to isolate c++ sim and run it solo without sparta
+# Rebuild once (from repo root, as usual)
+cd ~/spaceforge-xai
+rm -rf build && mkdir build && cd build
+cmake -DSPARTA_DIR="$HOME/opt/sparta/src" -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j
+cd ~/spaceforge-xai/Sim
+
+RUN_ID=debug_power_only \
+ENABLE_SPARTA=OFF \
+MODE=power \
+./run.sh
+

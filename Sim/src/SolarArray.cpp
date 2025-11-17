@@ -22,7 +22,9 @@ void SolarArray::initialize() {
 void SolarArray::tick(const TickContext& ctx) {
     // Simple diurnal-ish variation; keep your prior semantics:
     // base_input scaled by a smooth periodic function of time
-    const double phase = 2.0 * M_PI * (ctx.time / (24.0 * 3600.0)); // daily cycle
+    const double orbit_period_s = 94.0 * 60.0;  // 5640 s
+
+    const double phase = 2.0 * M_PI * (ctx.time / (orbit_period_s)); // daily cycle
     const double solar_input = base_input_ * (0.6 + 0.4 * std::max(0.0, std::sin(phase)));
 
     const double output = solar_input * efficiency_;

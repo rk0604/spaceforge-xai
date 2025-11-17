@@ -1,66 +1,80 @@
 cmake_minimum_required(VERSION 3.20)
+project(SpaceForgeSim LANGUAGES CXX)
 
-# MPI (already found in root, but fine to require the component here)
+# -------------------- Dependencies --------------------
 find_package(MPI REQUIRED COMPONENTS CXX)
 
-# If someone builds Sim/ standalone, create/import SPARTA only if missing
-if(NOT TARGET sparta_static)
-  option(ENABLE_SPARTA "Enable SPARTA coupling" OFF)
-  set(SPARTA_DIR "$ENV{SPARTA_DIR}" CACHE PATH "SPARTA build/install dir")
+# Option: embed SPARTA (OFF by default; external spa_ via --sparta-exe)
+option(ENABLE_SPARTA "Enable in-process SPARTA coupling (requires SPARTA headers/lib)" OFF)
+set(SPARTA_DIR "$ENV{SPARTA_DIR}" CACHE PATH "SPARTA source/build root (has src/, libsparta*.a)")
 
-  if(ENABLE_SPARTA)
-    find_path(SPARTA_INCLUDE_DIR
-      NAMES sparta.h
-      PATHS ${SPARTA_DIR} ${SPARTA_DIR}/src ${SPARTA_DIR}/include)
-    find_library(SPARTA_LIBRARY
-      NAMES sparta sparta_mpi sparta_static
-      PATHS ${SPARTA_DIR} ${SPARTA_DIR}/lib ${SPARTA_DIR}/src)
+# -------------------- Sources --------------------
+set(SIMCORE_SOURCES
+  src/Logger.cpp
+  src/SimulationEngine.cpp
+  src/TickPhaseEngine.cpp
+  src/PowerBus.cpp
+  src/Battery.cpp
+  src/SolarArray.cpp
+  src/EffusionCell.cpp
+  src/WakeChamber.cpp
+  src/DepositionMap.cpp
+  src/SpartaDiag.cpp
+  # Add HeaterBank implementation:
+  src/HeaterBank.cpp
+)
 
-    if(NOT SPARTA_INCLUDE_DIR OR NOT SPARTA_LIBRARY)
-      message(FATAL_ERROR "Could not find SPARTA at SPARTA_DIR='${SPARTA_DIR}'. Set -DSPARTA_DIR=/path/to/sparta.")
-    endif()
+set(SIMCORE_HEADERS
+  include/Logger.hpp
+  include/TickContext.hpp
+  include/SimulationEngine.hpp
+  include/TickPhaseEngine.hpp
+  include/PowerBus.hpp
+  include/Battery.hpp
+  include/SolarArray.hpp
+  include/EffusionCell.hpp
+  include/WakeChamber.hpp
+  include/DepositionMap.hpp
+  include/SpartaDiag.hpp
+  include/SpartaBridge.hpp
+  # Add HeaterBank header:
+  include/HeaterBank.hpp
+)
 
-    add_library(sparta_static UNKNOWN IMPORTED)
-    set_target_properties(sparta_static PROPERTIES
-      IMPORTED_LOCATION "${SPARTA_LIBRARY}"
-      INTERFACE_INCLUDE_DIRECTORIES "${SPARTA_INCLUDE_DIR}")
+# Choose Sparta bridge implementation
+if(ENABLE_SPARTA)
+  list(APPEND SIMCORE_SOURCES src/SpartaBridge.cpp)
+  include_directories(${SPARTA_DIR} ${SPARTA_DIR}/src)
+else()
+  list(APPEND SIMCORE_SOURCES src/SpartaBridgeShim.cpp)
+endif()
+
+add_library(simcore STATIC ${SIMCORE_SOURCES} ${SIMCORE_HEADERS})
+target_include_directories(simcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(simcore PUBLIC MPI::MPI_CXX)
+
+target_compile_definitions(simcore PRIVATE
+  ENABLE_SPARTA=$<BOOL:${ENABLE_SPARTA}>
+  PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+
+# If embedding, try to link a SPARTA lib/target only if it exists
+if(ENABLE_SPARTA)
+  if(TARGET sparta_static)
+    target_link_libraries(simcore PUBLIC sparta_static)
   else()
-    add_library(sparta_static INTERFACE)
+    message(FATAL_ERROR "ENABLE_SPARTA=ON but no SPARTA CMake target/library found. Build no-embed or provide sparta_static/libsparta.")
   endif()
 endif()
 
-# ---- Library: simcore ----
-set(SIMCORE_SOURCES
-  src/Battery.cpp
-  src/PowerBus.cpp
-  src/SolarArray.cpp
-  src/HeaterBank.cpp
-  src/SimulationEngine.cpp
-  src/TickPhaseEngine.cpp
-  src/Logger.cpp
-  src/SpartaDiag.cpp
-  # Files that depend on SPARTA are only built when enabled:
-)
-
-if(ENABLE_SPARTA)
-  list(APPEND SIMCORE_SOURCES
-    src/SpartaBridge.cpp
-    src/WakeChamber.cpp
-    src/EffusionCell.cpp
-    src/DepositionMap.cpp
-  )
-endif()
-
-add_library(simcore ${SIMCORE_SOURCES})
-target_include_directories(simcore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(simcore PUBLIC MPI::MPI_CXX sparta_static)
-target_compile_definitions(simcore PRIVATE PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-
-# ---- Executable: sim ----
+# -------------------- Executable: sim --------------------
 option(BUILD_SIM_APP "Build the Sim executable" ON)
 if(BUILD_SIM_APP)
   add_executable(sim src/main.cpp)
   target_link_libraries(sim PRIVATE simcore)
-  # Place the binary under build/Sim/
   set_target_properties(sim PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Sim")
+
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_link_options(sim PRIVATE "-Wl,--no-undefined")
+  endif()
 endif()

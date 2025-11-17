@@ -1,9 +1,10 @@
 #pragma once
+
 #include <mutex>
 #include <map>
 #include <string>
 #include <fstream>
-#include <vector>   
+#include <vector>
 
 class Logger {
 public:

@@ -4,7 +4,7 @@
 
 class SpartaBridge {
 public:
-  // Opens SPARTA with CUDA/Kokkos enabled (1 GPU) and logs to log.capi
+  // Opens SPARTA with CUDA/Kokkos enabled (1 GPU) and logs to i
   explicit SpartaBridge(MPI_Comm comm = MPI_COMM_WORLD);
   ~SpartaBridge();
 

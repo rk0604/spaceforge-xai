@@ -1,3 +1,4 @@
+// Sim/src/Logger.cpp
 #include "Logger.hpp"
 
 #include <iostream>
@@ -7,149 +8,154 @@
 #include <system_error>
 #include <mutex>
 #include <string>
-#include <vector>     // <-- needed
+#include <vector>
+#include <stdexcept>
 
 namespace {
 namespace fs = std::filesystem;
 
 // Resolve the base directory for logs.
-// Priority: env(SF_LOG_DIR) → <PROJECT_SOURCE_DIR>/data/raw → ./data/raw
-inline fs::path log_base_dir() {
-    if (const char* env = std::getenv("SF_LOG_DIR"); env && *env) {
-        return fs::path(env);
+//
+// Priority:
+//   1) env SF_LOG_DIR
+//   2) <PROJECT_SOURCE_DIR>/data/raw
+//   3) ./data/raw
+//
+// If env RUN_ID is set, we append it as a subdirectory so each run gets its
+// own folder, e.g. data/raw/test_low_alt3/Battery.csv
+fs::path resolve_base_dir() {
+    // 1) explicit override
+    if (const char* env = std::getenv("SF_LOG_DIR")) {
+        if (*env) {
+            fs::path p(env);
+            if (const char* run = std::getenv("RUN_ID")) {
+                if (*run) p /= run;
+            }
+            return p;
+        }
     }
+
+    // 2) project source dir if available
 #ifdef PROJECT_SOURCE_DIR
-    return fs::path(PROJECT_SOURCE_DIR) / "data" / "raw";
+    fs::path base = fs::path(PROJECT_SOURCE_DIR) / "data" / "raw";
 #else
-    return fs::path("data") / "raw";
+    // 3) fallback to current working directory
+    fs::path base = fs::current_path() / "data" / "raw";
 #endif
-}
 
-// Ensure directory exists (best-effort; no throw)
-inline void ensure_dir(const fs::path& p) {
-    std::error_code ec;
-    fs::create_directories(p, ec);
-    if (ec) {
-        std::cerr << "[Logger] Warning: failed to create log dir " << p
-                  << " : " << ec.message() << "\n";
+    if (const char* run = std::getenv("RUN_ID")) {
+        if (*run) base /= run;
     }
+    return base;
 }
 
-inline void warn_open_failure(const fs::path& p) {
+// Get or open the per-subsystem CSV file.
+// If this is the first time we open it, we also write the header.
+//
+// For "tall" logs (log()), the header is: tick,time_s,key,value
+// For "wide" logs (log_wide()), the header is: tick,time_s,<columns...>
+std::ofstream& get_stream_for_subsystem(
+    const std::string& subsystem,
+    std::map<std::string, std::ofstream>& per_node,
+    const std::vector<std::string>* wide_cols,
+    bool is_wide
+) {
+    auto it = per_node.find(subsystem);
+    if (it != per_node.end()) {
+        return it->second;
+    }
+
+    fs::path base_dir = resolve_base_dir();
     std::error_code ec;
-    auto abs = fs::absolute(p, ec);
-    std::cerr << "[Logger] Failed to open " << (ec ? p : abs)
-              << " (cwd=" << fs::current_path() << ")\n";
+    fs::create_directories(base_dir, ec);
+    if (ec) {
+        throw std::runtime_error(
+            "Logger: failed to create log directory " + base_dir.string() +
+            " : " + ec.message()
+        );
+    }
+
+    fs::path csv_path = base_dir / (subsystem + ".csv");
+    std::ofstream out(csv_path, std::ios::out | std::ios::trunc);
+    if (!out) {
+        throw std::runtime_error(
+            "Logger: failed to open log file " + csv_path.string()
+        );
+    }
+
+    // Write header
+    if (is_wide) {
+        out << "tick,time_s";
+        if (wide_cols) {
+            for (const auto& c : *wide_cols) {
+                out << ',' << c;
+            }
+        }
+        out << '\n';
+    } else {
+        out << "tick,time_s,key,value\n";
+    }
+    out.flush();
+
+    auto [new_it, _] = per_node.emplace(subsystem, std::move(out));
+    return new_it->second;
 }
 
-} // namespace
+} // anonymous namespace
 
-// -----------------------------------------------------------------------------
-// Singleton
-// -----------------------------------------------------------------------------
+// ---------------- Logger public API ----------------
+
 Logger& Logger::instance() {
     static Logger inst;
     return inst;
 }
 
-// -----------------------------------------------------------------------------
-// Dtor: close any open streams
-// -----------------------------------------------------------------------------
 Logger::~Logger() {
+    std::lock_guard<std::mutex> lock(mtx_);
     if (central_.is_open()) central_.close();
     for (auto& kv : per_node_) {
         if (kv.second.is_open()) kv.second.close();
     }
 }
 
-// -----------------------------------------------------------------------------
-// Log one batch of values for a subsystem at (tick, time) in long format
-// -----------------------------------------------------------------------------
+// Tall/long format: one row per (tick, key, value)
 void Logger::log(const std::string& subsystem,
                  int tick, double time,
                  const std::map<std::string, double>& values) {
     std::lock_guard<std::mutex> lock(mtx_);
 
-    const fs::path base = log_base_dir();
-    ensure_dir(base);
+    std::ofstream& out = get_stream_for_subsystem(
+        subsystem,
+        per_node_,
+        /*wide_cols=*/nullptr,
+        /*is_wide=*/false
+    );
 
-    // Open central log once
-    if (!central_.is_open()) {
-        const fs::path central_path = base / "simulation.log";
-        central_.open(central_path.string(), std::ios::out);
-        if (!central_) {
-            warn_open_failure(central_path);
-        } else {
-            central_ << "tick,time_s,subsystem,key,value\n";
-            central_.flush();
-        }
+    for (const auto& kv : values) {
+        out << tick << ',' << time << ','
+            << kv.first << ',' << kv.second << '\n';
     }
-
-    // Open per-subsystem CSV once
-    if (!per_node_.count(subsystem)) {
-        const fs::path node_path = base / (subsystem + ".csv");
-        auto& ofs = per_node_[subsystem];
-        ofs.open(node_path.string(), std::ios::out);
-        if (!ofs) {
-            warn_open_failure(node_path);
-        } else {
-            ofs << "tick,time_s,key,value\n";
-            ofs.flush();
-        }
-    }
-
-    // Write rows
-    auto write_row = [&](std::ostream& os, const std::string& key, double val) {
-        os << tick << ',' << time << ',';
-        if (&os == &central_) {
-            os << subsystem << ',' << key << ',' << val << '\n';
-        } else {
-            os << key << ',' << val << '\n';
-        }
-    };
-
-    for (const auto& [k, v] : values) {
-        if (central_) write_row(central_, k, v);
-        auto it = per_node_.find(subsystem);
-        if (it != per_node_.end() && it->second) write_row(it->second, k, v);
-    }
-
-    if (central_) central_.flush();
-    auto it = per_node_.find(subsystem);
-    if (it != per_node_.end() && it->second) it->second.flush();
+    out.flush();
 }
 
-// -----------------------------------------------------------------------------
-// Wide format: one row with multiple columns
-// -----------------------------------------------------------------------------
-void Logger::log_wide(const std::string& subsystem, int tick, double time,
+// Wide format: one row per tick with multiple named columns
+void Logger::log_wide(const std::string& subsystem,
+                      int tick, double time,
                       const std::vector<std::string>& cols,
                       const std::vector<double>& vals) {
     std::lock_guard<std::mutex> lock(mtx_);
 
-    const fs::path base = log_base_dir();
-    ensure_dir(base);
+    std::ofstream& out = get_stream_for_subsystem(
+        subsystem,
+        per_node_,
+        &cols,
+        /*is_wide=*/true
+    );
 
-    // Open per-subsystem CSV once
-    auto& out = per_node_[subsystem];
-    if (!out.is_open()) {
-        const fs::path node_path = base / (subsystem + ".csv");
-        out.open(node_path.string(), std::ios::out);
-        if (!out) {
-            warn_open_failure(node_path);
-            return;
-        }
-        // write header once: tick,time,<cols...>
-        out << "tick,time_s";
-        for (const auto& c : cols) out << ',' << c;
-        out << '\n';
-        out.flush();
-    }
-
-    // Write the row
     out << tick << ',' << time;
-    for (size_t i = 0; i < cols.size(); ++i) {
-        out << ',' << (i < vals.size() ? vals[i] : 0.0);
+    for (std::size_t i = 0; i < cols.size(); ++i) {
+        double v = (i < vals.size() ? vals[i] : 0.0);
+        out << ',' << v;
     }
     out << '\n';
     out.flush();
