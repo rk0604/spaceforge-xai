@@ -220,10 +220,8 @@ variable           mbe_active index 0
 # CSV output (one line per block).
 # Header will be written by the C++ harness; SPARTA only appends data rows.
 # ------------------------------------------------------------------
-print "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s,mbe_active" \
-      file ../data/raw/${runID}/wake_4probes.csv screen no
-      
-fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${mbe_active}" file ../data/raw/${runID}/wake_4probes.csv
+
+fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${mbe_active}" file ../data/raw/${runID}/wake_4probes.csv screen no append ../data/raw/${runID}/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s,mbe_active"
 
 # ------------------------------------------------------------------
 # Keep stats every block; ACTUAL stepping is driven by C++ harness,

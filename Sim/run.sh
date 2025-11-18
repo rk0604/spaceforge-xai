@@ -73,12 +73,12 @@ SPARTA_EXE="${SPARTA_EXE:-$SPARTA_EXE_DEFAULT}"
 ORBIT_SPARTA_ARGS=(
   -var pTorrTarget    "${PTORR_TARGET}"
   -var Pcup_Torr      "${PCUP_TORR}"
-  -var Fwafer_cm2s    "${FWAfer_CM2S}"
   -var cup_base_scale "${CUP_BASE_SCALE}"
   -var cup_amp_scale  "${CUP_AMP_SCALE}"
   -var phase0         "${CUP_PHASE0}"
   -var runID          "${RUN_ID}"
 )
+#  removed this as this is passed in via input/params.inc -var Fwafer_cm2s    "${FWAfer_CM2S}"
 
 # If caller didn’t override SPARTA_EXTRA_ARGS, build it
 if [ -z "${SPARTA_EXTRA_ARGS:-}" ]; then

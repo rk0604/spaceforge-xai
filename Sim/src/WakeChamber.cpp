@@ -12,6 +12,7 @@
 #include <sstream>
 #include <optional>
 #include <limits>
+#include <map>
 #include <mpi.h>
 
 namespace fs = std::filesystem;
@@ -74,6 +75,12 @@ double& n_inf_ref()        { static double v = 0.0; return v; }
 int& block_steps_ref() {
     static int v = 1000;   // default if caller never supplies --sparta-block
     return v;
+}
+
+// ---- NEW: in-memory parameter state for params.inc ----
+std::map<std::string,double>& param_state_ref() {
+    static std::map<std::string,double> m;
+    return m;
 }
 
 } // namespace
@@ -171,9 +178,18 @@ void WakeChamber::setParameter(const std::string& name, double value) {
 
     int rank = 0; MPI_Comm_rank(comm_, &rank);
     if (rank == 0) {
+        // Update in-memory state
+        auto& state = param_state_ref();
+        state[name] = value;
+
+        // Rewrite params.inc with ALL current variables
         std::ofstream out(params);
         if (!out) throw std::runtime_error("WakeChamber::setParameter: cannot open params.inc");
-        out << "variable " << name << " equal " << value << "\n";
+
+        for (const auto& kv : state) {
+            out << "variable " << kv.first << " equal " << kv.second << "\n";
+        }
+
         Logger::instance().log("Params", /*tick*/++event_id_, /*time*/0.0,
                                {{label_ + ".param." + name, value}});
     }

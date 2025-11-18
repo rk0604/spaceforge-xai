@@ -518,7 +518,7 @@ RUN_ID=test_sync MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP
 RUN_ID=test_jobs2 MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=1 ./run.sh
 
 #0.2 - more cores
-RUN_ID=test_sync MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=20  ./run.sh --couple-every 10 --sparta-block 25000 
+RUN_ID=test_sync2 MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=20  ./run.sh --couple-every 10 --sparta-block 25000 
 
 # 1) Default wake mode, extra C++ flags
 ./run.sh --nticks 500 --sparta-block 200

@@ -352,6 +352,7 @@ int main(int argc, char** argv) {
       const Job* currentJob = nullptr;
       double last_heater_set   = std::numeric_limits<double>::quiet_NaN();
       double last_Fwafer_sent  = std::numeric_limits<double>::quiet_NaN();
+      double last_mbe_sent     = std::numeric_limits<double>::quiet_NaN();
 
       const int NTICKS = args.nticks;
       for (int i = 0; i < NTICKS; ++i) {
@@ -388,33 +389,53 @@ int main(int argc, char** argv) {
             currentJob = newJob;
           }
 
-          // ---- 2) Decide heater demand and Fwafer for this tick ----
+          // ---- 2) Decide heater demand, Fwafer, and mbe_active for this tick ----
           double heaterDemand_W = 150.0;   // baseline if no jobs.txt
           double Fwafer_cmd     = std::numeric_limits<double>::quiet_NaN();
+          double mbe_flag       = 0.0;     // 0 = beam off, 1 = beam on
 
           if (!jobs.empty()) {
             if (currentJob) {
               heaterDemand_W = currentJob->heater_W;
               Fwafer_cmd     = currentJob->Fwafer_cm2s;
+              mbe_flag       = 1.0;
             } else {
               // Outside any job window: effusion off, heater 0
               heaterDemand_W = 0.0;
               Fwafer_cmd     = 0.0;
+              mbe_flag       = 0.0;
             }
           }
 
-          // ---- 3) Push Fwafer into SPARTA when it changes ----
-          if (!std::isnan(Fwafer_cmd)) {
-            if (std::isnan(last_Fwafer_sent) ||
-                Fwafer_cmd != last_Fwafer_sent) {
+          // ---- 3) Push Fwafer + mbe_active into SPARTA when they change ----
+          if (!jobs.empty()) {
+            bool need_update = false;
+
+            if (!std::isnan(Fwafer_cmd)) {
+              if (std::isnan(last_Fwafer_sent) ||
+                  Fwafer_cmd != last_Fwafer_sent) {
+                need_update = true;
+              }
+            }
+            if (std::isnan(last_mbe_sent) || mbe_flag != last_mbe_sent) {
+              need_update = true;
+            }
+
+            if (need_update) {
               std::ostringstream oss;
               oss << "[job] tick=" << tickIndex
-                  << " set SPARTA param Fwafer_cm2s=" << Fwafer_cmd << "\n";
+                  << " set SPARTA params: Fwafer_cm2s=" << Fwafer_cmd
+                  << ", mbe_active=" << mbe_flag << "\n";
               log_msg(oss.str());
 
-              wake.setParameter("Fwafer_cm2s", Fwafer_cmd);
+              if (!std::isnan(Fwafer_cmd)) {
+                wake.setParameter("Fwafer_cm2s", Fwafer_cmd);
+              }
+              wake.setParameter("mbe_active", mbe_flag);
               wake.markDirtyReload();
+
               last_Fwafer_sent = Fwafer_cmd;
+              last_mbe_sent    = mbe_flag;
             }
           }
 

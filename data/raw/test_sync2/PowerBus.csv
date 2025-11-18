@@ -1,0 +1,2 @@
+tick,time_s,status,available_added,total_draw_request,total_granted,remaining_power
+0,0,1,0,0,0,0
