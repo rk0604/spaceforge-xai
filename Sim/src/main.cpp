@@ -156,7 +156,7 @@ int main(int argc, char** argv) {
   }
 
   // ------------------------------------------------------------------------
-  // Sanity clamps so bad CLI/env values can't kill the simulation loop.
+  // Sanity clamps so bad CLI/env values cannot kill the simulation loop.
   // ------------------------------------------------------------------------
   if (args.nticks <= 0) {
     if (rank == 0) log_msg("[warn] nticks <= 0 from CLI/env; defaulting to 500.\n");
@@ -256,6 +256,50 @@ int main(int argc, char** argv) {
       }
     }
 
+    // Broadcast number of jobs to all ranks (so everyone can make decisions
+    // consistently if needed later).
+    int njobs = static_cast<int>(jobs.size());
+    MPI_Bcast(&njobs, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+    // --------------------------------------------------------------------
+    // Lambda to write params.inc (leader only) and sync ranks.
+    // Writes BOTH Fwafer_cm2s and mbe_active so SPARTA deck always sees both.
+    // Also clamps Fwafer_cm2s to a positive floor to avoid zero-density errors.
+    // --------------------------------------------------------------------
+    const double FWAFFER_FLOOR_CM2S = 1.0e8; // small but positive so mixture is legal
+
+    auto write_params_inc = [&](double Fwafer_cm2s, double mbe_active) {
+      // Clamp flux to positive floor
+      if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
+        Fwafer_cm2s = FWAFFER_FLOOR_CM2S;
+      }
+      if (!std::isfinite(mbe_active)) {
+        mbe_active = 0.0;
+      }
+
+      if (rank == 0) {
+        std::string path = args.inputDir + "/params.inc";
+        std::ofstream out(path);
+        if (!out) {
+          std::ostringstream oss;
+          oss << "[fatal] Cannot open " << path << " for writing.\n";
+          log_msg(oss.str());
+          throw std::runtime_error("Failed to write params.inc");
+        }
+        out << "variable Fwafer_cm2s equal " << Fwafer_cm2s << "\n";
+        out << "variable mbe_active  equal " << mbe_active  << "\n";
+        out.close();
+
+        std::ostringstream oss;
+        oss << "[params] Wrote params.inc: Fwafer_cm2s=" << Fwafer_cm2s
+            << ", mbe_active=" << mbe_active << "\n";
+        log_msg(oss.str());
+      }
+
+      // Make sure all ranks wait until file is written
+      MPI_Barrier(MPI_COMM_WORLD);
+    };
+
     // --------------------------------------------------------------------
     // Electrical/power subsystems (independent of SPARTA)
     // --------------------------------------------------------------------
@@ -335,6 +379,21 @@ int main(int argc, char** argv) {
         log_msg("[info] dual mode selected; using wake-only path (no effusion deck).\n");
       }
 
+      // Seed params.inc BEFORE the first SPARTA deck load.
+      double initial_Fwafer = FWAFFER_FLOOR_CM2S;
+      if (rank == 0 && !jobs.empty()) {
+        // Use first job's flux as a reasonable starting point
+        initial_Fwafer = jobs.front().Fwafer_cm2s;
+        if (!std::isfinite(initial_Fwafer) || initial_Fwafer <= 0.0) {
+          initial_Fwafer = FWAFFER_FLOOR_CM2S;
+        }
+      }
+      // Broadcast initial flux to all ranks so they agree
+      MPI_Bcast(&initial_Fwafer, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+      // Beam off initially (mbe_active = 0), but flux positive so mixture is legal
+      write_params_inc(initial_Fwafer, 0.0);
+
       if (rank == 0) {
         log_msg("[info] Constructing WakeChamber and calling wake.init(...)\n");
       }
@@ -383,7 +442,7 @@ int main(int argc, char** argv) {
                   << ", heater_W=" << newJob->heater_W << "\n";
             } else if (currentJob) {
               oss << "[job] tick=" << tickIndex
-                  << " leaving job window; reverting to baseline (heater=0, Fwafer=0).\n";
+                  << " leaving job window; reverting to baseline (heater=0, beam off).\n";
             }
             log_msg(oss.str());
             currentJob = newJob;
@@ -402,36 +461,47 @@ int main(int argc, char** argv) {
             } else {
               // Outside any job window: effusion off, heater 0
               heaterDemand_W = 0.0;
-              Fwafer_cmd     = 0.0;
-              mbe_flag       = 0.0;
+              // We do NOT set Fwafer_cmd to 0.0; that would kill mixture.
+              // Instead, keep last flux (or floor) and just set mbe_active = 0.
+              if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
+                Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+              } else {
+                Fwafer_cmd = last_Fwafer_sent;
+              }
+              mbe_flag = 0.0;
             }
+          } else {
+            // No jobs.txt: keep baseline heater and floor flux, beam off
+            heaterDemand_W = 150.0;
+            if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
+              Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+            } else {
+              Fwafer_cmd = last_Fwafer_sent;
+            }
+            mbe_flag = 0.0;
           }
 
-          // ---- 3) Push Fwafer + mbe_active into SPARTA when they change ----
-          if (!jobs.empty()) {
+          // ---- 3) Push Fwafer + mbe_active into params.inc when they change ----
+          if (!std::isnan(Fwafer_cmd)) {
             bool need_update = false;
 
-            if (!std::isnan(Fwafer_cmd)) {
-              if (std::isnan(last_Fwafer_sent) ||
-                  Fwafer_cmd != last_Fwafer_sent) {
-                need_update = true;
-              }
+            if (std::isnan(last_Fwafer_sent) ||
+                Fwafer_cmd != last_Fwafer_sent) {
+              need_update = true;
             }
-            if (std::isnan(last_mbe_sent) || mbe_flag != last_mbe_sent) {
+            if (std::isnan(last_mbe_sent) ||
+                mbe_flag != last_mbe_sent) {
               need_update = true;
             }
 
             if (need_update) {
               std::ostringstream oss;
               oss << "[job] tick=" << tickIndex
-                  << " set SPARTA params: Fwafer_cm2s=" << Fwafer_cmd
+                  << " update params.inc: Fwafer_cm2s=" << Fwafer_cmd
                   << ", mbe_active=" << mbe_flag << "\n";
               log_msg(oss.str());
 
-              if (!std::isnan(Fwafer_cmd)) {
-                wake.setParameter("Fwafer_cm2s", Fwafer_cmd);
-              }
-              wake.setParameter("mbe_active", mbe_flag);
+              write_params_inc(Fwafer_cmd, mbe_flag);
               wake.markDirtyReload();
 
               last_Fwafer_sent = Fwafer_cmd;
