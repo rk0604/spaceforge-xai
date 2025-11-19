@@ -1,0 +1,1 @@
+/usr/bin/mpicxx -O3 -DNDEBUG -Wl,--no-undefined CMakeFiles/sim.dir/src/main.cpp.o -o sim  libsimcore.a /common/home/rvk22/opt/sparta/src/libsparta_mpi.a 

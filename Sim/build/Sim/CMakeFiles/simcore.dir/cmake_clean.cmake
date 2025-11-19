@@ -1,0 +1,33 @@
+file(REMOVE_RECURSE
+  "CMakeFiles/simcore.dir/src/Battery.cpp.o"
+  "CMakeFiles/simcore.dir/src/Battery.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/DepositionMap.cpp.o"
+  "CMakeFiles/simcore.dir/src/DepositionMap.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/EffusionCell.cpp.o"
+  "CMakeFiles/simcore.dir/src/EffusionCell.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/HeaterBank.cpp.o"
+  "CMakeFiles/simcore.dir/src/HeaterBank.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/Logger.cpp.o"
+  "CMakeFiles/simcore.dir/src/Logger.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/PowerBus.cpp.o"
+  "CMakeFiles/simcore.dir/src/PowerBus.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/SimulationEngine.cpp.o"
+  "CMakeFiles/simcore.dir/src/SimulationEngine.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/SolarArray.cpp.o"
+  "CMakeFiles/simcore.dir/src/SolarArray.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o"
+  "CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o"
+  "CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o"
+  "CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/WakeChamber.cpp.o"
+  "CMakeFiles/simcore.dir/src/WakeChamber.cpp.o.d"
+  "libsimcore.a"
+  "libsimcore.pdb"
+)
+
+# Per-language clean rules from dependency scanning.
+foreach(lang CXX)
+  include(CMakeFiles/simcore.dir/cmake_clean_${lang}.cmake OPTIONAL)
+endforeach()

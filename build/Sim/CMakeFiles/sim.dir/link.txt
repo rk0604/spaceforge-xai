@@ -1,0 +1,1 @@
+/usr/bin/c++ -I/common/home/rvk22/opt/sparta/build-gpu/src/include -O3 -DNDEBUG -Wl,--no-undefined CMakeFiles/sim.dir/src/main.cpp.o -o sim  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib libsimcore.a /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so /common/home/rvk22/opt/sparta/build-gpu/src/libsparta.a 
