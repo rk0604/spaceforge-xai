@@ -1,2 +1,2 @@
-variable Fwafer_cm2s equal 5e+13
-variable mbe_active  equal 0
+variable Fwafer_cm2s equal 1e+14
+variable mbe_active  equal 1

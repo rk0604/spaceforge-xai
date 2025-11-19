@@ -55,7 +55,7 @@ struct Args {
 
   // make tick size and run length configurable
   int    nticks        = 500;        // engine ticks to run
-  double dt            = 0.1;        // seconds per engine tick
+  double dt            = 60;        // seconds per engine tick now 60 from 0.1
 };
 
 static bool arg_eq(const char* a, const char* b) { return std::strcmp(a,b) == 0; }
