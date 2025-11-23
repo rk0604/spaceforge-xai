@@ -1,6 +1,7 @@
 #include "SolarArray.hpp"
 #include "Logger.hpp"
 #include <cmath>
+// RUN_ID=sim_debug MODE=power ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=1   ./run.sh --nticks 50 --couple-every 1 --sparta-block 2500
 
 SolarArray::SolarArray(double efficiency, double base_input)
     : Subsystem("SolarArray"),

@@ -24,8 +24,8 @@ void EffusionCell::tick(const TickContext& ctx) {
         "EffusionCell",
         ctx.tick_index,
         ctx.time,
-        {"status","temperature","heatInput"},
-        { 1.0,     temperature_,  heat_input_w_ }
+        {"status", "temperature_K", "heatInput_w"},
+        { 1.0,      temperature_,   heat_input_w_ }
     );
 
     // Optionally push updated setpoint into SPARTA at a cadence

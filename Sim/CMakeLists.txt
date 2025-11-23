@@ -20,6 +20,7 @@ set(SIMCORE_SOURCES
   src/WakeChamber.cpp
   src/DepositionMap.cpp
   src/SpartaDiag.cpp
+  src/orbit.cpp
   # Add HeaterBank implementation:
   src/HeaterBank.cpp
 )
@@ -30,6 +31,7 @@ set(SIMCORE_HEADERS
   include/SimulationEngine.hpp
   include/TickPhaseEngine.hpp
   include/PowerBus.hpp
+  include/orbit.hpp
   include/Battery.hpp
   include/SolarArray.hpp
   include/EffusionCell.hpp

@@ -6,10 +6,12 @@ HeaterBank::HeaterBank(double maxDraw)
 : Subsystem("HeaterBank"), maxDraw_(maxDraw) {}
 
 void HeaterBank::setPowerBus(PowerBus* bus) { bus_ = bus; }
+
 void HeaterBank::setDemand(double watts) {
     std::lock_guard<std::mutex> lock(demandMtx_);
     demand_ = watts;
 }
+
 void HeaterBank::setEffusionCell(EffusionCell* eff) { effusion_ = eff; }
 
 void HeaterBank::initialize() {
@@ -19,23 +21,29 @@ void HeaterBank::initialize() {
 void HeaterBank::tick(const TickContext& ctx) {
     if (!bus_) return;
 
-    double requested;
+    double requested_w;
     {
         std::lock_guard<std::mutex> lock(demandMtx_);
-        requested = std::min(demand_, maxDraw_);
+        requested_w = std::min(demand_, maxDraw_);
     }
 
-    double granted = bus_->drawPower(requested, ctx);
-    lastConsumed_ = granted;
+    double received_w = bus_->drawPower(requested_w, ctx);
+    lastConsumed_ = received_w;
 
     if (effusion_) {
-        effusion_->applyHeat(granted, ctx.dt); // pass power (W)
+        // Pass the *actual* received power to the effusion cell
+        effusion_->applyHeat(received_w, ctx.dt);
     }
 
     // One wide row per tick with a fixed schema
-    Logger::instance().log_wide(name_, ctx.tick_index, ctx.time,
-        {"requested","granted"},
-        {requested, granted});
+    // Columns renamed for clarity: requested_w, received_w (both in watts)
+    Logger::instance().log_wide(
+        name_,
+        ctx.tick_index,
+        ctx.time,
+        {"requested_w", "received_w"},
+        {requested_w,   received_w}
+    );
 }
 
 void HeaterBank::shutdown() {

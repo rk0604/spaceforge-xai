@@ -1,6 +1,7 @@
 # --- LEO wake + pencil-beam MBE orifice: four-probe CSV (harness-driven) ---
 # CSV columns (from fix out title):
-#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s,mbe_active
+#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,
+#   cup_scale_frac,cup_emit_real_per_s,Fwafer_log_cm2s,mbe_active
 
 units              si
 seed               12345
@@ -8,7 +9,7 @@ dimension          3
 boundary           o o o
 timestep           1.0e-5
 
-# Bring in harness-driven variables: Fwafer_cm2s, mbe_active, (optionally others)
+# Bring in harness-driven variables: Fwafer_cm2s, mbe_active, CUP_BASE_SCALE
 include params.inc
 
 # ------------------------------------------------------------------
@@ -133,6 +134,9 @@ variable           Fwafer_m2s    equal ${Fwafer_cm2s}*1.0e4
 variable           Qmbe_m2s      equal ${Fwafer_m2s}*${pi}*${d_orif_wafer}*${d_orif_wafer}/${A_orif}
 variable           nrho_mbe      equal 4.0*${Qmbe_m2s}/${cbar_beam}
 
+# Log-friendly "effective" wafer flux in cm^-2 s^-1 (0 when mbe_active=0)
+variable           Fwafer_log_cm2s equal ${Fwafer_cm2s}*${mbe_active}
+
 mixture            mixMBE O temp ${Tbeam} nrho ${nrho_mbe}
 fix                mbe_emit emit/surf mixMBE mbeNozzleGrp normal yes
 print "diag: MBE orifice @x=${x_orif} m, D=${D_orif} m, A=${A_orif} m^2" screen yes
@@ -212,8 +216,8 @@ fix                avgCupEmit  ave/time 1 ${block} ${block} f_cup_emit[1]
 variable           CUP_EMIT_macro_per_step equal f_avgCupEmit
 variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNUM}/dt
 
-# External coupling knob: cup_scale (default 1.0; C++ can override later if desired)
-variable           cup_scale equal 1.0
+# External coupling knob: cup_scale comes directly from C++ (CUP_BASE_SCALE)
+variable           cup_scale equal ${CUP_BASE_SCALE}
 
 # NOTE: mbe_active is supplied by params.inc (from the C++ harness)
 
@@ -223,7 +227,7 @@ variable           cup_scale equal 1.0
 # Using ONLY 'append' avoids truncating the CSV when the deck is reloaded
 # between jobs.
 # ------------------------------------------------------------------
-fix out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
+fix out print ${block}  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
 
 # ------------------------------------------------------------------
 # Keep stats every block; ACTUAL stepping is driven by C++ harness,

@@ -8,15 +8,15 @@ Build (from repo root):
   cmake --build . -j
 
 Run (from build/, headless):
-  env -u DISPLAY mpirun -np 4 ./Sim/sim                             # uses run.sh defaults
-  env -u DISPLAY mpirun -np 4 ./Sim/sim --mode legacy               # original single-instance
-  env -u DISPLAY mpirun -np 4 ./Sim/sim --mode wake                 # wake-only (no effusion ranks)
-  env -u DISPLAY mpirun -np 4 ./Sim/sim --mode dual                 # alias of wake (no effusion)
+  env -u DISPLAY mpirun -np 4 ./Sim/sim                             // uses run.sh defaults
+  env -u DISPLAY mpirun -np 4 ./Sim/sim --mode legacy               // original single-instance
+  env -u DISPLAY mpirun -np 4 ./Sim/sim --mode wake                 // wake-only (no effusion ranks)
+  env -u DISPLAY mpirun -np 4 ./Sim/sim --mode dual                 // alias of wake (no effusion)
   env -u DISPLAY mpirun -np 4 ./Sim/sim --mode wake \
     --wake-deck in.wake_harness --input-subdir input \
     --couple-every 10 --sparta-block 200
 
-  # C++ harness only, no SPARTA; rank 0 logs to Sim/sim_debug_*.log
+  // C++ harness only, no SPARTA; rank 0 logs to Sim/sim_debug_*.log
   env -u DISPLAY mpirun -np 4 ./Sim/sim --mode power --nticks 500 --dt 0.1
 */
 
@@ -39,6 +39,8 @@ Run (from build/, headless):
 #include "HeaterBank.hpp"
 #include "WakeChamber.hpp"
 #include "EffusionCell.hpp"
+#include "orbit.hpp"   // simple circular orbit model
+#include "Logger.hpp"  // for Orbit.csv logging
 
 // ---------------------------
 // Tiny CLI helpers (no deps)
@@ -55,7 +57,7 @@ struct Args {
 
   // make tick size and run length configurable
   int    nticks        = 500;        // engine ticks to run
-  double dt            = 60;        // seconds per engine tick now 60 from 0.1
+  double dt            = 60;         // seconds per engine tick now 60 from 0.1
 };
 
 static bool arg_eq(const char* a, const char* b) { return std::strcmp(a,b) == 0; }
@@ -103,8 +105,37 @@ struct Job {
   int    start_tick = 0;      // inclusive
   int    end_tick   = -1;     // inclusive
   double Fwafer_cm2s = 0.0;   // effusion flux to send to SPARTA
-  double heater_W    = 0.0;   // heater demand in watts
+  double heater_W    = 0.0;   // (legacy) heater demand in watts
 };
+
+// Map desired wafer flux to an approximate heater power demand.
+// This is a placeholder calibration: tune F_low/F_high and P_low/P_high later.
+static double fluxToHeaterPower(double Fwafer_cm2s) {
+  // No beam then no heater
+  if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
+    return 0.0;
+  }
+
+  const double F_low  = 5.0e13;   // lower design flux
+  const double F_high = 1.0e14;   // upper design flux
+
+  const double P_low  = 120.0;    // heater power at F_low
+  const double P_high = 180.0;    // heater power at F_high
+
+  // Clamp flux into [F_low, F_high] for interpolation
+  double F = Fwafer_cm2s;
+  if (F < F_low)  F = F_low;
+  if (F > F_high) F = F_high;
+
+  double scale = (F - F_low) / (F_high - F_low);  // in [0,1]
+  double P = P_low + scale * (P_high - P_low);
+
+  // Safety clamp (HeaterBank max is 200 W in your ctor)
+  if (P < 0.0)   P = 0.0;
+  if (P > 200.0) P = 200.0;
+
+  return P;
+}
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
@@ -214,7 +245,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs.txt";
+        const std::string jobsPath = args.inputDir + "/jobs2.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -247,7 +278,7 @@ int main(int argc, char** argv) {
           for (std::size_t i = 0; i < jobs.size(); ++i) {
             const Job& j = jobs[i];
             oss << "  [job " << i
-                << "] ticks " << j.start_tick << "–" << j.end_tick
+                << "] ticks " << j.start_tick << "-" << j.end_tick
                 << ", Fwafer=" << j.Fwafer_cm2s
                 << " cm^-2 s^-1, heater=" << j.heater_W << " W\n";
           }
@@ -263,18 +294,23 @@ int main(int argc, char** argv) {
 
     // --------------------------------------------------------------------
     // Lambda to write params.inc (leader only) and sync ranks.
-    // Writes BOTH Fwafer_cm2s and mbe_active so SPARTA deck always sees both.
+    // Writes Fwafer_cm2s, mbe_active, and CUP_BASE_SCALE so SPARTA sees all.
     // Also clamps Fwafer_cm2s to a positive floor to avoid zero-density errors.
     // --------------------------------------------------------------------
     const double FWAFFER_FLOOR_CM2S = 1.0e8; // small but positive so mixture is legal
 
-    auto write_params_inc = [&](double Fwafer_cm2s, double mbe_active) {
+    auto write_params_inc = [&](double Fwafer_cm2s,
+                                double mbe_active,
+                                double cupola_scale) {
       // Clamp flux to positive floor
       if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
         Fwafer_cm2s = FWAFFER_FLOOR_CM2S;
       }
       if (!std::isfinite(mbe_active)) {
         mbe_active = 0.0;
+      }
+      if (!std::isfinite(cupola_scale)) {
+        cupola_scale = 1.0; // neutral scale if something goes weird
       }
 
       if (rank == 0) {
@@ -286,13 +322,15 @@ int main(int argc, char** argv) {
           log_msg(oss.str());
           throw std::runtime_error("Failed to write params.inc");
         }
-        out << "variable Fwafer_cm2s equal " << Fwafer_cm2s << "\n";
-        out << "variable mbe_active  equal " << mbe_active  << "\n";
+        out << "variable Fwafer_cm2s  equal " << Fwafer_cm2s  << "\n";
+        out << "variable mbe_active   equal " << mbe_active   << "\n";
+        out << "variable CUP_BASE_SCALE equal " << cupola_scale << "\n";
         out.close();
 
         std::ostringstream oss;
         oss << "[params] Wrote params.inc: Fwafer_cm2s=" << Fwafer_cm2s
-            << ", mbe_active=" << mbe_active << "\n";
+            << ", mbe_active=" << mbe_active
+            << ", CUP_BASE_SCALE=" << cupola_scale << "\n";
         log_msg(oss.str());
       }
 
@@ -388,11 +426,14 @@ int main(int argc, char** argv) {
           initial_Fwafer = FWAFFER_FLOOR_CM2S;
         }
       }
+      // Use neutral cupola scale = 1.0 for initial deck load.
+      double initial_cupola_scale = 1.0;
+
       // Broadcast initial flux to all ranks so they agree
       MPI_Bcast(&initial_Fwafer, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
       // Beam off initially (mbe_active = 0), but flux positive so mixture is legal
-      write_params_inc(initial_Fwafer, 0.0);
+      write_params_inc(initial_Fwafer, 0.0, initial_cupola_scale);
 
       if (rank == 0) {
         log_msg("[info] Constructing WakeChamber and calling wake.init(...)\n");
@@ -407,37 +448,89 @@ int main(int argc, char** argv) {
       MPI_Comm_rank(MPI_COMM_WORLD, &worldrank);
       const bool isLeader = (worldrank == 0);
 
+      // ---------------- Orbit model (leader drives logging + cupola scale) --
+      // Simple circular LEO at 300 km altitude, time step = dt (engine tick).
+      OrbitModel orbit(/*altitude_m=*/300e3,
+                       /*dt_s=*/dt,
+                       /*inclination_rad=*/0.0,
+                       /*sun_theta_rad=*/0.0);
+
+      if (isLeader) {
+        std::ostringstream oss;
+        oss << "[orbit] altitude_m=300000, period_s=" << orbit.period_s()
+            << " (~" << orbit.period_s() / 60.0 << " min)\n";
+        log_msg(oss.str());
+      }
+
       // Track which job and parameters are currently active (leader only).
       const Job* currentJob = nullptr;
-      double last_heater_set   = std::numeric_limits<double>::quiet_NaN();
-      double last_Fwafer_sent  = std::numeric_limits<double>::quiet_NaN();
-      double last_mbe_sent     = std::numeric_limits<double>::quiet_NaN();
+      int        currentJobIndex = -1;
+      double     last_heater_set   = std::numeric_limits<double>::quiet_NaN();
+      double     last_Fwafer_sent  = std::numeric_limits<double>::quiet_NaN();
+      double     last_mbe_sent     = std::numeric_limits<double>::quiet_NaN();
+      double     last_cupola_sent  = std::numeric_limits<double>::quiet_NaN();
+
+      // Job health tracking (leader only)
+      std::vector<bool> jobAborted(jobs.size(), false);
+      int   underflux_streak          = 0;
+      const int    UNDERFLUX_LIMIT_TICKS = 5;   // consecutive ticks
+      const double MIN_FLUX_FRACTION     = 0.99;  // require >= 99% of requested power
 
       const int NTICKS = args.nticks;
+      constexpr double PI_MAIN = 3.141592653589793;
+
       for (int i = 0; i < NTICKS; ++i) {
         const int tickIndex = i + 1;
         const double t_phys = tickIndex * dt;
 
-        // ---------------- leader: job schedule + per-tick harness -----------
+        // ---------------- leader: orbit, job schedule, per-tick harness -----
+        double cupola_scale_this_tick = 1.0;
+
         if (isLeader) {
+          // ---- 0) Orbit update + logging ----
+          orbit.step();
+          const OrbitState &orb = orbit.state();
+
+          double t_min     = orb.t_orbit_s / 60.0;
+          double theta_deg = orb.theta_rad * (180.0 / PI_MAIN);
+          cupola_scale_this_tick = orb.solar_scale; // 0 in eclipse, 1 in sun for now
+
+          // Log via the same Logger as other subsystems: creates Orbit.csv
+          Logger::instance().log_wide(
+              "Orbit",
+              tickIndex,
+              t_phys,
+              {"t_orbit_s","t_orbit_min","theta_rad","theta_deg","in_sun","solar_scale"},
+              {orb.t_orbit_s, t_min, orb.theta_rad, theta_deg,
+               orb.in_sun ? 1.0 : 0.0, orb.solar_scale}
+          );
+
           // ---- 1) Determine active job for this tick (if any) ----
           const Job* newJob = nullptr;
+          int        newJobIndex = -1;
+
           if (!jobs.empty()) {
-            for (const Job& j : jobs) {
+            for (std::size_t idx = 0; idx < jobs.size(); ++idx) {
+              if (jobAborted[idx]) continue;  // skip jobs we have already killed
+              const Job& j = jobs[idx];
               if (tickIndex >= j.start_tick && tickIndex <= j.end_tick) {
-                newJob = &j;
+                newJob      = &j;
+                newJobIndex = static_cast<int>(idx);
                 break;
               }
             }
           }
 
           if (newJob != currentJob) {
+            // Reset underflux streak when entering/leaving a job
+            underflux_streak = 0;
+
             std::ostringstream oss;
             if (newJob) {
               oss << "[job] tick=" << tickIndex
                   << " entering job window ["
                   << newJob->start_tick << ","
-                  << newJob->end_tick << "] "
+                  << newJob->end_tick << "] (index=" << newJobIndex << ") "
                   << "Fwafer_cm2s=" << newJob->Fwafer_cm2s
                   << ", heater_W=" << newJob->heater_W << "\n";
             } else if (currentJob) {
@@ -445,7 +538,9 @@ int main(int argc, char** argv) {
                   << " leaving job window; reverting to baseline (heater=0, beam off).\n";
             }
             log_msg(oss.str());
-            currentJob = newJob;
+
+            currentJob      = newJob;
+            currentJobIndex = newJobIndex;
           }
 
           // ---- 2) Decide heater demand, Fwafer, and mbe_active for this tick ----
@@ -455,11 +550,11 @@ int main(int argc, char** argv) {
 
           if (!jobs.empty()) {
             if (currentJob) {
-              heaterDemand_W = currentJob->heater_W;
               Fwafer_cmd     = currentJob->Fwafer_cm2s;
+              heaterDemand_W = fluxToHeaterPower(Fwafer_cmd);
               mbe_flag       = 1.0;
             } else {
-              // Outside any job window: effusion off, heater 0
+              // Outside any job window or after abort: effusion off, heater 0
               heaterDemand_W = 0.0;
               // We do NOT set Fwafer_cmd to 0.0; that would kill mixture.
               // Instead, keep last flux (or floor) and just set mbe_active = 0.
@@ -481,7 +576,8 @@ int main(int argc, char** argv) {
             mbe_flag = 0.0;
           }
 
-          // ---- 3) Push Fwafer + mbe_active into params.inc when they change ----
+          // ---- 3) Push Fwafer + mbe_active + CUP_BASE_SCALE into params.inc
+          //         when any of them change.
           if (!std::isnan(Fwafer_cmd)) {
             bool need_update = false;
 
@@ -493,19 +589,25 @@ int main(int argc, char** argv) {
                 mbe_flag != last_mbe_sent) {
               need_update = true;
             }
+            if (std::isnan(last_cupola_sent) ||
+                cupola_scale_this_tick != last_cupola_sent) {
+              need_update = true;
+            }
 
             if (need_update) {
               std::ostringstream oss;
               oss << "[job] tick=" << tickIndex
                   << " update params.inc: Fwafer_cm2s=" << Fwafer_cmd
-                  << ", mbe_active=" << mbe_flag << "\n";
+                  << ", mbe_active=" << mbe_flag
+                  << ", CUP_BASE_SCALE=" << cupola_scale_this_tick << "\n";
               log_msg(oss.str());
 
-              write_params_inc(Fwafer_cmd, mbe_flag);
+              write_params_inc(Fwafer_cmd, mbe_flag, cupola_scale_this_tick);
               wake.markDirtyReload();
 
               last_Fwafer_sent = Fwafer_cmd;
               last_mbe_sent    = mbe_flag;
+              last_cupola_sent = cupola_scale_this_tick;
             }
           }
 
@@ -528,17 +630,72 @@ int main(int argc, char** argv) {
               << " s : BEFORE engine.tick() + wake.tick()\n";
           log_msg(oss.str());
 
+          // C++ harness first, then SPARTA
           engine.tick();
 
           TickContext ctx{ tickIndex, t_phys, dt };
-          wake.tick(ctx);
+          wake.tick(ctx); 
 
           std::ostringstream oss2;
           oss2 << "[wake] tick=" << tickIndex
                << " t=" << t_phys
                << " s : AFTER engine.tick() + wake.tick()\n";
           log_msg(oss2.str());
-        }
+
+          // ---- 6) After ticking, evaluate job health (under-flux guard) ----
+          if (currentJob && heaterDemand_W > 1e-6) {
+            double P_actual = effCell.getLastHeatInputW();
+            double flux_ratio = 1.0;
+
+            if (heaterDemand_W > 0.0) {
+              flux_ratio = P_actual / heaterDemand_W;
+            }
+            if (!std::isfinite(flux_ratio)) {
+              flux_ratio = 0.0;
+            }
+
+            if (flux_ratio < MIN_FLUX_FRACTION) {
+              underflux_streak += 1;
+            } else {
+              underflux_streak = 0;
+            }
+
+            if (underflux_streak >= UNDERFLUX_LIMIT_TICKS &&
+                currentJobIndex >= 0 &&
+                currentJobIndex < static_cast<int>(jobAborted.size()) &&
+                !jobAborted[currentJobIndex]) {
+
+              jobAborted[currentJobIndex] = true;
+
+              std::ostringstream joss;
+              joss << "[job] tick=" << tickIndex
+                   << " ABORTING job index " << currentJobIndex
+                   << " due to under-flux for " << underflux_streak
+                   << " consecutive ticks (flux_ratio=" << flux_ratio << ")\n";
+              log_msg(joss.str());
+
+              // Mark failure for SimulationEngine.csv on this tick
+              engine.markJobFailedThisTick();
+
+              // Immediately tell SPARTA the beam is off.
+              double F_for_abort = last_Fwafer_sent;
+              if (!std::isfinite(F_for_abort) || F_for_abort <= 0.0) {
+                F_for_abort = FWAFFER_FLOOR_CM2S;
+              }
+              write_params_inc(F_for_abort, 0.0, cupola_scale_this_tick);
+              wake.markDirtyReload();
+              last_Fwafer_sent = F_for_abort;
+              last_mbe_sent    = 0.0;
+              last_cupola_sent = cupola_scale_this_tick;
+
+              // Reset job state so next tick we fall into "no job" path
+              currentJob       = nullptr;
+              currentJobIndex  = -1;
+              underflux_streak = 0;
+              last_heater_set  = std::numeric_limits<double>::quiet_NaN();
+            }
+          }
+        } // end if (isLeader)
 
         // ---------------- SPARTA coupling block ----------------
         if (i % args.coupleEvery == 0) {

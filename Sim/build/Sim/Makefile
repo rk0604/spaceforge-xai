@@ -459,6 +459,30 @@ src/main.cpp.s:
 	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/sim.dir/build.make Sim/CMakeFiles/sim.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
+src/orbit.o: src/orbit.cpp.o
+.PHONY : src/orbit.o
+
+# target to build an object file
+src/orbit.cpp.o:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/orbit.cpp.o
+.PHONY : src/orbit.cpp.o
+
+src/orbit.i: src/orbit.cpp.i
+.PHONY : src/orbit.i
+
+# target to preprocess a source file
+src/orbit.cpp.i:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/orbit.cpp.i
+.PHONY : src/orbit.cpp.i
+
+src/orbit.s: src/orbit.cpp.s
+.PHONY : src/orbit.s
+
+# target to generate assembly for a file
+src/orbit.cpp.s:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/orbit.cpp.s
+.PHONY : src/orbit.cpp.s
+
 # Help Target
 help:
 	@echo "The following are some of the valid targets for this Makefile:"
@@ -508,6 +532,9 @@ help:
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"
+	@echo "... src/orbit.o"
+	@echo "... src/orbit.i"
+	@echo "... src/orbit.s"
 .PHONY : help
 
 

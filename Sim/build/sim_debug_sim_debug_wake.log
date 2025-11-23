@@ -1,0 +1,40 @@
+============================================================
+New run started (mode=wake, RUN_ID=sim_debug, world_size=1)
+============================================================
+[info] MPI world size = 1
+[info] Args: mode=wake wakeDeck=in.wake_harness effDeck=in.effusion inputDir=/common/home/rvk22/spaceforge-xai/input nWake=-1 nticks=75 dt=60 coupleEvery=1 spartaBlock=2500
+[info] Env: RUN_ID=sim_debug
+[info] Env: ENABLE_SPARTA=ON
+[info] Env: MODE=wake
+[info] Env: INPUT_SUBDIR=<unset>
+[info] Loaded 4 job(s) from /common/home/rvk22/spaceforge-xai/input/jobs2.txt
+  [job 0] ticks 2-18, Fwafer=1e+14 cm^-2 s^-1, heater=150 W
+  [job 1] ticks 25-35, Fwafer=7.5e+13 cm^-2 s^-1, heater=150 W
+  [job 2] ticks 40-65, Fwafer=1e+14 cm^-2 s^-1, heater=150 W
+  [job 3] ticks 70-75, Fwafer=5e+13 cm^-2 s^-1, heater=150 W
+[info] Simulation starting on 1 MPI task(s)
+[info] Mode = wake
+[info] nticks = 75
+[info] dt = 60 s
+[info] couple-every = 1
+[info] sparta-block = 2500
+[params] Wrote params.inc: Fwafer_cm2s=1e+14, mbe_active=0, CUP_BASE_SCALE=1
+[info] Constructing WakeChamber and calling wake.init(...)
+[info] wake.init() returned; entering main wake loop.
+[orbit] altitude_m=300000, period_s=5422.47 (~90.3745 min)
+[job] tick=1 update params.inc: Fwafer_cm2s=1e+08, mbe_active=0, CUP_BASE_SCALE=0.997584
+[params] Wrote params.inc: Fwafer_cm2s=1e+08, mbe_active=0, CUP_BASE_SCALE=0.997584
+[job] tick=1 set heater demand=0 W
+[wake] tick=1 t=60 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=1 t=60 s : AFTER engine.tick() + wake.tick()
+[job] tick=2 entering job window [2,18] (index=0) Fwafer_cm2s=1e+14, heater_W=150
+[job] tick=2 update params.inc: Fwafer_cm2s=1e+14, mbe_active=1, CUP_BASE_SCALE=0.990348
+[params] Wrote params.inc: Fwafer_cm2s=1e+14, mbe_active=1, CUP_BASE_SCALE=0.990348
+[job] tick=2 set heater demand=180 W
+[wake] tick=2 t=120 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=2 t=120 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=2 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=2 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=3 t=180 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=3 t=180 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=3 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)

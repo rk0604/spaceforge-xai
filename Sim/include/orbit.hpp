@@ -78,6 +78,11 @@ public:
     // Access the current orbit state (read only).
     const OrbitState &state() const { return state_; }
 
+    // Convenience helpers for schedulers / env models
+    double orbit_time_s() const { return state_.t_orbit_s; }
+    double orbit_phase_rad() const { return state_.theta_rad; }
+    double orbit_phase_01() const { return state_.theta_rad / (2.0 * 3.141592653589793); }
+
     // Get the current semi major axis (meters).
     double semi_major_axis_m() const { return a_m_; }
 
@@ -113,10 +118,10 @@ private:
     double mu_m3_s2_;  // Earth gravitational parameter mu (m^3 / s^2)
 
     // Orbit parameters
-    double altitude_m_;     // altitude above Re_m_ (meters)
-    double a_m_;            // semi major axis (meters)
-    double n_rad_s_;        // mean motion (radians per second)
-    double period_s_;       // orbital period (seconds)
+    double altitude_m_;      // altitude above Re_m_ (meters)
+    double a_m_;             // semi major axis (meters)
+    double n_rad_s_;         // mean motion (radians per second)
+    double period_s_;        // orbital period (seconds)
     double inclination_rad_; // inclination (radians)
 
     // Time step used per call to step()

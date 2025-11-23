@@ -1,6 +1,0 @@
-tick,time_s,key,value
-2,0,WakeChamber.param.Fwafer_cm2s,0
-5,0,WakeChamber.param.Fwafer_cm2s,1e+14
-8,0,WakeChamber.param.Fwafer_cm2s,0
-10,0,WakeChamber.param.Fwafer_cm2s,5e+13
-13,0,WakeChamber.param.Fwafer_cm2s,0
