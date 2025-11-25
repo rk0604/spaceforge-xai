@@ -459,6 +459,30 @@ src/WakeChamber.cpp.s:
 	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/WakeChamber.cpp.s
 .PHONY : src/WakeChamber.cpp.s
 
+src/helpers.o: src/helpers.cpp.o
+.PHONY : src/helpers.o
+
+# target to build an object file
+src/helpers.cpp.o:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/helpers.cpp.o
+.PHONY : src/helpers.cpp.o
+
+src/helpers.i: src/helpers.cpp.i
+.PHONY : src/helpers.i
+
+# target to preprocess a source file
+src/helpers.cpp.i:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/helpers.cpp.i
+.PHONY : src/helpers.cpp.i
+
+src/helpers.s: src/helpers.cpp.s
+.PHONY : src/helpers.s
+
+# target to generate assembly for a file
+src/helpers.cpp.s:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/helpers.cpp.s
+.PHONY : src/helpers.cpp.s
+
 src/main.o: src/main.cpp.o
 .PHONY : src/main.o
 
@@ -556,6 +580,9 @@ help:
 	@echo "... src/WakeChamber.o"
 	@echo "... src/WakeChamber.i"
 	@echo "... src/WakeChamber.s"
+	@echo "... src/helpers.o"
+	@echo "... src/helpers.i"
+	@echo "... src/helpers.s"
 	@echo "... src/main.o"
 	@echo "... src/main.i"
 	@echo "... src/main.s"

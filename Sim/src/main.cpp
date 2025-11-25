@@ -22,7 +22,6 @@ Run (from build/, headless):
 
 #include <mpi.h>
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <string>
@@ -42,106 +41,22 @@ Run (from build/, headless):
 #include "orbit.hpp"         // simple circular orbit model
 #include "Logger.hpp"        // for Orbit.csv logging
 #include "GrowthMonitor.hpp" // wafer dose / heatmap tracker
+#include "helpers.hpp"       // new helpers split from main
+
+// Bring helper types/functions into local scope
+using SimHelpers::Args;
+using SimHelpers::Job;
+using SimHelpers::parse_args;
+using SimHelpers::print_usage;
+using SimHelpers::fluxToHeaterPower;
+using SimHelpers::write_params_inc;
+using SimHelpers::FWAFFER_FLOOR_CM2S;
+using SimHelpers::LogFn;
 
 // Global sunlight scale shared with SolarArray.cpp.
 // In wake/dual/legacy mode this is updated each tick from OrbitModel.
 // In power mode (no orbit), it stays at 1.0 (always sunlit).
 double g_orbit_solar_scale = 1.0;
-
-// ---------------------------
-// Tiny CLI helpers (no deps)
-// ---------------------------
-struct Args {
-  std::string mode     = "dual";     // "dual", "legacy", "wake", or "power"
-  std::string wakeDeck = "in.wake_harness";
-  std::string effDeck  = "in.effusion"; // kept for compatibility, but unused now
-  std::string inputDir = "input";
-  int  nWake           = -1;         // unused now (no dual effusion), kept for compat
-  int  coupleEvery     = 10;         // advance SPARTA every X engine ticks
-  int  spartaBlock     = 200;        // run N steps per advance
-  bool showHelp        = false;
-
-  // make tick size and run length configurable
-  int    nticks        = 500;        // engine ticks to run
-  double dt            = 60;         // seconds per engine tick now 60 from 0.1
-};
-
-static bool arg_eq(const char* a, const char* b) { return std::strcmp(a,b) == 0; }
-
-static Args parse_args(int argc, char** argv) {
-  Args a;
-  for (int i = 1; i < argc; ++i) {
-    if (arg_eq(argv[i], "--mode") && i+1 < argc)              a.mode = argv[++i];
-    else if (arg_eq(argv[i], "--wake-deck") && i+1 < argc)    a.wakeDeck = argv[++i];
-    else if (arg_eq(argv[i], "--eff-deck") && i+1 < argc)     a.effDeck  = argv[++i];  // ignored now
-    else if (arg_eq(argv[i], "--input-subdir") && i+1 < argc) a.inputDir = argv[++i];
-    else if (arg_eq(argv[i], "--split") && i+1 < argc)        a.nWake = std::atoi(argv[++i]); // ignored
-    else if (arg_eq(argv[i], "--couple-every") && i+1 < argc) a.coupleEvery = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--sparta-block") && i+1 < argc) a.spartaBlock = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--nticks") && i+1 < argc)       a.nticks = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--dt") && i+1 < argc)           a.dt = std::atof(argv[++i]);
-    else if (arg_eq(argv[i], "--help"))                       a.showHelp = true;
-  }
-  return a;
-}
-
-static void print_usage() {
-  std::cout <<
-    "Usage: sim [--mode dual|legacy|wake|power]\n"
-    "           [--wake-deck in.wake_harness]\n"
-    "           [--input-subdir input]\n"
-    "           [--couple-every T] [--sparta-block N]\n"
-    "           [--nticks N] [--dt seconds]\n"
-    "\n"
-    "Modes:\n"
-    "  legacy  - single SPARTA instance on MPI_COMM_WORLD (wake only)\n"
-    "  wake    - wake-only with in.wake_harness, no effusion ranks\n"
-    "  dual    - alias of wake (same as wake, no separate effusion deck)\n"
-    "  power   - C++ power/thermal harness only (no SPARTA)\n"
-    "\n"
-    "Default 'dual' is currently an alias of 'wake'; both run a single wake\n"
-    "deck across MPI_COMM_WORLD. Coupling advances SPARTA by N steps every\n"
-    "T engine ticks.\n";
-}
-
-// ---------------------------
-// Job schedule for effusion
-// ---------------------------
-struct Job {
-  int    start_tick = 0;      // inclusive
-  int    end_tick   = -1;     // inclusive
-  double Fwafer_cm2s = 0.0;   // effusion flux to send to SPARTA
-  double heater_W    = 0.0;   // (legacy) heater demand in watts
-};
-
-// Map desired wafer flux to an approximate heater power demand.
-// This is a placeholder calibration: tune F_low/F_high and P_low/P_high later.
-static double fluxToHeaterPower(double Fwafer_cm2s) {
-  // No beam then no heater
-  if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
-    return 0.0;
-  }
-
-  const double F_low  = 5.0e13;   // lower design flux
-  const double F_high = 1.0e14;   // upper design flux
-
-  const double P_low  = 120.0;    // heater power at F_low
-  const double P_high = 180.0;    // heater power at F_high
-
-  // Clamp flux into [F_low, F_high] for interpolation
-  double F = Fwafer_cm2s;
-  if (F < F_low)  F = F_low;
-  if (F > F_high) F = F_high;
-
-  double scale = (F - F_low) / (F_high - F_low);  // in [0,1]
-  double P = P_low + scale * (P_high - P_low);
-
-  // Safety clamp (HeaterBank max is 200 W in your ctor)
-  if (P < 0.0)   P = 0.0;
-  if (P > 200.0) P = 200.0;
-
-  return P;
-}
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
@@ -157,7 +72,7 @@ int main(int argc, char** argv) {
   // Log file name: sim_debug_<RUN_ID>_<mode>.log (in Sim/).
   // ------------------------------------------------------------------------
   std::ofstream debugLog;
-  auto log_msg = [&](const std::string& s) {
+  LogFn log_msg = [&](const std::string& s) {
     if (rank == 0) {
       std::cerr << s;
       if (debugLog.is_open()) {
@@ -251,7 +166,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs.txt";
+        const std::string jobsPath = args.inputDir + "/jobs2.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -287,8 +202,8 @@ int main(int argc, char** argv) {
                 << "] ticks " << j.start_tick << "-" << j.end_tick
                 << ", Fwafer=" << j.Fwafer_cm2s
                 << " cm^-2 s^-1, heater=" << j.heater_W << " W\n";
+            log_msg(oss.str());
           }
-          log_msg(oss.str());
         }
       }
     }
@@ -299,52 +214,12 @@ int main(int argc, char** argv) {
     MPI_Bcast(&njobs, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
     // --------------------------------------------------------------------
-    // Lambda to write params.inc (leader only) and sync ranks.
-    // Writes Fwafer_cm2s and mbe_active so SPARTA sees both.
-    // Also clamps Fwafer_cm2s to a positive floor to avoid zero-density errors.
-    // --------------------------------------------------------------------
-    const double FWAFFER_FLOOR_CM2S = 1.0e8; // small but positive so mixture is legal
-
-    auto write_params_inc = [&](double Fwafer_cm2s,
-                                double mbe_active) {
-      // Clamp flux to positive floor
-      if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
-        Fwafer_cm2s = FWAFFER_FLOOR_CM2S;
-      }
-      if (!std::isfinite(mbe_active)) {
-        mbe_active = 0.0;
-      }
-
-      if (rank == 0) {
-        std::string path = args.inputDir + "/params.inc";
-        std::ofstream out(path);
-        if (!out) {
-          std::ostringstream oss;
-          oss << "[fatal] Cannot open " << path << " for writing.\n";
-          log_msg(oss.str());
-          throw std::runtime_error("Failed to write params.inc");
-        }
-        out << "variable Fwafer_cm2s  equal " << Fwafer_cm2s  << "\n";
-        out << "variable mbe_active   equal " << mbe_active   << "\n";
-        out.close();
-
-        std::ostringstream oss;
-        oss << "[params] Wrote params.inc: Fwafer_cm2s=" << Fwafer_cm2s
-            << ", mbe_active=" << mbe_active << "\n";
-        log_msg(oss.str());
-      }
-
-      // Make sure all ranks wait until file is written
-      MPI_Barrier(MPI_COMM_WORLD);
-    };
-
-    // --------------------------------------------------------------------
     // Electrical/power subsystems (independent of SPARTA)
     // --------------------------------------------------------------------
     PowerBus      bus;
     SolarArray    solar;
     Battery       battery;
-    HeaterBank    heater(/*maxPowerW=*/200.0);
+    HeaterBank    heater(/*maxDraw=*/200.0);
     EffusionCell  effCell;
     GrowthMonitor growth(/*gridN=*/32);
 
@@ -446,7 +321,7 @@ int main(int argc, char** argv) {
       MPI_Bcast(&initial_Fwafer, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
       // Beam off initially (mbe_active = 0), but flux positive so mixture is legal
-      write_params_inc(initial_Fwafer, 0.0);
+      write_params_inc(initial_Fwafer, 0.0, rank, args.inputDir, log_msg);
 
       if (rank == 0) {
         log_msg("[info] Constructing WakeChamber and calling wake.init(...)\n");
@@ -594,8 +469,7 @@ int main(int argc, char** argv) {
                               mbe_flag > 0.5,
                               Fwafer_cmd);
 
-          // ---- 3) Push Fwafer + mbe_active into params.inc
-          //         when either of them changes.
+          // ---- 3) Push Fwafer + mbe_active into params.inc when needed ----
           if (!std::isnan(Fwafer_cmd)) {
             bool need_update = false;
 
@@ -615,7 +489,7 @@ int main(int argc, char** argv) {
                   << ", mbe_active=" << mbe_flag << "\n";
               log_msg(oss.str());
 
-              write_params_inc(Fwafer_cmd, mbe_flag);
+              write_params_inc(Fwafer_cmd, mbe_flag, rank, args.inputDir, log_msg);
               wake.markDirtyReload();
 
               last_Fwafer_sent = Fwafer_cmd;
@@ -666,13 +540,13 @@ int main(int argc, char** argv) {
               flux_ratio = 0.0;
             }
 
-            if (flux_ratio < MIN_FLUX_FRACTION) {
+            if (flux_ratio < 0.99) {
               underflux_streak += 1;
             } else {
               underflux_streak = 0;
             }
 
-            if (underflux_streak >= UNDERFLUX_LIMIT_TICKS &&
+            if (underflux_streak >= 5 &&
                 currentJobIndex >= 0 &&
                 currentJobIndex < static_cast<int>(jobAborted.size()) &&
                 !jobAborted[currentJobIndex]) {
@@ -698,7 +572,7 @@ int main(int argc, char** argv) {
               if (!std::isfinite(F_for_abort) || F_for_abort <= 0.0) {
                 F_for_abort = FWAFFER_FLOOR_CM2S;
               }
-              write_params_inc(F_for_abort, 0.0);
+              write_params_inc(F_for_abort, 0.0, rank, args.inputDir, log_msg);
               wake.markDirtyReload();
               last_Fwafer_sent = F_for_abort;
               last_mbe_sent    = 0.0;

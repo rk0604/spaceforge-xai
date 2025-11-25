@@ -22,6 +22,7 @@ set(SIMCORE_SOURCES
   src/SpartaDiag.cpp
   src/orbit.cpp
   src/GrowthMonitor.cpp
+  src/helpers.cpp
   # Add HeaterBank implementation:
   src/HeaterBank.cpp
 )
@@ -40,6 +41,7 @@ set(SIMCORE_HEADERS
   include/WakeChamber.hpp
   include/DepositionMap.hpp
   include/SpartaDiag.hpp
+  include/helpers.hpp
   include/SpartaBridge.hpp
   # Add HeaterBank header:
   include/HeaterBank.hpp

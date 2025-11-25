@@ -25,6 +25,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o.d"
   "CMakeFiles/simcore.dir/src/WakeChamber.cpp.o"
   "CMakeFiles/simcore.dir/src/WakeChamber.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/helpers.cpp.o"
+  "CMakeFiles/simcore.dir/src/helpers.cpp.o.d"
   "CMakeFiles/simcore.dir/src/orbit.cpp.o"
   "CMakeFiles/simcore.dir/src/orbit.cpp.o.d"
   "libsimcore.a"
