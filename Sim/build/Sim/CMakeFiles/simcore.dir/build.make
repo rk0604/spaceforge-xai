@@ -226,10 +226,24 @@ Sim/CMakeFiles/simcore.dir/src/orbit.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/simcore.dir/src/orbit.cpp.s"
 	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && /usr/bin/mpicxx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /common/home/rvk22/spaceforge-xai/Sim/src/orbit.cpp -o CMakeFiles/simcore.dir/src/orbit.cpp.s
 
+Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o: Sim/CMakeFiles/simcore.dir/flags.make
+Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o: /common/home/rvk22/spaceforge-xai/Sim/src/GrowthMonitor.cpp
+Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o: Sim/CMakeFiles/simcore.dir/compiler_depend.ts
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o"
+	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && /usr/bin/mpicxx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o -MF CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o.d -o CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/GrowthMonitor.cpp
+
+Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.i"
+	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && /usr/bin/mpicxx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /common/home/rvk22/spaceforge-xai/Sim/src/GrowthMonitor.cpp > CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.i
+
+Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.s"
+	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && /usr/bin/mpicxx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /common/home/rvk22/spaceforge-xai/Sim/src/GrowthMonitor.cpp -o CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.s
+
 Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o: Sim/CMakeFiles/simcore.dir/flags.make
 Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o: /common/home/rvk22/spaceforge-xai/Sim/src/HeaterBank.cpp
 Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o: Sim/CMakeFiles/simcore.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_12) "Building CXX object Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o"
 	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && /usr/bin/mpicxx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o -MF CMakeFiles/simcore.dir/src/HeaterBank.cpp.o.d -o CMakeFiles/simcore.dir/src/HeaterBank.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/HeaterBank.cpp
 
 Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.i: cmake_force
@@ -243,7 +257,7 @@ Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.s: cmake_force
 Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o: Sim/CMakeFiles/simcore.dir/flags.make
 Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o: /common/home/rvk22/spaceforge-xai/Sim/src/SpartaBridge.cpp
 Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o: Sim/CMakeFiles/simcore.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o"
 	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && /usr/bin/mpicxx $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o -MF CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o.d -o CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/SpartaBridge.cpp
 
 Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.i: cmake_force
@@ -267,6 +281,7 @@ simcore_OBJECTS = \
 "CMakeFiles/simcore.dir/src/DepositionMap.cpp.o" \
 "CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o" \
 "CMakeFiles/simcore.dir/src/orbit.cpp.o" \
+"CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o" \
 "CMakeFiles/simcore.dir/src/HeaterBank.cpp.o" \
 "CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o"
 
@@ -284,11 +299,12 @@ Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/WakeChamber.cpp.o
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/DepositionMap.cpp.o
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/orbit.cpp.o
+Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/build.make
 Sim/libsimcore.a: Sim/CMakeFiles/simcore.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Linking CXX static library libsimcore.a"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/common/home/rvk22/spaceforge-xai/Sim/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Linking CXX static library libsimcore.a"
 	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && $(CMAKE_COMMAND) -P CMakeFiles/simcore.dir/cmake_clean_target.cmake
 	cd /common/home/rvk22/spaceforge-xai/Sim/build/Sim && $(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/simcore.dir/link.txt --verbose=$(VERBOSE)
 

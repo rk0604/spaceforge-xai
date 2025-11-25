@@ -219,6 +219,30 @@ src/EffusionCell.cpp.s:
 	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/EffusionCell.cpp.s
 .PHONY : src/EffusionCell.cpp.s
 
+src/GrowthMonitor.o: src/GrowthMonitor.cpp.o
+.PHONY : src/GrowthMonitor.o
+
+# target to build an object file
+src/GrowthMonitor.cpp.o:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o
+.PHONY : src/GrowthMonitor.cpp.o
+
+src/GrowthMonitor.i: src/GrowthMonitor.cpp.i
+.PHONY : src/GrowthMonitor.i
+
+# target to preprocess a source file
+src/GrowthMonitor.cpp.i:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.i
+.PHONY : src/GrowthMonitor.cpp.i
+
+src/GrowthMonitor.s: src/GrowthMonitor.cpp.s
+.PHONY : src/GrowthMonitor.s
+
+# target to generate assembly for a file
+src/GrowthMonitor.cpp.s:
+	cd /common/home/rvk22/spaceforge-xai/Sim/build && $(MAKE) $(MAKESILENT) -f Sim/CMakeFiles/simcore.dir/build.make Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.s
+.PHONY : src/GrowthMonitor.cpp.s
+
 src/HeaterBank.o: src/HeaterBank.cpp.o
 .PHONY : src/HeaterBank.o
 
@@ -502,6 +526,9 @@ help:
 	@echo "... src/EffusionCell.o"
 	@echo "... src/EffusionCell.i"
 	@echo "... src/EffusionCell.s"
+	@echo "... src/GrowthMonitor.o"
+	@echo "... src/GrowthMonitor.i"
+	@echo "... src/GrowthMonitor.s"
 	@echo "... src/HeaterBank.o"
 	@echo "... src/HeaterBank.i"
 	@echo "... src/HeaterBank.s"

@@ -3,7 +3,9 @@
 #include <cmath>
 
 // Simple local constant for pi so we do not rely on M_PI.
-static constexpr double ORBIT_PI = 3.141592653589793;
+static constexpr double ORBIT_PI       = 3.141592653589793;
+// Forced orbital period: 94 minutes (in seconds).
+static constexpr double ORBIT_PERIOD_S = 94.0 * 60.0;
 
 // Constructor
 OrbitModel::OrbitModel(double altitude_m,
@@ -21,10 +23,10 @@ OrbitModel::OrbitModel(double altitude_m,
       sun_theta_rad_(sun_theta_rad),
       state_()
 {
-    // Semi-major axis = Earth radius + altitude
+    // Semi-major axis = Earth radius + altitude (kept for geometry)
     a_m_ = Re_m_ + altitude_m_;
 
-    // Compute n_rad_s_ and period_s_
+    // Compute n_rad_s_ and period_s_ (will be forced to 94 min).
     update_orbit_parameters();
 
     // Start at t = 0, theta = 0 by default
@@ -69,7 +71,7 @@ void OrbitModel::step()
 void OrbitModel::recompute_state()
 {
     // 1) Position in orbital plane (circular orbit: r = a_m_)
-    double r = a_m_;
+    double r  = a_m_;
     double ct = std::cos(state_.theta_rad);
     double st = std::sin(state_.theta_rad);
 
@@ -103,7 +105,8 @@ void OrbitModel::recompute_state()
     state_.vy_mps = vy_eci;
     state_.vz_mps = vz_eci;
 
-    // 4) Simple sunlight model with a *sinusoidal* scale.
+    // 4) Simple sunlight / eclipse geometry.
+
     // Sun is a unit vector in the reference plane at angle sun_theta_rad_.
     double cs = std::cos(sun_theta_rad_);
     double ss = std::sin(sun_theta_rad_);
@@ -115,24 +118,55 @@ void OrbitModel::recompute_state()
     // Dot product between position vector and sun direction.
     double dot_rs = x_eci * sun_x + y_eci * sun_y + z_eci * sun_z;
 
-    // Cosine of angle between r and sun, clamped into [0, 1].
+    // Cosine of angle between r and sun.
     double rmag = std::sqrt(x_eci * x_eci + y_eci * y_eci + z_eci * z_eci);
     double cos_alpha = 0.0;
     if (rmag > 0.0) {
         cos_alpha = dot_rs / rmag;
     }
 
-    // Half-wave rectified cosine: 0 in eclipse, smooth peak=1 at sub-solar point.
-    double s = cos_alpha;
+    // "In sun" if the sub-solar point is on the same side of Earth as the spacecraft.
+    bool in_sun = (cos_alpha > 0.0);
+    state_.in_sun = in_sun;
+
+    // 5) Time-based sinusoidal solar scale, locked to the 94-min period.
+    //
+    // We define an orbit phase phi in [0, 2*pi) from the elapsed orbit time:
+    //   phi = 2*pi * ( (t mod period) / period )
+    //
+    // Then a simple cosine:
+    //   s_phase = 0.5 * (1 + cos(phi))
+    //
+    // has:
+    //   - s_phase = 1 at t = 0 (start of orbit)
+    //   - s_phase = 0 at half-orbit
+    //   - 94-minute period, same as SPARTA CUP_SCALE if you mirror this formula.
+    //
+    // Finally we gate it by the geometry-based eclipse:
+    //   - if in_sun is false, we force s = 0
+    double s_phase = 0.0;
+    if (period_s_ > 0.0) {
+        double t_mod = std::fmod(state_.t_orbit_s, period_s_);
+        if (t_mod < 0.0) {
+            t_mod += period_s_;
+        }
+        double phi = 2.0 * ORBIT_PI * (t_mod / period_s_);
+        s_phase = 0.5 * (1.0 + std::cos(phi));  // in [0, 1], starts at 1
+    }
+
+    double s = (in_sun ? s_phase : 0.0);
+
+    // Clamp numerically just in case.
     if (s < 0.0) s = 0.0;
     if (s > 1.0) s = 1.0;
 
-    state_.in_sun      = (s > 0.0);
     state_.solar_scale = s;
 
-    // You can later replace this with a more detailed model:
-    //   - add penumbra region for partial eclipse
-    //   - add time-varying sun_theta_rad_ to model precession, etc.
+    // NOTE:
+    //  - state_.in_sun tells you the geometry (eclipse or not).
+    //  - state_.solar_scale is a smooth sinusoid locked to the 94-min period,
+    //    starting at 1 for t=0, and zeroed in eclipse. SPARTA's CUP_SCALE can
+    //    replicate this exactly from (t, period_s_) without needing the full geometry.
 }
 
 // Change the Sun direction angle used for eclipse checks.
@@ -158,16 +192,11 @@ void OrbitModel::set_dt(double dt_s)
 // Internal helper to recompute n_rad_s_ and period_s_ when a_m_ changes.
 void OrbitModel::update_orbit_parameters()
 {
-    // Mean motion for circular orbit:
-    //   n = sqrt(mu / a^3)
-    n_rad_s_ = std::sqrt(mu_m3_s2_ / (a_m_ * a_m_ * a_m_));
+    // If you want the physically implied period from mu and a, this is it:
+    // double n_kepler = std::sqrt(mu_m3_s2_ / (a_m_ * a_m_ * a_m_));
+    // double T_kepler = 2.0 * ORBIT_PI / n_kepler;
 
-    // Physical period from n:
-    period_s_ = 2.0 * ORBIT_PI / n_rad_s_;
-
-    // If you want to force an exact 94-minute period instead of the
-    // physically implied one, uncomment the following two lines:
-    //
-    // period_s_ = 94.0 * 60.0;
-    // n_rad_s_  = 2.0 * ORBIT_PI / period_s_;
+    // For SpaceForgeOS we *force* a 94-minute orbit, independent of altitude.
+    period_s_ = ORBIT_PERIOD_S;
+    n_rad_s_  = 2.0 * ORBIT_PI / period_s_;
 }

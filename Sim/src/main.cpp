@@ -39,8 +39,14 @@ Run (from build/, headless):
 #include "HeaterBank.hpp"
 #include "WakeChamber.hpp"
 #include "EffusionCell.hpp"
-#include "orbit.hpp"   // simple circular orbit model
-#include "Logger.hpp"  // for Orbit.csv logging
+#include "orbit.hpp"         // simple circular orbit model
+#include "Logger.hpp"        // for Orbit.csv logging
+#include "GrowthMonitor.hpp" // wafer dose / heatmap tracker
+
+// Global sunlight scale shared with SolarArray.cpp.
+// In wake/dual/legacy mode this is updated each tick from OrbitModel.
+// In power mode (no orbit), it stays at 1.0 (always sunlit).
+double g_orbit_solar_scale = 1.0;
 
 // ---------------------------
 // Tiny CLI helpers (no deps)
@@ -245,7 +251,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs2.txt";
+        const std::string jobsPath = args.inputDir + "/jobs.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -294,23 +300,19 @@ int main(int argc, char** argv) {
 
     // --------------------------------------------------------------------
     // Lambda to write params.inc (leader only) and sync ranks.
-    // Writes Fwafer_cm2s, mbe_active, and CUP_BASE_SCALE so SPARTA sees all.
+    // Writes Fwafer_cm2s and mbe_active so SPARTA sees both.
     // Also clamps Fwafer_cm2s to a positive floor to avoid zero-density errors.
     // --------------------------------------------------------------------
     const double FWAFFER_FLOOR_CM2S = 1.0e8; // small but positive so mixture is legal
 
     auto write_params_inc = [&](double Fwafer_cm2s,
-                                double mbe_active,
-                                double cupola_scale) {
+                                double mbe_active) {
       // Clamp flux to positive floor
       if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
         Fwafer_cm2s = FWAFFER_FLOOR_CM2S;
       }
       if (!std::isfinite(mbe_active)) {
         mbe_active = 0.0;
-      }
-      if (!std::isfinite(cupola_scale)) {
-        cupola_scale = 1.0; // neutral scale if something goes weird
       }
 
       if (rank == 0) {
@@ -324,13 +326,11 @@ int main(int argc, char** argv) {
         }
         out << "variable Fwafer_cm2s  equal " << Fwafer_cm2s  << "\n";
         out << "variable mbe_active   equal " << mbe_active   << "\n";
-        out << "variable CUP_BASE_SCALE equal " << cupola_scale << "\n";
         out.close();
 
         std::ostringstream oss;
         oss << "[params] Wrote params.inc: Fwafer_cm2s=" << Fwafer_cm2s
-            << ", mbe_active=" << mbe_active
-            << ", CUP_BASE_SCALE=" << cupola_scale << "\n";
+            << ", mbe_active=" << mbe_active << "\n";
         log_msg(oss.str());
       }
 
@@ -341,16 +341,23 @@ int main(int argc, char** argv) {
     // --------------------------------------------------------------------
     // Electrical/power subsystems (independent of SPARTA)
     // --------------------------------------------------------------------
-    PowerBus   bus;
-    SolarArray solar;
-    Battery    battery;
-    HeaterBank heater(/*maxPowerW=*/200.0);
-    EffusionCell effCell;
+    PowerBus      bus;
+    SolarArray    solar;
+    Battery       battery;
+    HeaterBank    heater(/*maxPowerW=*/200.0);
+    EffusionCell  effCell;
+    GrowthMonitor growth(/*gridN=*/32);
 
     solar.setPowerBus(&bus);
     battery.setPowerBus(&bus);
     heater.setPowerBus(&bus);
     heater.setEffusionCell(&effCell);     // Heater warms the effusion cell
+    growth.setPowerBus(&bus);             // Film/growth monitor draws instrument power
+
+    // GrowthMonitor should only log + write CSV on leader, but engine tick
+    // will be called on all ranks.
+    growth.setIsLeader(rank == 0);
+    growth.setNumJobs(jobs.size());
 
     SimulationEngine engine;
     engine.addSubsystem(&effCell);
@@ -358,6 +365,7 @@ int main(int argc, char** argv) {
     engine.addSubsystem(&bus);
     engine.addSubsystem(&battery);
     engine.addSubsystem(&heater);
+    engine.addSubsystem(&growth);
 
     const double dt = args.dt;
     engine.setTickStep(dt);
@@ -382,6 +390,9 @@ int main(int argc, char** argv) {
         log_msg("[info] Entering power-only mode (no SPARTA / no WakeChamber).\n");
       }
 
+      // Always treat as sunlit in power-only tests.
+      g_orbit_solar_scale = 1.0;
+
       const int NTICKS = args.nticks;
       for (int i = 0; i < NTICKS; ++i) {
         const int tickIndex = i + 1;
@@ -394,6 +405,10 @@ int main(int argc, char** argv) {
           log_msg(oss.str());
 
           heater.setDemand(150.0);
+          // No jobs in power-only mode -> growth monitor gets jobIndex=-1, mbeOff.
+          growth.setBeamState(-1, false, 0.0);
+          engine.tick();
+        } else {
           engine.tick();
         }
         MPI_Barrier(MPI_COMM_WORLD);
@@ -426,14 +441,12 @@ int main(int argc, char** argv) {
           initial_Fwafer = FWAFFER_FLOOR_CM2S;
         }
       }
-      // Use neutral cupola scale = 1.0 for initial deck load.
-      double initial_cupola_scale = 1.0;
 
       // Broadcast initial flux to all ranks so they agree
       MPI_Bcast(&initial_Fwafer, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
       // Beam off initially (mbe_active = 0), but flux positive so mixture is legal
-      write_params_inc(initial_Fwafer, 0.0, initial_cupola_scale);
+      write_params_inc(initial_Fwafer, 0.0);
 
       if (rank == 0) {
         log_msg("[info] Constructing WakeChamber and calling wake.init(...)\n");
@@ -448,7 +461,7 @@ int main(int argc, char** argv) {
       MPI_Comm_rank(MPI_COMM_WORLD, &worldrank);
       const bool isLeader = (worldrank == 0);
 
-      // ---------------- Orbit model (leader drives logging + cupola scale) --
+      // ---------------- Orbit model (leader drives logging + SolarArray) ---
       // Simple circular LEO at 300 km altitude, time step = dt (engine tick).
       OrbitModel orbit(/*altitude_m=*/300e3,
                        /*dt_s=*/dt,
@@ -468,7 +481,6 @@ int main(int argc, char** argv) {
       double     last_heater_set   = std::numeric_limits<double>::quiet_NaN();
       double     last_Fwafer_sent  = std::numeric_limits<double>::quiet_NaN();
       double     last_mbe_sent     = std::numeric_limits<double>::quiet_NaN();
-      double     last_cupola_sent  = std::numeric_limits<double>::quiet_NaN();
 
       // Job health tracking (leader only)
       std::vector<bool> jobAborted(jobs.size(), false);
@@ -484,8 +496,6 @@ int main(int argc, char** argv) {
         const double t_phys = tickIndex * dt;
 
         // ---------------- leader: orbit, job schedule, per-tick harness -----
-        double cupola_scale_this_tick = 1.0;
-
         if (isLeader) {
           // ---- 0) Orbit update + logging ----
           orbit.step();
@@ -493,7 +503,9 @@ int main(int argc, char** argv) {
 
           double t_min     = orb.t_orbit_s / 60.0;
           double theta_deg = orb.theta_rad * (180.0 / PI_MAIN);
-          cupola_scale_this_tick = orb.solar_scale; // 0 in eclipse, 1 in sun for now
+
+          // Update global sunlight scale for SolarArray.
+          g_orbit_solar_scale = orb.solar_scale;
 
           // Log via the same Logger as other subsystems: creates Orbit.csv
           Logger::instance().log_wide(
@@ -529,8 +541,8 @@ int main(int argc, char** argv) {
             if (newJob) {
               oss << "[job] tick=" << tickIndex
                   << " entering job window ["
-                  << newJob->start_tick << ","
-                  << newJob->end_tick << "] (index=" << newJobIndex << ") "
+                  << newJob->start_tick << "," << newJob->end_tick
+                  << "] (index=" << newJobIndex << ") "
                   << "Fwafer_cm2s=" << newJob->Fwafer_cm2s
                   << ", heater_W=" << newJob->heater_W << "\n";
             } else if (currentJob) {
@@ -576,8 +588,14 @@ int main(int argc, char** argv) {
             mbe_flag = 0.0;
           }
 
-          // ---- 3) Push Fwafer + mbe_active + CUP_BASE_SCALE into params.inc
-          //         when any of them change.
+          // Inform GrowthMonitor about the beam/job state for this tick
+          int jobIndexForGrowth = currentJob ? currentJobIndex : -1;
+          growth.setBeamState(jobIndexForGrowth,
+                              mbe_flag > 0.5,
+                              Fwafer_cmd);
+
+          // ---- 3) Push Fwafer + mbe_active into params.inc
+          //         when either of them changes.
           if (!std::isnan(Fwafer_cmd)) {
             bool need_update = false;
 
@@ -589,25 +607,19 @@ int main(int argc, char** argv) {
                 mbe_flag != last_mbe_sent) {
               need_update = true;
             }
-            if (std::isnan(last_cupola_sent) ||
-                cupola_scale_this_tick != last_cupola_sent) {
-              need_update = true;
-            }
 
             if (need_update) {
               std::ostringstream oss;
               oss << "[job] tick=" << tickIndex
                   << " update params.inc: Fwafer_cm2s=" << Fwafer_cmd
-                  << ", mbe_active=" << mbe_flag
-                  << ", CUP_BASE_SCALE=" << cupola_scale_this_tick << "\n";
+                  << ", mbe_active=" << mbe_flag << "\n";
               log_msg(oss.str());
 
-              write_params_inc(Fwafer_cmd, mbe_flag, cupola_scale_this_tick);
+              write_params_inc(Fwafer_cmd, mbe_flag);
               wake.markDirtyReload();
 
               last_Fwafer_sent = Fwafer_cmd;
               last_mbe_sent    = mbe_flag;
-              last_cupola_sent = cupola_scale_this_tick;
             }
           }
 
@@ -634,7 +646,7 @@ int main(int argc, char** argv) {
           engine.tick();
 
           TickContext ctx{ tickIndex, t_phys, dt };
-          wake.tick(ctx); 
+          wake.tick(ctx);
 
           std::ostringstream oss2;
           oss2 << "[wake] tick=" << tickIndex
@@ -674,6 +686,10 @@ int main(int argc, char** argv) {
                    << " consecutive ticks (flux_ratio=" << flux_ratio << ")\n";
               log_msg(joss.str());
 
+              // Tell GrowthMonitor that this job got aborted (it will still
+              // write the partial wafer at shutdown).
+              growth.markJobAborted(currentJobIndex);
+
               // Mark failure for SimulationEngine.csv on this tick
               engine.markJobFailedThisTick();
 
@@ -682,11 +698,10 @@ int main(int argc, char** argv) {
               if (!std::isfinite(F_for_abort) || F_for_abort <= 0.0) {
                 F_for_abort = FWAFFER_FLOOR_CM2S;
               }
-              write_params_inc(F_for_abort, 0.0, cupola_scale_this_tick);
+              write_params_inc(F_for_abort, 0.0);
               wake.markDirtyReload();
               last_Fwafer_sent = F_for_abort;
               last_mbe_sent    = 0.0;
-              last_cupola_sent = cupola_scale_this_tick;
 
               // Reset job state so next tick we fall into "no job" path
               currentJob       = nullptr;
