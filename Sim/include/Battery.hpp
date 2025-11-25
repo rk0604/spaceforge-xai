@@ -1,6 +1,8 @@
 #pragma once
 #include "Subsystem.hpp"
-#include "PowerBus.hpp"
+
+// Forward declaration instead of including PowerBus.hpp
+class PowerBus;
 
 class Battery : public Subsystem {
 public:
@@ -11,13 +13,21 @@ public:
     void shutdown() override;
 
     void setPowerBus(PowerBus* bus);
+
+    // True energy storage (Wh)
     double getCharge() const;
+
+    // Called by PowerBus when the bus cannot satisfy a load
+    double discharge(double needed_W, double dt);
+
+    // Called by PowerBus to store surplus bus energy
+    void chargeFromSurplus(double surplus_W, double dt);
 
 private:
     PowerBus* bus_;
-    double capacity_;    // maximum storage (Wh)
-    double charge_;      // current charge (Wh)
+    double capacity_;      // battery capacity (Wh)
+    double charge_;        // current stored energy (Wh)
 
-    // policy: how much we try to draw each tick to charge up
-    double request_per_tick_ = 5.0;  // matches your previous logs
+    double max_charge_rate_W_    = 200.0;   // limit charging speed (W)
+    double max_discharge_rate_W_ = 2000.0;  // battery can output up to 2 kW
 };

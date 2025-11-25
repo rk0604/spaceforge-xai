@@ -1,0 +1,5 @@
+# start_tick  end_tick  wafer_flux_cm2s  heater_W
+10           70        9.0e13           1   # Shorter wafer
+90           230       8.0e13           1   # Long, moderate flux
+260          420       1.0e14           1   # Long, high flux (stress heater)
+450          540       6.5e13           1   # Cooler wafer after a big job

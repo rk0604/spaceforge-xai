@@ -1,0 +1,7 @@
+# start_tick  end_tick  wafer_flux_cm2s  heater_W
+5            85        7.5e13           1   # Wafer 0
+95           175       1.0e14           1   # Wafer 1 (hotter, shorter)
+185          265       6.0e13           1   # Wafer 2
+275          355       9.0e13           1   # Wafer 3
+365          445       5.0e13           1   # Wafer 4 (colder, longer warm-up)
+455          535       8.5e13           1   # Wafer 5

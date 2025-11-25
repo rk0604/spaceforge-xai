@@ -4,7 +4,10 @@
 
 class SolarArray : public Subsystem {
 public:
-    explicit SolarArray(double efficiency = 0.2, double base_input = 1000.0);
+    // Default: ~30 % efficient array, ~5.7 kW incident sunlight at full sun.
+    // This yields about 1.7 kW electrical output when solar_scale = 1.0.
+    explicit SolarArray(double efficiency = 0.30,
+                        double base_input = 5667.0);
 
     void initialize() override;
     void tick(const TickContext& ctx) override;
@@ -15,7 +18,7 @@ public:
 
 private:
     PowerBus* bus_;
-    double efficiency_;   // fraction converted to power
-    double base_input_;   // baseline solar input (W)
-    double last_output_;  // last tick output (W)
+    double efficiency_;   // fraction of incident solar converted to electrical power
+    double base_input_;   // baseline solar input at solar_scale=1 (W)
+    double last_output_;  // last tick electrical output (W)
 };

@@ -67,11 +67,13 @@ double fluxToHeaterPower(double Fwafer_cm2s) {
     return 0.0;
   }
 
+  // Design band for MBE growth jobs
   const double F_low  = 5.0e13;   // lower design flux
   const double F_high = 1.0e14;   // upper design flux
 
-  const double P_low  = 120.0;    // heater power at F_low
-  const double P_high = 180.0;    // heater power at F_high
+  // kW-class effusion cell heater so RC model can reach ~1300 K.
+  const double P_low  = 1200.0;   // heater power at F_low  (W)
+  const double P_high = 1800.0;   // heater power at F_high (W)
 
   // Clamp flux into [F_low, F_high] for interpolation
   double F = Fwafer_cm2s;
@@ -81,9 +83,9 @@ double fluxToHeaterPower(double Fwafer_cm2s) {
   double scale = (F - F_low) / (F_high - F_low);  // in [0,1]
   double P = P_low + scale * (P_high - P_low);
 
-  // Safety clamp (HeaterBank max is 200 W in your ctor)
-  if (P < 0.0)   P = 0.0;
-  if (P > 200.0) P = 200.0;
+  // Safety clamp to match HeaterBank max (set in main.cpp)
+  if (P < 0.0)    P = 0.0;
+  if (P > 2000.0) P = 2000.0;
 
   return P;
 }

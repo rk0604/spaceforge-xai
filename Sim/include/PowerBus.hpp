@@ -1,7 +1,7 @@
 #pragma once
 #include "Subsystem.hpp"
 #include "TickContext.hpp"
-#include <string>
+#include "Battery.hpp"
 
 class PowerBus : public Subsystem {
 public:
@@ -14,20 +14,22 @@ public:
     // Add generation during this tick
     void addPower(double watts);
 
-    // Consumers request power; returns amount granted (≤ requested)
+    // Consumer power request
     double drawPower(double requested, const TickContext& ctx);
+
+    // Called by main to link the battery
+    void setBattery(Battery* batt);
 
     double getAvailablePower() const;
 
 private:
-    // One snapshot row per tick via Logger::log_wide(...)
-    void logRow_(int tick, double time, double status);
+    void logRow_(int tick, double time);
 
-    // Bus state
     double available_power_{0.0};
 
-    // Per-tick accumulators (reset in tick())
     double added_this_tick_{0.0};
     double requested_this_tick_{0.0};
     double granted_this_tick_{0.0};
+
+    Battery* battery_ = nullptr;
 };

@@ -30,6 +30,7 @@ Run (from build/, headless):
 #include <vector>
 #include <limits>
 #include <cmath>
+#include <algorithm>  // for std::clamp
 
 #include "SimulationEngine.hpp"
 #include "Battery.hpp"
@@ -53,10 +54,122 @@ using SimHelpers::write_params_inc;
 using SimHelpers::FWAFFER_FLOOR_CM2S;
 using SimHelpers::LogFn;
 
+// Globals defined in EffusionCell.cpp so streaks show up in EffusionCell.csv.
+extern int g_underflux_streak_for_log;
+extern int g_temp_miss_streak_for_log;
+
 // Global sunlight scale shared with SolarArray.cpp.
 // In wake/dual/legacy mode this is updated each tick from OrbitModel.
 // In power mode (no orbit), it stays at 1.0 (always sunlit).
 double g_orbit_solar_scale = 1.0;
+
+// ---------------------------------------------------------------------------
+// Map wafer flux (cm^-2 s^-1) from jobs.txt to a notional effusion-cell
+// target temperature (K). This does NOT enforce the temperature; it simply
+// provides a "desired" setpoint that we log as target_temp_K in EffusionCell.
+// This is the original 1100–1300 K mapping you already had.
+// ---------------------------------------------------------------------------
+static double targetTempForFlux(double Fwafer_cm2s) {
+  // Idle / no-flux baseline
+  if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
+    return 300.0;
+  }
+
+  // Design anchors: tweak as desired.
+  const double F_low  = 5e13;   // lower design flux (cm^-2 s^-1)
+  const double F_high = 1e14;   // upper design flux (cm^-2 s^-1)
+  const double T_low  = 1100.0; // effusion temp at F_low (K)
+  const double T_high = 1300.0; // effusion temp at F_high (K)
+
+  // Clamp flux to the design band.
+  double F_clamped = std::clamp(Fwafer_cm2s, F_low, F_high);
+
+  double logF     = std::log(F_clamped);
+  double logFlow  = std::log(F_low);
+  double logFhigh = std::log(F_high);
+  double denom    = (logFhigh - logFlow);
+
+  double alpha = 0.0;
+  if (denom > 0.0) {
+    alpha = (logF - logFlow) / denom;
+  }
+  alpha = std::clamp(alpha, 0.0, 1.0);
+
+  return T_low + alpha * (T_high - T_low);
+}
+
+// ---------------------------------------------------------------------------
+// Estimate how many ticks of "warm-up" to ignore gate penalties for a job,
+// based on its flux (via heater power) and the same RC model used for
+// temp_proxy_K and EffusionCell::applyHeat. This does NOT change flux or
+// SPARTA runs; it only controls when gates become active.
+// ---------------------------------------------------------------------------
+static int estimateWarmupTicksForFlux(double Fwafer_cm2s, double dt_s) {
+  // Same RC constants as in the temp_proxy_K update below.
+  const double C_J_PER_K = 1000.0;
+  const double H_W_PER_K = 1.5;
+  const double T_ENV_K   = 300.0;
+
+  if (!std::isfinite(dt_s) || dt_s <= 0.0) {
+    return 0;
+  }
+
+  // Map flux -> heater power using the helper.
+  double P_W = fluxToHeaterPower(Fwafer_cm2s);
+  if (!std::isfinite(P_W) || P_W <= 0.0) {
+    return 0;
+  }
+
+  // Use the same target temperature mapping as logging.
+  double T_target_K = targetTempForFlux(Fwafer_cm2s);
+  if (!std::isfinite(T_target_K) || T_target_K <= T_ENV_K + 10.0) {
+    return 0;
+  }
+
+  // Steady-state temperature under constant P_W.
+  double T_ss_K = T_ENV_K + P_W / H_W_PER_K;
+  if (T_ss_K <= T_ENV_K + 1.0) {
+    return 0;
+  }
+
+  // We arm the gate once we reach some fraction of the target temperature.
+  const double GATE_FRACTION = 0.9; // 90% of target
+  double T_gate_K = GATE_FRACTION * T_target_K;
+
+  // If target is above steady-state, fall back to fraction of T_ss.
+  if (T_gate_K >= T_ss_K) {
+    T_gate_K = 0.9 * T_ss_K;
+  }
+
+  double numer = T_gate_K - T_ENV_K;
+  double denom = T_ss_K   - T_ENV_K;
+  if (numer <= 0.0 || denom <= 0.0) {
+    return 0;
+  }
+
+  double ratio = numer / denom;
+  if (ratio >= 1.0) ratio = 0.999;
+  if (ratio <= 0.0) ratio = 0.0;
+
+  // First-order RC time constant.
+  double tau_s = C_J_PER_K / H_W_PER_K;
+  double t_gate_s = -tau_s * std::log(1.0 - ratio);
+
+  if (!std::isfinite(t_gate_s) || t_gate_s <= 0.0) {
+    return 0;
+  }
+
+  int ticks = static_cast<int>(std::ceil(t_gate_s / dt_s));
+  if (ticks < 0) ticks = 0;
+
+  // Safety cap so we never "warm up" longer than a reasonable window.
+  const int MAX_WARMUP_TICKS = 60; // config: 60 engine ticks max
+  if (ticks > MAX_WARMUP_TICKS) {
+    ticks = MAX_WARMUP_TICKS;
+  }
+
+  return ticks;
+}
 
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
@@ -166,7 +279,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs2.txt";
+        const std::string jobsPath = args.inputDir + "/jobs.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -190,19 +303,21 @@ int main(int argc, char** argv) {
               log_msg(oss.str());
               continue;
             }
-            if (j.end_tick < j.start_tick) std::swap(j.start_tick, j.end_tick);
+            if (j.end_tick < j.start_tick) std::swap(j.end_tick, j.start_tick);
             jobs.push_back(j);
           }
 
           std::ostringstream oss;
           oss << "[info] Loaded " << jobs.size() << " job(s) from " << jobsPath << "\n";
+          log_msg(oss.str());
           for (std::size_t i = 0; i < jobs.size(); ++i) {
             const Job& j = jobs[i];
-            oss << "  [job " << i
-                << "] ticks " << j.start_tick << "-" << j.end_tick
-                << ", Fwafer=" << j.Fwafer_cm2s
-                << " cm^-2 s^-1, heater=" << j.heater_W << " W\n";
-            log_msg(oss.str());
+            std::ostringstream joss;
+            joss << "  [job " << i
+                 << "] ticks " << j.start_tick << "-" << j.end_tick
+                 << ", Fwafer=" << j.Fwafer_cm2s
+                 << " cm^-2 s^-1, heater=" << j.heater_W << " W\n";
+            log_msg(joss.str());
           }
         }
       }
@@ -213,13 +328,34 @@ int main(int argc, char** argv) {
     int njobs = static_cast<int>(jobs.size());
     MPI_Bcast(&njobs, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
+    // Per-job dynamic warm-up ticks (leader only actually uses values).
+    std::vector<int> jobWarmupTicks;
+    if (rank == 0 && njobs > 0 &&
+        (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy")) {
+      jobWarmupTicks.resize(jobs.size(), 0);
+      for (std::size_t i = 0; i < jobs.size(); ++i) {
+        const Job& j = jobs[i];
+        int W = estimateWarmupTicksForFlux(j.Fwafer_cm2s, args.dt);
+        jobWarmupTicks[i] = W;
+
+        std::ostringstream oss;
+        oss << "[info] Job " << i
+            << " dynamic warm-up estimate: " << W
+            << " tick(s) at dt=" << args.dt
+            << " s (Fwafer_cm2s=" << j.Fwafer_cm2s << ")\n";
+        log_msg(oss.str());
+      }
+    }
+
     // --------------------------------------------------------------------
     // Electrical/power subsystems (independent of SPARTA)
     // --------------------------------------------------------------------
     PowerBus      bus;
     SolarArray    solar;
     Battery       battery;
-    HeaterBank    heater(/*maxDraw=*/200.0);
+    bus.setBattery(&battery);
+    // Bigger heater: can draw up to 2 kW from the bus.
+    HeaterBank    heater(/*maxDraw=*/2000.0);
     EffusionCell  effCell;
     GrowthMonitor growth(/*gridN=*/32);
 
@@ -235,12 +371,12 @@ int main(int argc, char** argv) {
     growth.setNumJobs(jobs.size());
 
     SimulationEngine engine;
-    engine.addSubsystem(&effCell);
-    engine.addSubsystem(&solar);
-    engine.addSubsystem(&bus);
-    engine.addSubsystem(&battery);
-    engine.addSubsystem(&heater);
-    engine.addSubsystem(&growth);
+    engine.addSubsystem(&solar);      // 1) power source
+    engine.addSubsystem(&battery);    // 2) storage update
+    engine.addSubsystem(&heater);     // 3) power load
+    engine.addSubsystem(&effCell);    // 4) heat response (after heater!)
+    engine.addSubsystem(&bus);        // 5) bookkeeping on power totals
+    engine.addSubsystem(&growth);     // 6) sensors/aux
 
     const double dt = args.dt;
     engine.setTickStep(dt);
@@ -279,7 +415,7 @@ int main(int argc, char** argv) {
               << " t=" << t_phys << " s : calling engine.tick()\n";
           log_msg(oss.str());
 
-          heater.setDemand(150.0);
+          heater.setDemand(1500.0); // representative kW-scale test
           // No jobs in power-only mode -> growth monitor gets jobIndex=-1, mbeOff.
           growth.setBeamState(-1, false, 0.0);
           engine.tick();
@@ -359,9 +495,16 @@ int main(int argc, char** argv) {
 
       // Job health tracking (leader only)
       std::vector<bool> jobAborted(jobs.size(), false);
-      int   underflux_streak          = 0;
-      const int    UNDERFLUX_LIMIT_TICKS = 5;   // consecutive ticks
-      const double MIN_FLUX_FRACTION     = 0.99;  // require >= 99% of requested power
+      int   underflux_streak            = 0;
+      int   temp_miss_streak            = 0;
+      int   job_tick_counter            = 0;
+      const int    UNDERFLUX_LIMIT_TICKS    = 5;     // consecutive ticks
+      const double MIN_FLUX_FRACTION        = 0.99;  // require >= 99% of requested power
+      const int    TEMP_FAIL_LIMIT_TICKS    = 5;     // N consecutive temp misses
+      const double TEMP_TOLERANCE_FRACTION  = 0.95;  // must reach >= 95% of target
+
+      // RC temp proxy (mirrors EffusionCell RC constants) used for temp gate.
+      double temp_proxy_K = 300.0;
 
       const int NTICKS = args.nticks;
       constexpr double PI_MAIN = 3.141592653589793;
@@ -409,8 +552,13 @@ int main(int argc, char** argv) {
           }
 
           if (newJob != currentJob) {
-            // Reset underflux streak when entering/leaving a job
-            underflux_streak = 0;
+            // Reset streaks and per-job counters when entering/leaving a job
+            underflux_streak   = 0;
+            temp_miss_streak   = 0;
+            job_tick_counter   = 0;
+            g_underflux_streak_for_log = 0;
+            g_temp_miss_streak_for_log = 0;
+            temp_proxy_K       = 300.0;
 
             std::ostringstream oss;
             if (newJob) {
@@ -419,7 +567,15 @@ int main(int argc, char** argv) {
                   << newJob->start_tick << "," << newJob->end_tick
                   << "] (index=" << newJobIndex << ") "
                   << "Fwafer_cm2s=" << newJob->Fwafer_cm2s
-                  << ", heater_W=" << newJob->heater_W << "\n";
+                  << ", heater_W=" << newJob->heater_W;
+
+              int W = 0;
+              if (newJobIndex >= 0 &&
+                  newJobIndex < static_cast<int>(jobWarmupTicks.size())) {
+                W = jobWarmupTicks[newJobIndex];
+                oss << " (warmup_ticks=" << W << ")";
+              }
+              oss << "\n";
             } else if (currentJob) {
               oss << "[job] tick=" << tickIndex
                   << " leaving job window; reverting to baseline (heater=0, beam off).\n";
@@ -430,16 +586,28 @@ int main(int argc, char** argv) {
             currentJobIndex = newJobIndex;
           }
 
+          if (currentJob) {
+            job_tick_counter += 1;
+          } else {
+            job_tick_counter = 0;
+          }
+
           // ---- 2) Decide heater demand, Fwafer, and mbe_active for this tick ----
-          double heaterDemand_W = 150.0;   // baseline if no jobs.txt
+          double heaterDemand_W = 1500.0;   // baseline if no jobs.txt
           double Fwafer_cmd     = std::numeric_limits<double>::quiet_NaN();
           double mbe_flag       = 0.0;     // 0 = beam off, 1 = beam on
+          double target_T_K     = 300.0;   // idle baseline target
 
           if (!jobs.empty()) {
             if (currentJob) {
               Fwafer_cmd     = currentJob->Fwafer_cm2s;
               heaterDemand_W = fluxToHeaterPower(Fwafer_cmd);
               mbe_flag       = 1.0;
+
+              // Target temperature derived directly from the job's flux.
+              if (currentJob->Fwafer_cm2s > 0.0) {
+                target_T_K = targetTempForFlux(currentJob->Fwafer_cm2s);
+              }
             } else {
               // Outside any job window or after abort: effusion off, heater 0
               heaterDemand_W = 0.0;
@@ -450,18 +618,25 @@ int main(int argc, char** argv) {
               } else {
                 Fwafer_cmd = last_Fwafer_sent;
               }
-              mbe_flag = 0.0;
+              mbe_flag   = 0.0;
+              target_T_K = 300.0; // idle target when no job is active
             }
           } else {
             // No jobs.txt: keep baseline heater and floor flux, beam off
-            heaterDemand_W = 150.0;
+            heaterDemand_W = 1500.0;
             if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
               Fwafer_cmd = FWAFFER_FLOOR_CM2S;
             } else {
               Fwafer_cmd = last_Fwafer_sent;
             }
-            mbe_flag = 0.0;
+            mbe_flag   = 0.0;
+            target_T_K = 300.0; // idle baseline when running with no jobs.txt
           }
+
+          // Inform EffusionCell of the "desired" crucible temperature implied
+          // by the job's wafer flux. The cell will log target_temp_K alongside
+          // act_temp_K so the discrepancy is visible in EffusionCell.csv.
+          effCell.setTargetTempK(target_T_K);
 
           // Inform GrowthMonitor about the beam/job state for this tick
           int jobIndexForGrowth = currentJob ? currentJobIndex : -1;
@@ -528,11 +703,35 @@ int main(int argc, char** argv) {
                << " s : AFTER engine.tick() + wake.tick()\n";
           log_msg(oss2.str());
 
-          // ---- 6) After ticking, evaluate job health (under-flux guard) ----
+          // ---- 6) After ticking, evaluate job health (under-flux + temp gate)
           if (currentJob && heaterDemand_W > 1e-6) {
             double P_actual = effCell.getLastHeatInputW();
-            double flux_ratio = 1.0;
 
+            // 6a) Update RC temp proxy (same constants as EffusionCell::applyHeat).
+            {
+              const double C_J_PER_K = 1000.0;
+              const double H_W_PER_K = 1.5;
+              const double T_ENV_K   = 300.0;
+
+              double net_W = P_actual - H_W_PER_K * (temp_proxy_K - T_ENV_K);
+              double dT    = (net_W / C_J_PER_K) * dt;
+              temp_proxy_K += dT;
+
+              if (!std::isfinite(temp_proxy_K)) temp_proxy_K = T_ENV_K;
+              if (temp_proxy_K < 0.0)           temp_proxy_K = 0.0;
+            }
+
+            // 6b) Determine if gates are armed for this job based on dynamic warm-up.
+            int warmup_ticks_for_job = 0;
+            if (currentJobIndex >= 0 &&
+                currentJobIndex < static_cast<int>(jobWarmupTicks.size())) {
+              warmup_ticks_for_job = jobWarmupTicks[currentJobIndex];
+            }
+            bool gates_armed = (job_tick_counter > warmup_ticks_for_job) &&
+                               (target_T_K > 310.0); // ignore trivial ambient targets
+
+            // 6c) Under-flux gate (power-based), only once gates are armed.
+            double flux_ratio = 1.0;
             if (heaterDemand_W > 0.0) {
               flux_ratio = P_actual / heaterDemand_W;
             }
@@ -540,13 +739,48 @@ int main(int argc, char** argv) {
               flux_ratio = 0.0;
             }
 
-            if (flux_ratio < 0.99) {
-              underflux_streak += 1;
+            if (gates_armed) {
+              if (flux_ratio < MIN_FLUX_FRACTION) {
+                underflux_streak += 1;
+              } else {
+                underflux_streak = 0;
+              }
             } else {
+              // Still in warm-up: do not accumulate under-flux streaks.
               underflux_streak = 0;
             }
 
-            if (underflux_streak >= 5 &&
+            bool flux_gate_fail = (underflux_streak >= UNDERFLUX_LIMIT_TICKS);
+
+            // 6d) Temperature gate: after warm-up, require T >= 95% of target.
+            bool temp_gate_fail = false;
+
+            if (gates_armed) {
+              double temp_ratio = temp_proxy_K / target_T_K;
+              if (!std::isfinite(temp_ratio)) {
+                temp_ratio = 0.0;
+              }
+
+              if (temp_ratio < TEMP_TOLERANCE_FRACTION) {
+                temp_miss_streak += 1;
+              } else {
+                temp_miss_streak = 0;
+              }
+
+              if (temp_miss_streak >= TEMP_FAIL_LIMIT_TICKS) {
+                temp_gate_fail = true;
+              }
+            } else {
+              // During warm-up, do not accumulate temperature misses.
+              temp_miss_streak = 0;
+            }
+
+            // Push current streaks into globals so EffusionCell.csv can log them.
+            g_underflux_streak_for_log = underflux_streak;
+            g_temp_miss_streak_for_log = temp_miss_streak;
+
+            // 6e) Abort if either gate fails, but only once per job.
+            if ((flux_gate_fail || temp_gate_fail) &&
                 currentJobIndex >= 0 &&
                 currentJobIndex < static_cast<int>(jobAborted.size()) &&
                 !jobAborted[currentJobIndex]) {
@@ -556,8 +790,20 @@ int main(int argc, char** argv) {
               std::ostringstream joss;
               joss << "[job] tick=" << tickIndex
                    << " ABORTING job index " << currentJobIndex
-                   << " due to under-flux for " << underflux_streak
-                   << " consecutive ticks (flux_ratio=" << flux_ratio << ")\n";
+                   << " due to ";
+              if (flux_gate_fail && temp_gate_fail) {
+                joss << "under-flux AND temperature-miss";
+              } else if (flux_gate_fail) {
+                joss << "under-flux";
+              } else {
+                joss << "temperature-miss";
+              }
+              joss << " (underflux_streak=" << underflux_streak
+                   << ", temp_miss_streak=" << temp_miss_streak
+                   << ", temp_proxy_K=" << temp_proxy_K
+                   << ", target_T_K=" << target_T_K
+                   << ", flux_ratio=" << flux_ratio
+                   << ")\n";
               log_msg(joss.str());
 
               // Tell GrowthMonitor that this job got aborted (it will still
@@ -581,8 +827,17 @@ int main(int argc, char** argv) {
               currentJob       = nullptr;
               currentJobIndex  = -1;
               underflux_streak = 0;
+              temp_miss_streak = 0;
+              job_tick_counter = 0;
+              g_underflux_streak_for_log = 0;
+              g_temp_miss_streak_for_log = 0;
+              temp_proxy_K     = 300.0;
               last_heater_set  = std::numeric_limits<double>::quiet_NaN();
             }
+          } else {
+            // No active job or zero heater demand: clear temp streaks in logs.
+            temp_miss_streak = 0;
+            g_temp_miss_streak_for_log = 0;
           }
         } // end if (isLeader)
 

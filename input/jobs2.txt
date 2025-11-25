@@ -1,17 +1,4 @@
 # start_tick  end_tick  wafer_flux_cm2s  heater_W
-# High-flux job early in the run.
-# Expect high heater demand (near P_high in fluxToHeaterPower).
-2   18   1.0e14   150.0
-
-# Medium-flux job with a gap before it.
-# Lower heater demand; should normally be satisfiable early on.
-25  35   7.5e13   150.0
-
-# Long, high-flux job late in the run.
-# This is the one most likely to go under-powered if the battery/solar
-# combo cannot sustain it, which should trigger your 10-tick abort logic.
-40  65   1.0e14   150.0
-
-# Very short, low-flux "cleanup" job at the end, to test that
-# the scheduler can move on after an aborted job.
-70  75   5.0e13   150.0
+10           190       8.0e13           1   # Wafer 0: moderate flux
+220          430       1.0e14           1   # Wafer 1: high flux
+460          760       6.0e13           1   # Wafer 2: lower flux, longer run

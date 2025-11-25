@@ -1,3 +1,2 @@
 # start_tick  end_tick  wafer_flux_cm2s  heater_W
-2   22  1.0e14  1
-25  45  5.0e13  1
+2            22        1.0e14           1
