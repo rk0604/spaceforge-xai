@@ -1,0 +1,4 @@
+tick,time_s,status,act_temp_K,target_temp_K,heatInput_w,underflux_streak,temp_miss_streak
+1,60,1,300,300,0,0,0
+2,120,1,408,1300,1800,0,0
+3,180,1,506.28,1300,1800,0,0
