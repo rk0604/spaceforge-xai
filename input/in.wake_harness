@@ -89,7 +89,7 @@ print "diag:pInf_Pa=${pInf}"          screen yes
 print "diag:nInf_m^-3=${nInf}"        screen yes
 
 # Macro weighting
-variable           FNUM          equal 5.0e12
+variable           FNUM          equal 1.0e13
 global             fnum ${FNUM}
 
 # Inlet at xlo for freestream

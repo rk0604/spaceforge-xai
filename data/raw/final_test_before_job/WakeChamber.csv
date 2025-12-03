@@ -1,0 +1,6 @@
+tick,time_s,status,ran_steps,cum_steps,reload,mark_reload,temp_K,density_m3,n_ratio,pressure_Pa,shield_hits,shield_reemit
+1,60,1,0,0,0,0,0,0,0,0,0,0
+2,120,1,2500,2500,0,0,0,0,0,0,0,0
+3,180,1,2500,5000,0,0,0,0,0,0,0,0
+4,240,1,2500,7500,0,0,0,0,0,0,0,0
+5,300,1,2500,10000,0,0,0,0,0,0,0,0
