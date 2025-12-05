@@ -1,0 +1,9 @@
+# start_tick  end_tick  wafer_flux_cm2s  heater_W
+10    220    9.0e13     1   # 300mm production wafer, baseline growth layer
+240   460    1.05e14    1   # 300mm wafer, high-rate layer (near max qualified flux)
+480   640    7.5e13     1   # 300mm wafer, gentler cap layer to reduce thermal stress
+660   840    6.8e13     1   # 300mm wafer, long cooler run for defect smoothing
+860   1040   1.10e14    1   # 300mm wafer, peak-throughput segment within heater limits
+1060  1200   8.2e13     1   # 300mm wafer, follow-up layer at nominal recipe point
+1220  1350   6.5e13     1   # 300mm wafer, low-flux planarization / clean-up layer
+1370  1500   7.0e13     1   # 300mm wafer, final uniformity touch-up before idle
