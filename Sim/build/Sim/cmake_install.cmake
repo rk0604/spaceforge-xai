@@ -1,4 +1,4 @@
-# Install script for directory: /common/home/rvk22/spaceforge-xai/Sim
+# Install script for directory: /common/home/ssb196/spaceforge-xai/Sim
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
