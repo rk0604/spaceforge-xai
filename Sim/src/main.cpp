@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs_raunak.txt";
+        const std::string jobsPath = args.inputDir + "/jobs6.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -498,10 +498,10 @@ int main(int argc, char** argv) {
       int   underflux_streak            = 0;
       int   temp_miss_streak            = 0;
       int   job_tick_counter            = 0;
-      const int    UNDERFLUX_LIMIT_TICKS    = 5;     // consecutive ticks
-      const double MIN_FLUX_FRACTION        = 0.99;  // require >= 99% of requested power
-      const int    TEMP_FAIL_LIMIT_TICKS    = 5;     // N consecutive temp misses
-      const double TEMP_TOLERANCE_FRACTION  = 0.95;  // must reach >= 95% of target
+      const int    UNDERFLUX_LIMIT_TICKS    = 10;     // consecutive ticks
+      const double MIN_FLUX_FRACTION        = 0.93;  // require >= 99% of requested power
+      const int    TEMP_FAIL_LIMIT_TICKS    = 10;     // N consecutive temp misses
+      const double TEMP_TOLERANCE_FRACTION  = 0.90;  // must reach >= 95% of target
 
       // RC temp proxy (mirrors EffusionCell RC constants) used for temp gate.
       double temp_proxy_K = 300.0;

@@ -1,5 +1,0 @@
-tick,time_s,status,available_added,requested,granted,remaining
-0,0,1,0,0,0,0
-1,60,1,1698.2,0,0,1698.2
-2,120,1,1692.52,1800,1800,0
-3,180,1,1683.07,1805,1805,0

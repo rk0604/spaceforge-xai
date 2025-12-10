@@ -1,0 +1,12 @@
+# start_tick  end_tick  wafer_flux_cm2s  heater_W
+5            95         7.2e13           1   # Long warm, moderate wafer
+105          185        1.05e14          1   # Shorter hot run
+195          275        6.0e13           1   # Cooler wafer, longer duration
+285          365        9.2e13           1   # High-temp mid-run
+375          455        5.3e13           1   # Coldest wafer, longest warm-up
+465          545        8.7e13           1   # Stable mid-flux growth
+555          635        7.0e13           1   # Standard balanced job
+645          725        9.8e13           1   # Shorter high-flux, hotter cell
+735          815        6.4e13           1   # Cooler run, stable
+825          905        8.9e13           1   # Higher flux for sharper growth
+915          995        5.8e13           1   # Final long cooldown-like wafer

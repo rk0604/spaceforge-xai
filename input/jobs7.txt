@@ -1,0 +1,11 @@
+# start_tick   end_tick   wafer_flux_cm2s   heater_W     # Notes
+5             55         6.0e13            1            # Gentle warm-up, cooler wafer
+65            115        8.0e13            1            # Standard mid-flux stabilization
+125           135        1.05e14           1            # Brief overshoot after gate increase
+135           185        9.2e13            1            # Settled high-flux growth plateau
+195           245        6.8e13            1            # Coolback run with moderate flux
+255           305        9.0e13            1            # Mid-run reheating, slightly hotter wafer
+315           365        1.10e14           1            # Short, aggressive high-flux push
+375           445        6.5e13            1            # Long, cooler growth to balance thermal load
+455           515        8.4e13            1            # Final consolidation layer with steady flux
+525           595        5.8e13            1            # Extended cooldown-like conditioning segment
