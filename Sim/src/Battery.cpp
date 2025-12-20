@@ -13,8 +13,8 @@ void Battery::initialize() {
         "Battery",
         0,
         0.0,
-        {"status","charge_Wh","capacity_Wh"},
-        {1.0, charge_, capacity_}
+        {"status","charge_Wh","capacity_Wh","max_charge_W","max_discharge_W"},
+        {1.0, charge_, capacity_, max_charge_rate_W_, max_discharge_rate_W_}
     );
 }
 
@@ -27,6 +27,7 @@ double Battery::getCharge() const { return charge_; }
 //
 void Battery::chargeFromSurplus(double surplus_W, double dt) {
     if (surplus_W <= 0.0) return;
+    if (dt <= 0.0) return;
 
     // Apply charge rate limit
     double actual_W = std::min(surplus_W, max_charge_rate_W_);
@@ -43,11 +44,12 @@ void Battery::chargeFromSurplus(double surplus_W, double dt) {
 //
 double Battery::discharge(double needed_W, double dt) {
     if (needed_W <= 0.0) return 0.0;
+    if (dt <= 0.0) return 0.0;
 
     // Cannot draw more than our discharge limit
     double deliverable_W = std::min(needed_W, max_discharge_rate_W_);
 
-    // Convert battery Wh to max available power
+    // Convert battery Wh to max available power at this dt
     double max_possible_W = (charge_ * 3600.0) / dt;  // Wh → W
 
     double W_out = std::min(deliverable_W, max_possible_W);
@@ -65,8 +67,8 @@ void Battery::tick(const TickContext& ctx) {
         "Battery",
         ctx.tick_index,
         ctx.time,
-        {"status","charge_Wh","capacity_Wh"},
-        {1.0, charge_, capacity_}
+        {"status","charge_Wh","capacity_Wh","max_charge_W","max_discharge_W"},
+        {1.0, charge_, capacity_, max_charge_rate_W_, max_discharge_rate_W_}
     );
 }
 

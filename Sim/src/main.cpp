@@ -347,12 +347,14 @@ int main(int argc, char** argv) {
       }
     }
 
-    // --------------------------------------------------------------------
     // Electrical/power subsystems (independent of SPARTA)
-    // --------------------------------------------------------------------
-    PowerBus      bus;
-    SolarArray    solar;
-    Battery       battery;
+    PowerBus bus;
+    const double SOLAR_EFFICIENCY   = 0.30;
+    const double SOLAR_BASE_INPUT_W = 8000.0; // example boost
+
+    SolarArray solar(SOLAR_EFFICIENCY, SOLAR_BASE_INPUT_W);
+    Battery battery;
+
     bus.setBattery(&battery);
     // Bigger heater: can draw up to 2 kW from the bus.
     HeaterBank    heater(/*maxDraw=*/2000.0);

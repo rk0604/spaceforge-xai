@@ -14,7 +14,12 @@ public:
     void shutdown() override;
 
     void setPowerBus(PowerBus* bus);
+
     double getLastOutput() const;
+
+    // Regime getters (for logging + dataset conditioning)
+    double getEfficiency() const { return efficiency_; }
+    double getBaseInputW() const { return base_input_; }
 
 private:
     PowerBus* bus_;

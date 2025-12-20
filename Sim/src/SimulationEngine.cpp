@@ -20,30 +20,22 @@ void SimulationEngine::initialize() {
 
     for (auto* s : subsystems_) s->initialize();
 
-    // No job has failed before the sim starts
     job_failed_flag_ = false;
 
-    // Initial snapshot row
     logRow_(/*tick*/0, /*time*/0.0);
 
-    tick_count_ = 1;   // next tick index
+    tick_count_ = 1;
     sim_time_   = tick_step_;
 }
 
 void SimulationEngine::tick() {
     const TickContext ctx{ tick_count_, sim_time_, tick_step_ };
 
-    // Advance all subsystems once
     for (auto* s : subsystems_) s->tick(ctx);
 
-    // Snapshot the system state in one wide row.
-    // job_failed_flag_ reflects any failure that was marked
-    // since the previous tick. After logging, clear it so it
-    // only shows up for a single row.
     logRow_(tick_count_, sim_time_);
     job_failed_flag_ = false;
 
-    // Advance time
     tick_count_ += 1;
     sim_time_   += tick_step_;
 }
@@ -53,14 +45,10 @@ void SimulationEngine::setTickStep(double dt) {
 }
 
 void SimulationEngine::markJobFailedThisTick() {
-    // Called from main.cpp when a job is deemed failed.
-    // This flag will appear as job_failed=1.0 in the *next*
-    // SimulationEngine.csv row that gets logged.
     job_failed_flag_ = true;
 }
 
 void SimulationEngine::shutdown() {
-    // No -1 sentinel row to keep CSVs consistent
     for (auto* s : subsystems_) s->shutdown();
 }
 
@@ -69,9 +57,29 @@ void SimulationEngine::logRow_(int tick, double time) {
     double batt  = 0.0;
     double solar = 0.0;
 
-    if (powerbus_) bus   = powerbus_->getAvailablePower();
-    if (battery_)  batt  = battery_->getCharge();
-    if (solar_)    solar = solar_->getLastOutput();
+    // Regime metadata (logged every row)
+    double batt_cap_Wh = 0.0;
+    double batt_cW     = 0.0;
+    double batt_dW     = 0.0;
+
+    double sol_eff     = 0.0;
+    double sol_base_W  = 0.0;
+
+    if (powerbus_) bus = powerbus_->getAvailablePower();
+
+    if (battery_) {
+        batt        = battery_->getCharge();
+        // These getters will be added in Battery.hpp next.
+        batt_cap_Wh = battery_->getCapacityWh();
+        batt_cW     = battery_->getMaxChargeW();
+        batt_dW     = battery_->getMaxDischargeW();
+    }
+
+    if (solar_) {
+        solar      = solar_->getLastOutput();
+        sol_eff    = solar_->getEfficiency();
+        sol_base_W = solar_->getBaseInputW();
+    }
 
     const double job_failed = job_failed_flag_ ? 1.0 : 0.0;
 
@@ -79,7 +87,15 @@ void SimulationEngine::logRow_(int tick, double time) {
         "SimulationEngine",
         tick,
         time,
-        {"status","bus","battery","solar","job_failed"},
-        {1.0,      bus,  batt,     solar,  job_failed}
+        {
+            "status","bus","battery","solar","job_failed",
+            "battery_capacity_Wh","battery_max_charge_W","battery_max_discharge_W",
+            "solar_efficiency","solar_base_input_W"
+        },
+        {
+            1.0, bus, batt, solar, job_failed,
+            batt_cap_Wh, batt_cW, batt_dW,
+            sol_eff, sol_base_W
+        }
     );
 }

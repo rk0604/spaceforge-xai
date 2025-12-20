@@ -18,33 +18,29 @@ extern double g_orbit_solar_scale;
  *   - base_input_  is the raw solar power hitting the panel (W),
  *   - efficiency_  is the DC electrical efficiency (0..1).
  *
- * For a realistic, "kW-class" array we hard-code:
+ * Defaults:
  *   efficiency_ = 0.30 (30 %)
- *   base_input_ = 5.67 kW
+ *   base_input_ = 5667 W
  *
  * so at full sun:
  *
  *   P_out_max ≈ 1.7 kW
- *
- * This is enough to plausibly feed your 1.5–1.8 kW heater jobs without
- * immediately tripping the underflux gate, while still being small
- * compared to something like ISS wings.
  */
-SolarArray::SolarArray(double /*efficiency*/, double /*base_input*/)
+SolarArray::SolarArray(double efficiency, double base_input)
     : Subsystem("SolarArray"),
       bus_(nullptr),
-      efficiency_(0.30),        // 30 % electrical efficiency
-      base_input_(5667.0),      // W of raw solar power at solar_scale = 1
+      efficiency_(efficiency),
+      base_input_(base_input),
       last_output_(0.0) {}
 
 void SolarArray::initialize() {
     last_output_ = 0.0;
-    // Initial wide row, include efficiency so header is stable.
-    // We also expose solar_scale explicitly for debugging.
+
+    // Keep header stable and include regime columns for conditioning.
     Logger::instance().log_wide(
         "SolarArray", 0, 0.0,
-        {"status","solar_scale","solar_input","output","efficiency"},
-        {1.0, 0.0, 0.0, 0.0, efficiency_}
+        {"status","solar_scale","solar_input","output","efficiency","base_input"},
+        {1.0, 0.0, 0.0, 0.0, efficiency_, base_input_}
     );
 }
 
@@ -66,8 +62,8 @@ void SolarArray::tick(const TickContext& ctx) {
         solar_scale = 1.0;
     }
 
-    const double solar_input = base_input_ * solar_scale;      // W of sunlight
-    const double output      = solar_input * efficiency_;      // W electrical
+    const double solar_input = base_input_ * solar_scale; // W of sunlight
+    const double output      = solar_input * efficiency_; // W electrical
 
     last_output_ = output;
 
@@ -78,8 +74,8 @@ void SolarArray::tick(const TickContext& ctx) {
 
     Logger::instance().log_wide(
         "SolarArray", ctx.tick_index, ctx.time,
-        {"status","solar_scale","solar_input","output","efficiency"},
-        {1.0, solar_scale, solar_input, output, efficiency_}
+        {"status","solar_scale","solar_input","output","efficiency","base_input"},
+        {1.0, solar_scale, solar_input, output, efficiency_, base_input_}
     );
 }
 

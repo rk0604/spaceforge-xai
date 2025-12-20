@@ -1,0 +1,18 @@
+# all jobs that are not prepended with V2_sim have the old params for pwoer:
+# === OLD HARDWARE / REGIME VALUES (before changes) ===
+#
+# Battery:
+#   battery_capacity_Wh      = 1000.0    # total energy capacity
+#   battery_initial_charge   = 500.0     # starts at 50% capacity
+#   battery_max_charge_W     = 200.0     # max charge rate (this was the main bottleneck)
+#   battery_max_discharge_W  = 2000.0    # max discharge rate
+#
+# Solar Array:
+#   solar_efficiency         = 0.30      # 30% electrical efficiency
+#   solar_base_input_W       = 5667.0    # incident solar power at full sun
+#                                       # -> max electrical output ≈ 1700 W
+#
+# Notes:
+# - SolarArray constructor IGNORED passed-in parameters and hardcoded these values.
+# - Battery max_charge_W = 200 W limited energy storage severely, causing underflux/undertemp failures.
+# - These values were NOT logged into SimulationEngine.csv, so regime changes were implicit.
