@@ -1,0 +1,10 @@
+# start_tick   end_tick   wafer_flux_cm2s   heater_W   # Notes
+0             80         9.0e12             1          # Outgassing / bake, low background flux to stabilize surface
+80            150        1.8e13             1          # Early nucleation, gentle adsorption and ordering
+150           230        3.0e13             1          # Controlled ramp into growth, avoid roughening transients
+230           330        4.2e13             1          # Pre-plateau growth, lock morphology and temperature balance
+330           700        5.4e13             1          # Main growth plateau, steady thickness accumulation
+700           820        6.1e13             1          # Mild throughput push, stay in stable regime
+820           900        5.6e13             1          # Recovery / re-equilibration, suppress defect propagation
+900           1000       4.3e13             1          # Taper down, reduce supersaturation for smoother finish
+1000          1100       2.8e13             1          # Final conditioning, low-defect termination and smoothing

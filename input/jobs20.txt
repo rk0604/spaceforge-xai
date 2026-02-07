@@ -1,0 +1,13 @@
+# start_tick   end_tick   wafer_flux_cm2s   heater_W     # Notes
+0             80         0.0e0              850         # Pumpdown settle + initial stage warm-up, shutters closed (no deposition)
+80            170        0.0e0              1400        # Outgassing/soak at temperature, shutters closed
+170           230        0.0e0              1750        # Surface prep / oxide desorption window (material-dependent), shutters closed
+230           260        2.5e12             1700        # Low-flux conditioning pre-exposure (optional), avoids transient nucleation spikes
+260           340        7.0e12             1750        # Nucleation start, gentle flux for 300 mm uniformity (reduce islanding)
+340           440        1.5e13             1850        # Transition ramp into growth, gradual increase to protect morphology
+440           790        2.9e13             2000        # Main growth plateau, stable segment for thickness + uniformity control
+790           870        3.5e13             2050        # Mild throughput push, bounded to avoid roughening / step-bunching
+870           950        2.7e13             1950        # Recovery / re-equilibration, reduce supersaturation and defect incorporation
+950           1040       1.9e13             1800        # Taper-down finish, smoothing-focused segment (edge-to-center uniformity)
+1040          1090       0.0e0              1650        # Growth termination + short anneal/soak, shutters closed (surface relaxation)
+1090          1180       0.0e0              1100        # Controlled cool-down ramp, shutters closed (stress/bow management on 300 mm)

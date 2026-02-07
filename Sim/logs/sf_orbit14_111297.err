@@ -1,0 +1,118 @@
+[info] MPI world size = 1
+[info] Args: mode=wake wakeDeck=in.wake_harness effDeck=in.effusion inputDir=/common/home/rvk22/spaceforge-xai/input nWake=-1 nticks=1050 dt=60 coupleEvery=1 spartaBlock=2500
+[info] Env: RUN_ID=V2_jobs14
+[info] Env: ENABLE_SPARTA=ON
+[info] Env: MODE=wake
+[info] Env: INPUT_SUBDIR=<unset>
+[info] Loaded 9 job(s) from /common/home/rvk22/spaceforge-xai/input/jobs14.txt
+  [job 0] ticks 5-105, Fwafer=2e+13 cm^-2 s^-1, heater=1 W
+  [job 1] ticks 115-225, Fwafer=3.5e+13 cm^-2 s^-1, heater=1 W
+  [job 2] ticks 235-365, Fwafer=5.5e+13 cm^-2 s^-1, heater=1 W
+  [job 3] ticks 375-515, Fwafer=7.2e+13 cm^-2 s^-1, heater=1 W
+  [job 4] ticks 525-565, Fwafer=8.5e+13 cm^-2 s^-1, heater=1 W
+  [job 5] ticks 575-705, Fwafer=7.4e+13 cm^-2 s^-1, heater=1 W
+  [job 6] ticks 715-825, Fwafer=6e+13 cm^-2 s^-1, heater=1 W
+  [job 7] ticks 835-955, Fwafer=4.8e+13 cm^-2 s^-1, heater=1 W
+  [job 8] ticks 965-1035, Fwafer=3.5e+13 cm^-2 s^-1, heater=1 W
+[info] Job 0 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=2e+13)
+[info] Job 1 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=3.5e+13)
+[info] Job 2 dynamic warm-up estimate: 22 tick(s) at dt=60 s (Fwafer_cm2s=5.5e+13)
+[info] Job 3 dynamic warm-up estimate: 19 tick(s) at dt=60 s (Fwafer_cm2s=7.2e+13)
+[info] Job 4 dynamic warm-up estimate: 17 tick(s) at dt=60 s (Fwafer_cm2s=8.5e+13)
+[info] Job 5 dynamic warm-up estimate: 18 tick(s) at dt=60 s (Fwafer_cm2s=7.4e+13)
+[info] Job 6 dynamic warm-up estimate: 21 tick(s) at dt=60 s (Fwafer_cm2s=6e+13)
+[info] Job 7 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=4.8e+13)
+[info] Job 8 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=3.5e+13)
+[info] Simulation starting on 1 MPI task(s)
+[info] Mode = wake
+[info] nticks = 1050
+[info] dt = 60 s
+[info] couple-every = 1
+[info] sparta-block = 2500
+[params] Wrote params.inc: Fwafer_cm2s=2e+13, mbe_active=0
+[info] Constructing WakeChamber and calling wake.init(...)
+[info] wake.init() returned; entering main wake loop.
+[orbit] altitude_m=300000, period_s=5640 (~94 min)
+[job] tick=1 update params.inc: Fwafer_cm2s=1e+08, mbe_active=0
+[params] Wrote params.inc: Fwafer_cm2s=1e+08, mbe_active=0
+[job] tick=1 set heater demand=0 W
+[wake] tick=1 t=60 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=1 t=60 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=1 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=1 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=2 t=120 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=2 t=120 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=2 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=2 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=3 t=180 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=3 t=180 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=3 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=3 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=4 t=240 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=4 t=240 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=4 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=4 EXIT  wake.runIfDirtyOrAdvance(...)
+[job] tick=5 entering job window [5,105] (index=0) Fwafer_cm2s=2e+13, heater_W=1 (warmup_ticks=23)
+[job] tick=5 update params.inc: Fwafer_cm2s=2e+13, mbe_active=1
+[params] Wrote params.inc: Fwafer_cm2s=2e+13, mbe_active=1
+[job] tick=5 set heater demand=1200 W
+[wake] tick=5 t=300 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=5 t=300 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=5 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=5 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=6 t=360 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=6 t=360 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=6 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=6 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=7 t=420 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=7 t=420 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=7 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=7 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=8 t=480 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=8 t=480 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=8 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=8 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=9 t=540 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=9 t=540 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=9 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=9 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=10 t=600 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=10 t=600 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=10 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=10 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=11 t=660 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=11 t=660 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=11 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=11 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=12 t=720 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=12 t=720 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=12 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=12 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=13 t=780 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=13 t=780 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=13 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=13 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=14 t=840 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=14 t=840 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=14 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=14 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=15 t=900 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=15 t=900 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=15 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=15 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=16 t=960 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=16 t=960 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=16 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=16 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=17 t=1020 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=17 t=1020 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=17 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=17 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=18 t=1080 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=18 t=1080 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=18 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[cpl] tick=18 EXIT  wake.runIfDirtyOrAdvance(...)
+[wake] tick=19 t=1140 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=19 t=1140 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=19 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[2025-12-29T10:55:24.594] error: *** JOB 111297 ON ilab4 CANCELLED AT 2025-12-29T10:55:24 DUE to SIGNAL Terminated ***

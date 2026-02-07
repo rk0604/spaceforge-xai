@@ -1,0 +1,10 @@
+# start_tick   end_tick   wafer_flux_cm2s   heater_W     # Notes
+5             95         2.2e13            1            # Warm-up / outgassing, very low flux, gentle thermal ramp
+105           205        3.8e13            1            # Nucleation / low-rate start, stabilize surface chemistry
+215           335        5.8e13            1            # Ramp into main growth, moderate flux to avoid overshoot
+345           495        7.6e13            1            # Steady growth plateau, primary thickness accumulation
+505           545        9.0e13            1            # Brief step-up, check response without prolonged high load
+555           705        7.9e13            1            # Return to stable plateau, settle after perturbation
+715           815        6.6e13            1            # Controlled taper, reduce power stress while continuing growth
+825           935        5.2e13            1            # Long smoothing segment, improve uniformity and thermal margin
+945           1005       3.9e13            1            # Late-stage conditioning, lower rate to finish cleanly

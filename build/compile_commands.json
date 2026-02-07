@@ -1,0 +1,98 @@
+[
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/Logger.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/Logger.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/Logger.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/Logger.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/SimulationEngine.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/SimulationEngine.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/SimulationEngine.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/SimulationEngine.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/TickPhaseEngine.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/TickPhaseEngine.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/PowerBus.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/PowerBus.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/PowerBus.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/PowerBus.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/Battery.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/Battery.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/Battery.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/Battery.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/SolarArray.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/SolarArray.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/SolarArray.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/SolarArray.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/EffusionCell.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/EffusionCell.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/EffusionCell.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/EffusionCell.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/WakeChamber.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/WakeChamber.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/WakeChamber.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/WakeChamber.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/DepositionMap.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/DepositionMap.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/DepositionMap.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/DepositionMap.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/SpartaDiag.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/SpartaDiag.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/orbit.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/orbit.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/orbit.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/orbit.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/GrowthMonitor.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/GrowthMonitor.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/GrowthMonitor.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/helpers.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/helpers.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/helpers.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/helpers.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/HeaterBank.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/HeaterBank.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/HeaterBank.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -DENABLE_SPARTA=0 -DPROJECT_SOURCE_DIR=\\\"/common/home/rvk22/spaceforge-xai\\\" -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/simcore.dir/src/SpartaBridgeShim.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/SpartaBridgeShim.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/SpartaBridgeShim.cpp",
+  "output": "Sim/CMakeFiles/simcore.dir/src/SpartaBridgeShim.cpp.o"
+},
+{
+  "directory": "/common/home/rvk22/spaceforge-xai/build",
+  "command": "/usr/bin/g++ -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -g -std=gnu++17 -o Sim/CMakeFiles/sim.dir/src/main.cpp.o -c /common/home/rvk22/spaceforge-xai/Sim/src/main.cpp",
+  "file": "/common/home/rvk22/spaceforge-xai/Sim/src/main.cpp",
+  "output": "Sim/CMakeFiles/sim.dir/src/main.cpp.o"
+}
+]

@@ -1,0 +1,18 @@
+# start_tick   end_tick   wafer_flux_cm2s   heater_W     # Notes
+0             90         0.0e0              850         # Pumpdown settle + initial stage warm-up, shutters closed (no deposition)
+90            210        0.0e0              1450        # Outgassing/soak at temperature, shutters closed (stabilize surface + chamber)
+210           270        0.0e0              1750        # Surface prep / desorb window (material-dependent), shutters closed
+270           305        2.0e12             1650        # Low-flux conditioning pre-exposure (optional), reduce transient nucleation spikes
+305           395        7.0e12             1750        # Nucleation start, gentle flux for 300 mm uniformity (minimize islanding)
+395           455        1.3e13             1825        # Transition ramp (step 1), gradual increase to protect morphology
+455           515        1.6e13             1875        # Transition ramp (step 2), controlled continuation
+515           650        2.75e13            1950        # Main growth plateau (A1), steady growth baseline
+650           720        2.95e13            1975        # Main growth plateau (A2), small +7% flux correction (RHEED/cal drift analogue)
+720           760        0.0e0              1500        # LEO eclipse hold (~40 min), shutters closed, thermal hold to preserve continuity
+760           885        2.85e13            1950        # Main growth plateau (B1), resume steady growth after eclipse
+885           945        3.15e13            2000        # Mild throughput push (sunlit margin), bounded to avoid roughening
+945           1005       2.70e13            1925        # Recovery / re-equilibration, reduce supersaturation and defect incorporation
+1005          1070       2.05e13            1800        # Taper-down finish (step 1), smoothing-focused segment (edge-to-center uniformity)
+1070          1120       1.85e13            1750        # Taper-down finish (step 2), gentle termination approach
+1120          1160       0.0e0              1600        # Termination + short anneal/soak, shutters closed (surface relaxation)
+1160          1190       0.0e0              1200        # Controlled cool-down start, shutters closed (stress/bow management on 300 mm)

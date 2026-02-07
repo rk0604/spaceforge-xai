@@ -1,0 +1,43 @@
+[info] MPI world size = 1
+[info] Args: mode=wake wakeDeck=in.wake_harness effDeck=in.effusion inputDir=/common/home/rvk22/spaceforge-xai/input nWake=-1 nticks=1150 dt=60 coupleEvery=1 spartaBlock=2500
+[info] Env: RUN_ID=V2_jobs15
+[info] Env: ENABLE_SPARTA=ON
+[info] Env: MODE=wake
+[info] Env: INPUT_SUBDIR=<unset>
+[info] Loaded 9 job(s) from /common/home/rvk22/spaceforge-xai/input/jobs15.txt
+  [job 0] ticks 0-80, Fwafer=9e+12 cm^-2 s^-1, heater=1 W
+  [job 1] ticks 80-150, Fwafer=1.8e+13 cm^-2 s^-1, heater=1 W
+  [job 2] ticks 150-230, Fwafer=3e+13 cm^-2 s^-1, heater=1 W
+  [job 3] ticks 230-330, Fwafer=4.2e+13 cm^-2 s^-1, heater=1 W
+  [job 4] ticks 330-700, Fwafer=5.4e+13 cm^-2 s^-1, heater=1 W
+  [job 5] ticks 700-820, Fwafer=6.1e+13 cm^-2 s^-1, heater=1 W
+  [job 6] ticks 820-900, Fwafer=5.6e+13 cm^-2 s^-1, heater=1 W
+  [job 7] ticks 900-1000, Fwafer=4.3e+13 cm^-2 s^-1, heater=1 W
+  [job 8] ticks 1000-1100, Fwafer=2.8e+13 cm^-2 s^-1, heater=1 W
+[info] Job 0 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=9e+12)
+[info] Job 1 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=1.8e+13)
+[info] Job 2 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=3e+13)
+[info] Job 3 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=4.2e+13)
+[info] Job 4 dynamic warm-up estimate: 22 tick(s) at dt=60 s (Fwafer_cm2s=5.4e+13)
+[info] Job 5 dynamic warm-up estimate: 21 tick(s) at dt=60 s (Fwafer_cm2s=6.1e+13)
+[info] Job 6 dynamic warm-up estimate: 21 tick(s) at dt=60 s (Fwafer_cm2s=5.6e+13)
+[info] Job 7 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=4.3e+13)
+[info] Job 8 dynamic warm-up estimate: 23 tick(s) at dt=60 s (Fwafer_cm2s=2.8e+13)
+[info] Simulation starting on 1 MPI task(s)
+[info] Mode = wake
+[info] nticks = 1150
+[info] dt = 60 s
+[info] couple-every = 1
+[info] sparta-block = 2500
+[params] Wrote params.inc: Fwafer_cm2s=9e+12, mbe_active=0
+[info] Constructing WakeChamber and calling wake.init(...)
+[info] wake.init() returned; entering main wake loop.
+[orbit] altitude_m=300000, period_s=5640 (~94 min)
+[job] tick=1 entering job window [0,80] (index=0) Fwafer_cm2s=9e+12, heater_W=1 (warmup_ticks=23)
+[job] tick=1 update params.inc: Fwafer_cm2s=9e+12, mbe_active=1
+[params] Wrote params.inc: Fwafer_cm2s=9e+12, mbe_active=1
+[job] tick=1 set heater demand=1200 W
+[wake] tick=1 t=60 s : BEFORE engine.tick() + wake.tick()
+[wake] tick=1 t=60 s : AFTER engine.tick() + wake.tick()
+[cpl] tick=1 ENTER wake.runIfDirtyOrAdvance(spartaBlock=2500)
+[2025-12-31T18:49:41.773] error: *** JOB 111403 ON ilab4 CANCELLED AT 2025-12-31T18:49:41 DUE to SIGNAL Terminated ***

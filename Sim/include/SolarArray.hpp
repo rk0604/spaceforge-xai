@@ -4,7 +4,7 @@
 
 class SolarArray : public Subsystem {
 public:
-    // Default: ~30 % efficient array, ~5.7 kW incident sunlight at full sun.
+    // Default: 30 % efficient array, 5.7 kW incident sunlight at full sun.
     // This yields about 1.7 kW electrical output when solar_scale = 1.0.
     explicit SolarArray(double efficiency = 0.30,
                         double base_input = 5667.0);

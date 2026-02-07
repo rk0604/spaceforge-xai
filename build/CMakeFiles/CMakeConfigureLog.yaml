@@ -418,3 +418,2849 @@ events:
         
       exitCode: 0
 ...
+
+---
+events:
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineSystem.cmake:233 (message)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      The system is: Linux - 6.8.0-64-generic - x86_64
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:17 (message)"
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerId.cmake:64 (__determine_compiler_id_test)"
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCXXCompiler.cmake:126 (CMAKE_DETERMINE_COMPILER_ID)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Compiling the CXX compiler identification source file "CMakeCXXCompilerId.cpp" succeeded.
+      Compiler: /usr/bin/g++ 
+      Build flags: 
+      Id flags:  
+      
+      The output was:
+      0
+      
+      
+      Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
+      
+      The CXX compiler identification is GNU, found in:
+        /common/home/rvk22/spaceforge-xai/build/CMakeFiles/3.28.3/CompilerIdCXX/a.out
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:57 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    checks:
+      - "Detecting CXX compiler ABI info"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZEdXMh"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZEdXMh"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_CXX_ABI_COMPILED"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZEdXMh'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_91be6
+        [1/2] /usr/bin/g++   -v -o CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp
+        Using built-in specs.
+        COLLECT_GCC=/usr/bin/g++
+        OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-linux-gnu
+        Configured with: ../src/configure -v --with-pkgversion='Ubuntu 13.3.0-6ubuntu2~24.04' --with-bugurl=file:///usr/share/doc/gcc-13/README.Bugs --enable-languages=c,ada,c++,go,d,fortran,objc,obj-c++,m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-13 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/libexec --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-libstdcxx-backtrace --enable-gnu-unique-object --disable-vtable-verify --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --disable-werror --enable-cet --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-nvptx/usr,amdgcn-amdhsa=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-gcn/usr --enable-offload-defaulted --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-serialization=2
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04) 
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_91be6.dir/'
+         /usr/libexec/gcc/x86_64-linux-gnu/13/cc1plus -quiet -v -imultiarch x86_64-linux-gnu -D_GNU_SOURCE /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_91be6.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -fasynchronous-unwind-tables -fstack-protector-strong -Wformat -Wformat-security -fstack-clash-protection -fcf-protection -o /tmp/ccJJb1Me.s
+        GNU C++17 (Ubuntu 13.3.0-6ubuntu2~24.04) version 13.3.0 (x86_64-linux-gnu)
+        	compiled by GNU C version 13.3.0, GMP version 6.3.0, MPFR version 4.2.1, MPC version 1.3.1, isl version isl-0.26-GMP
+        
+        GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072
+        ignoring duplicate directory "/usr/include/x86_64-linux-gnu/c++/13"
+        ignoring nonexistent directory "/usr/local/include/x86_64-linux-gnu"
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-linux-gnu/13/include-fixed/x86_64-linux-gnu"
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-linux-gnu/13/include-fixed"
+        ignoring nonexistent directory "/usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include"
+        #include "..." search starts here:
+        #include <...> search starts here:
+         /usr/include/c++/13
+         /usr/include/x86_64-linux-gnu/c++/13
+         /usr/include/c++/13/backward
+         /usr/lib/gcc/x86_64-linux-gnu/13/include
+         /usr/local/include
+         /usr/include/x86_64-linux-gnu
+         /usr/include
+        End of search list.
+        Compiler executable checksum: c81c05345ce537099dafd5580045814a
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_91be6.dir/'
+         as -v --64 -o CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccJJb1Me.s
+        GNU assembler version 2.42 (x86_64-linux-gnu) using BFD version (GNU Binutils for Ubuntu) 2.42
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.'
+        [2/2] : && /usr/bin/g++  -v CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_91be6   && :
+        Using built-in specs.
+        COLLECT_GCC=/usr/bin/g++
+        COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper
+        OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa
+        OFFLOAD_TARGET_DEFAULT=1
+        Target: x86_64-linux-gnu
+        Configured with: ../src/configure -v --with-pkgversion='Ubuntu 13.3.0-6ubuntu2~24.04' --with-bugurl=file:///usr/share/doc/gcc-13/README.Bugs --enable-languages=c,ada,c++,go,d,fortran,objc,obj-c++,m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-13 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/libexec --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-libstdcxx-backtrace --enable-gnu-unique-object --disable-vtable-verify --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --disable-werror --enable-cet --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32,m64,mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-nvptx/usr,amdgcn-amdhsa=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-gcn/usr --enable-offload-defaulted --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-serialization=2
+        Thread model: posix
+        Supported LTO compression algorithms: zlib zstd
+        gcc version 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04) 
+        COMPILER_PATH=/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/
+        LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../:/lib/:/usr/lib/
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_91be6' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_91be6.'
+         /usr/libexec/gcc/x86_64-linux-gnu/13/collect2 -plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper -plugin-opt=-fresolution=/tmp/ccxJiOs6.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -z now -z relro -o cmTC_91be6 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o -L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/13/../../.. CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o
+        COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_91be6' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_91be6.'
+        
+      exitCode: 0
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:127 (message)"
+      - "/usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit include dir info: rv=done
+        found start of include info
+        found start of implicit include info
+          add: [/usr/include/c++/13]
+          add: [/usr/include/x86_64-linux-gnu/c++/13]
+          add: [/usr/include/c++/13/backward]
+          add: [/usr/lib/gcc/x86_64-linux-gnu/13/include]
+          add: [/usr/local/include]
+          add: [/usr/include/x86_64-linux-gnu]
+          add: [/usr/include]
+        end of search list found
+        collapse include dir [/usr/include/c++/13] ==> [/usr/include/c++/13]
+        collapse include dir [/usr/include/x86_64-linux-gnu/c++/13] ==> [/usr/include/x86_64-linux-gnu/c++/13]
+        collapse include dir [/usr/include/c++/13/backward] ==> [/usr/include/c++/13/backward]
+        collapse include dir [/usr/lib/gcc/x86_64-linux-gnu/13/include] ==> [/usr/lib/gcc/x86_64-linux-gnu/13/include]
+        collapse include dir [/usr/local/include] ==> [/usr/local/include]
+        collapse include dir [/usr/include/x86_64-linux-gnu] ==> [/usr/include/x86_64-linux-gnu]
+        collapse include dir [/usr/include] ==> [/usr/include]
+        implicit include dirs: [/usr/include/c++/13;/usr/include/x86_64-linux-gnu/c++/13;/usr/include/c++/13/backward;/usr/lib/gcc/x86_64-linux-gnu/13/include;/usr/local/include;/usr/include/x86_64-linux-gnu;/usr/include]
+      
+      
+  -
+    kind: "message-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/CMakeDetermineCompilerABI.cmake:159 (message)"
+      - "/usr/share/cmake-3.28/Modules/CMakeTestCXXCompiler.cmake:26 (CMAKE_DETERMINE_COMPILER_ABI)"
+      - "CMakeLists.txt:2 (project)"
+    message: |
+      Parsed CXX implicit link information:
+        link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
+        ignore line: [Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZEdXMh']
+        ignore line: []
+        ignore line: [Run Build Command(s): /usr/bin/ninja -v cmTC_91be6]
+        ignore line: [[1/2] /usr/bin/g++   -v -o CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o -c /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=/usr/bin/g++]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-linux-gnu]
+        ignore line: [Configured with: ../src/configure -v --with-pkgversion='Ubuntu 13.3.0-6ubuntu2~24.04' --with-bugurl=file:///usr/share/doc/gcc-13/README.Bugs --enable-languages=c ada c++ go d fortran objc obj-c++ m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-13 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/libexec --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-libstdcxx-backtrace --enable-gnu-unique-object --disable-vtable-verify --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --disable-werror --enable-cet --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32 m64 mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-nvptx/usr amdgcn-amdhsa=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-gcn/usr --enable-offload-defaulted --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-serialization=2]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04) ]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_91be6.dir/']
+        ignore line: [ /usr/libexec/gcc/x86_64-linux-gnu/13/cc1plus -quiet -v -imultiarch x86_64-linux-gnu -D_GNU_SOURCE /usr/share/cmake-3.28/Modules/CMakeCXXCompilerABI.cpp -quiet -dumpdir CMakeFiles/cmTC_91be6.dir/ -dumpbase CMakeCXXCompilerABI.cpp.cpp -dumpbase-ext .cpp -mtune=generic -march=x86-64 -version -fasynchronous-unwind-tables -fstack-protector-strong -Wformat -Wformat-security -fstack-clash-protection -fcf-protection -o /tmp/ccJJb1Me.s]
+        ignore line: [GNU C++17 (Ubuntu 13.3.0-6ubuntu2~24.04) version 13.3.0 (x86_64-linux-gnu)]
+        ignore line: [	compiled by GNU C version 13.3.0  GMP version 6.3.0  MPFR version 4.2.1  MPC version 1.3.1  isl version isl-0.26-GMP]
+        ignore line: []
+        ignore line: [GGC heuristics: --param ggc-min-expand=100 --param ggc-min-heapsize=131072]
+        ignore line: [ignoring duplicate directory "/usr/include/x86_64-linux-gnu/c++/13"]
+        ignore line: [ignoring nonexistent directory "/usr/local/include/x86_64-linux-gnu"]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-linux-gnu/13/include-fixed/x86_64-linux-gnu"]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-linux-gnu/13/include-fixed"]
+        ignore line: [ignoring nonexistent directory "/usr/lib/gcc/x86_64-linux-gnu/13/../../../../x86_64-linux-gnu/include"]
+        ignore line: [#include "..." search starts here:]
+        ignore line: [#include <...> search starts here:]
+        ignore line: [ /usr/include/c++/13]
+        ignore line: [ /usr/include/x86_64-linux-gnu/c++/13]
+        ignore line: [ /usr/include/c++/13/backward]
+        ignore line: [ /usr/lib/gcc/x86_64-linux-gnu/13/include]
+        ignore line: [ /usr/local/include]
+        ignore line: [ /usr/include/x86_64-linux-gnu]
+        ignore line: [ /usr/include]
+        ignore line: [End of search list.]
+        ignore line: [Compiler executable checksum: c81c05345ce537099dafd5580045814a]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_91be6.dir/']
+        ignore line: [ as -v --64 -o CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o /tmp/ccJJb1Me.s]
+        ignore line: [GNU assembler version 2.42 (x86_64-linux-gnu) using BFD version (GNU Binutils for Ubuntu) 2.42]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o' '-c' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.']
+        ignore line: [[2/2] : && /usr/bin/g++  -v CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o -o cmTC_91be6   && :]
+        ignore line: [Using built-in specs.]
+        ignore line: [COLLECT_GCC=/usr/bin/g++]
+        ignore line: [COLLECT_LTO_WRAPPER=/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper]
+        ignore line: [OFFLOAD_TARGET_NAMES=nvptx-none:amdgcn-amdhsa]
+        ignore line: [OFFLOAD_TARGET_DEFAULT=1]
+        ignore line: [Target: x86_64-linux-gnu]
+        ignore line: [Configured with: ../src/configure -v --with-pkgversion='Ubuntu 13.3.0-6ubuntu2~24.04' --with-bugurl=file:///usr/share/doc/gcc-13/README.Bugs --enable-languages=c ada c++ go d fortran objc obj-c++ m2 --prefix=/usr --with-gcc-major-version-only --program-suffix=-13 --program-prefix=x86_64-linux-gnu- --enable-shared --enable-linker-build-id --libexecdir=/usr/libexec --without-included-gettext --enable-threads=posix --libdir=/usr/lib --enable-nls --enable-bootstrap --enable-clocale=gnu --enable-libstdcxx-debug --enable-libstdcxx-time=yes --with-default-libstdcxx-abi=new --enable-libstdcxx-backtrace --enable-gnu-unique-object --disable-vtable-verify --enable-plugin --enable-default-pie --with-system-zlib --enable-libphobos-checking=release --with-target-system-zlib=auto --enable-objc-gc=auto --enable-multiarch --disable-werror --enable-cet --with-arch-32=i686 --with-abi=m64 --with-multilib-list=m32 m64 mx32 --enable-multilib --with-tune=generic --enable-offload-targets=nvptx-none=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-nvptx/usr amdgcn-amdhsa=/build/gcc-13-fG75Ri/gcc-13-13.3.0/debian/tmp-gcn/usr --enable-offload-defaulted --without-cuda-driver --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu --with-build-config=bootstrap-lto-lean --enable-link-serialization=2]
+        ignore line: [Thread model: posix]
+        ignore line: [Supported LTO compression algorithms: zlib zstd]
+        ignore line: [gcc version 13.3.0 (Ubuntu 13.3.0-6ubuntu2~24.04) ]
+        ignore line: [COMPILER_PATH=/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/13/:/usr/libexec/gcc/x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/]
+        ignore line: [LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/13/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib/:/lib/x86_64-linux-gnu/:/lib/../lib/:/usr/lib/x86_64-linux-gnu/:/usr/lib/../lib/:/usr/lib/gcc/x86_64-linux-gnu/13/../../../:/lib/:/usr/lib/]
+        ignore line: [COLLECT_GCC_OPTIONS='-v' '-o' 'cmTC_91be6' '-shared-libgcc' '-mtune=generic' '-march=x86-64' '-dumpdir' 'cmTC_91be6.']
+        link line: [ /usr/libexec/gcc/x86_64-linux-gnu/13/collect2 -plugin /usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so -plugin-opt=/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper -plugin-opt=-fresolution=/tmp/ccxJiOs6.res -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc -plugin-opt=-pass-through=-lc -plugin-opt=-pass-through=-lgcc_s -plugin-opt=-pass-through=-lgcc --build-id --eh-frame-hdr -m elf_x86_64 --hash-style=gnu --as-needed -dynamic-linker /lib64/ld-linux-x86-64.so.2 -pie -z now -z relro -o cmTC_91be6 /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o /usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o -L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu -L/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib -L/lib/x86_64-linux-gnu -L/lib/../lib -L/usr/lib/x86_64-linux-gnu -L/usr/lib/../lib -L/usr/lib/gcc/x86_64-linux-gnu/13/../../.. CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o -lstdc++ -lm -lgcc_s -lgcc -lc -lgcc_s -lgcc /usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o /usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o]
+          arg [/usr/libexec/gcc/x86_64-linux-gnu/13/collect2] ==> ignore
+          arg [-plugin] ==> ignore
+          arg [/usr/libexec/gcc/x86_64-linux-gnu/13/liblto_plugin.so] ==> ignore
+          arg [-plugin-opt=/usr/libexec/gcc/x86_64-linux-gnu/13/lto-wrapper] ==> ignore
+          arg [-plugin-opt=-fresolution=/tmp/ccxJiOs6.res] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lc] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc_s] ==> ignore
+          arg [-plugin-opt=-pass-through=-lgcc] ==> ignore
+          arg [--build-id] ==> ignore
+          arg [--eh-frame-hdr] ==> ignore
+          arg [-m] ==> ignore
+          arg [elf_x86_64] ==> ignore
+          arg [--hash-style=gnu] ==> ignore
+          arg [--as-needed] ==> ignore
+          arg [-dynamic-linker] ==> ignore
+          arg [/lib64/ld-linux-x86-64.so.2] ==> ignore
+          arg [-pie] ==> ignore
+          arg [-znow] ==> ignore
+          arg [-zrelro] ==> ignore
+          arg [-o] ==> ignore
+          arg [cmTC_91be6] ==> ignore
+          arg [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o] ==> obj [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o]
+          arg [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o] ==> obj [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o]
+          arg [/usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o] ==> obj [/usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o]
+          arg [-L/usr/lib/gcc/x86_64-linux-gnu/13] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/13]
+          arg [-L/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu]
+          arg [-L/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib]
+          arg [-L/lib/x86_64-linux-gnu] ==> dir [/lib/x86_64-linux-gnu]
+          arg [-L/lib/../lib] ==> dir [/lib/../lib]
+          arg [-L/usr/lib/x86_64-linux-gnu] ==> dir [/usr/lib/x86_64-linux-gnu]
+          arg [-L/usr/lib/../lib] ==> dir [/usr/lib/../lib]
+          arg [-L/usr/lib/gcc/x86_64-linux-gnu/13/../../..] ==> dir [/usr/lib/gcc/x86_64-linux-gnu/13/../../..]
+          arg [CMakeFiles/cmTC_91be6.dir/CMakeCXXCompilerABI.cpp.o] ==> ignore
+          arg [-lstdc++] ==> lib [stdc++]
+          arg [-lm] ==> lib [m]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [-lc] ==> lib [c]
+          arg [-lgcc_s] ==> lib [gcc_s]
+          arg [-lgcc] ==> lib [gcc]
+          arg [/usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o] ==> obj [/usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o]
+          arg [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o] ==> obj [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o]
+        collapse obj [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/Scrt1.o] ==> [/usr/lib/x86_64-linux-gnu/Scrt1.o]
+        collapse obj [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crti.o] ==> [/usr/lib/x86_64-linux-gnu/crti.o]
+        collapse obj [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu/crtn.o] ==> [/usr/lib/x86_64-linux-gnu/crtn.o]
+        collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/13] ==> [/usr/lib/gcc/x86_64-linux-gnu/13]
+        collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/13/../../../x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+        collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/13/../../../../lib] ==> [/usr/lib]
+        collapse library dir [/lib/x86_64-linux-gnu] ==> [/lib/x86_64-linux-gnu]
+        collapse library dir [/lib/../lib] ==> [/lib]
+        collapse library dir [/usr/lib/x86_64-linux-gnu] ==> [/usr/lib/x86_64-linux-gnu]
+        collapse library dir [/usr/lib/../lib] ==> [/usr/lib]
+        collapse library dir [/usr/lib/gcc/x86_64-linux-gnu/13/../../..] ==> [/usr/lib]
+        implicit libs: [stdc++;m;gcc_s;gcc;c;gcc_s;gcc]
+        implicit objs: [/usr/lib/x86_64-linux-gnu/Scrt1.o;/usr/lib/x86_64-linux-gnu/crti.o;/usr/lib/gcc/x86_64-linux-gnu/13/crtbeginS.o;/usr/lib/gcc/x86_64-linux-gnu/13/crtendS.o;/usr/lib/x86_64-linux-gnu/crtn.o]
+        implicit dirs: [/usr/lib/gcc/x86_64-linux-gnu/13;/usr/lib/x86_64-linux-gnu;/usr/lib;/lib/x86_64-linux-gnu;/lib]
+        implicit fwks: []
+      
+      
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zmyygh"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zmyygh"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zmyygh'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_91603
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_91603.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zmyygh/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_91603.dir/test_mpi.cpp.o -o cmTC_91603  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-74GynC"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-74GynC"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-74GynC'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_34068
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_34068.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-74GynC/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_34068.dir/test_mpi.cpp.o -o cmTC_34068  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PInrsd"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PInrsd"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PInrsd'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_af2a7
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_af2a7.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PInrsd/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_af2a7.dir/test_mpi.cpp.o -o cmTC_af2a7  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-e0joQB"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-e0joQB"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-e0joQB'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_cf55c
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_cf55c.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-e0joQB/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_cf55c.dir/test_mpi.cpp.o -o cmTC_cf55c  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7KXQFy"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7KXQFy"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7KXQFy'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_68d58
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_68d58.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7KXQFy/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_68d58.dir/test_mpi.cpp.o -o cmTC_68d58  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-maEkai"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-maEkai"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-maEkai'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_32b62
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_32b62.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-maEkai/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_32b62.dir/test_mpi.cpp.o -o cmTC_32b62  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7i2jNT"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7i2jNT"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7i2jNT'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b9c5f
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_b9c5f.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7i2jNT/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_b9c5f.dir/test_mpi.cpp.o -o cmTC_b9c5f  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-o13xAX"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-o13xAX"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-o13xAX'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_3c7c5
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_3c7c5.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-o13xAX/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_3c7c5.dir/test_mpi.cpp.o -o cmTC_3c7c5  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-mYXZJF"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-mYXZJF"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-mYXZJF'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_36eed
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_36eed.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-mYXZJF/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_36eed.dir/test_mpi.cpp.o -o cmTC_36eed  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jHjChp"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jHjChp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jHjChp'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_dcce2
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_dcce2.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jHjChp/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_dcce2.dir/test_mpi.cpp.o -o cmTC_dcce2  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9Ai6bM"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9Ai6bM"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9Ai6bM'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_70a60
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_70a60.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9Ai6bM/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_70a60.dir/test_mpi.cpp.o -o cmTC_70a60  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-nX5U2V"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-nX5U2V"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-nX5U2V'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_e4563
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_e4563.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-nX5U2V/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_e4563.dir/test_mpi.cpp.o -o cmTC_e4563  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XRx2g3"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XRx2g3"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XRx2g3'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_860ca
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_860ca.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XRx2g3/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_860ca.dir/test_mpi.cpp.o -o cmTC_860ca  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnty8z"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnty8z"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnty8z'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_607b5
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_607b5.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnty8z/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_607b5.dir/test_mpi.cpp.o -o cmTC_607b5  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2d969T"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2d969T"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2d969T'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b7971
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_b7971.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2d969T/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_b7971.dir/test_mpi.cpp.o -o cmTC_b7971  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-AvlAYG"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-AvlAYG"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-AvlAYG'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_11834
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_11834.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-AvlAYG/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_11834.dir/test_mpi.cpp.o -o cmTC_11834  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3BqJQv"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3BqJQv"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3BqJQv'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_0d0db
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_0d0db.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3BqJQv/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_0d0db.dir/test_mpi.cpp.o -o cmTC_0d0db  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PNDkvM"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PNDkvM"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PNDkvM'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_28202
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_28202.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PNDkvM/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_28202.dir/test_mpi.cpp.o -o cmTC_28202  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4CRk7a"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4CRk7a"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4CRk7a'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_75c10
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_75c10.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4CRk7a/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_75c10.dir/test_mpi.cpp.o -o cmTC_75c10  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-sq6LKT"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-sq6LKT"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-sq6LKT'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b5fe8
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_b5fe8.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-sq6LKT/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_b5fe8.dir/test_mpi.cpp.o -o cmTC_b5fe8  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MIX1sD"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MIX1sD"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MIX1sD'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_903ee
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_903ee.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MIX1sD/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_903ee.dir/test_mpi.cpp.o -o cmTC_903ee  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Va3XtC"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Va3XtC"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Va3XtC'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_44919
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_44919.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Va3XtC/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_44919.dir/test_mpi.cpp.o -o cmTC_44919  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-SvOFzh"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-SvOFzh"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-SvOFzh'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b00f4
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_b00f4.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-SvOFzh/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_b00f4.dir/test_mpi.cpp.o -o cmTC_b00f4  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-X3Xzi3"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-X3Xzi3"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-X3Xzi3'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_704a4
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_704a4.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-X3Xzi3/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_704a4.dir/test_mpi.cpp.o -o cmTC_704a4  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-kdWaJ5"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-kdWaJ5"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-kdWaJ5'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_33414
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_33414.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-kdWaJ5/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_33414.dir/test_mpi.cpp.o -o cmTC_33414  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-goLlgE"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-goLlgE"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-goLlgE'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_07a04
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_07a04.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-goLlgE/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_07a04.dir/test_mpi.cpp.o -o cmTC_07a04  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-FYm5Hd"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-FYm5Hd"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-FYm5Hd'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_e3475
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_e3475.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-FYm5Hd/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_e3475.dir/test_mpi.cpp.o -o cmTC_e3475  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-isg0tH"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-isg0tH"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-isg0tH'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_d2a66
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_d2a66.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-isg0tH/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_d2a66.dir/test_mpi.cpp.o -o cmTC_d2a66  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jzYnRS"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jzYnRS"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jzYnRS'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_0986a
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_0986a.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jzYnRS/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_0986a.dir/test_mpi.cpp.o -o cmTC_0986a  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3TggOn"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3TggOn"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3TggOn'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_a518a
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_a518a.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-3TggOn/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_a518a.dir/test_mpi.cpp.o -o cmTC_a518a  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-qjNu9H"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-qjNu9H"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-qjNu9H'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_7f80b
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_7f80b.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-qjNu9H/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_7f80b.dir/test_mpi.cpp.o -o cmTC_7f80b  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-G3OVSE"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-G3OVSE"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-G3OVSE'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_66839
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_66839.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-G3OVSE/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_66839.dir/test_mpi.cpp.o -o cmTC_66839  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZLedBM"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZLedBM"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZLedBM'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_5224c
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_5224c.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ZLedBM/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_5224c.dir/test_mpi.cpp.o -o cmTC_5224c  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-JNmQ6k"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-JNmQ6k"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-JNmQ6k'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_a0020
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_a0020.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-JNmQ6k/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_a0020.dir/test_mpi.cpp.o -o cmTC_a0020  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CoFAJR"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CoFAJR"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CoFAJR'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_9f588
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_9f588.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CoFAJR/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_9f588.dir/test_mpi.cpp.o -o cmTC_9f588  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fj3LmI"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fj3LmI"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fj3LmI'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_cffe5
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_cffe5.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fj3LmI/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_cffe5.dir/test_mpi.cpp.o -o cmTC_cffe5  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bdVjZr"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bdVjZr"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bdVjZr'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_3ae61
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_3ae61.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bdVjZr/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_3ae61.dir/test_mpi.cpp.o -o cmTC_3ae61  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7hFSFY"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7hFSFY"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7hFSFY'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_71df2
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_71df2.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7hFSFY/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_71df2.dir/test_mpi.cpp.o -o cmTC_71df2  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eLTuXR"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eLTuXR"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eLTuXR'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_b9941
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_b9941.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eLTuXR/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_b9941.dir/test_mpi.cpp.o -o cmTC_b9941  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ITSV7u"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ITSV7u"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ITSV7u'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_0e77b
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_0e77b.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ITSV7u/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_0e77b.dir/test_mpi.cpp.o -o cmTC_0e77b  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eumavA"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eumavA"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eumavA'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_de3ab
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_de3ab.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eumavA/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_de3ab.dir/test_mpi.cpp.o -o cmTC_de3ab  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-0mJ774"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-0mJ774"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-0mJ774'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_7ae3d
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_7ae3d.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-0mJ774/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_7ae3d.dir/test_mpi.cpp.o -o cmTC_7ae3d  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CclVbb"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CclVbb"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CclVbb'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_9b016
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_9b016.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-CclVbb/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_9b016.dir/test_mpi.cpp.o -o cmTC_9b016  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-EvF1rU"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-EvF1rU"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-EvF1rU'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_16670
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_16670.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-EvF1rU/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_16670.dir/test_mpi.cpp.o -o cmTC_16670  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jFgz2V"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jFgz2V"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jFgz2V'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_bbe3d
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_bbe3d.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-jFgz2V/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_bbe3d.dir/test_mpi.cpp.o -o cmTC_bbe3d  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HMSE3V"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HMSE3V"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HMSE3V'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_2387e
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_2387e.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HMSE3V/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_2387e.dir/test_mpi.cpp.o -o cmTC_2387e  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-pf6AQG"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-pf6AQG"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-pf6AQG'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_42156
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_42156.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-pf6AQG/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_42156.dir/test_mpi.cpp.o -o cmTC_42156  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-b70aZj"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-b70aZj"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-b70aZj'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_3deb1
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_3deb1.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-b70aZj/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_3deb1.dir/test_mpi.cpp.o -o cmTC_3deb1  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PMHUws"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PMHUws"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PMHUws'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_2a309
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_2a309.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-PMHUws/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_2a309.dir/test_mpi.cpp.o -o cmTC_2a309  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-RDRTB0"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-RDRTB0"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-RDRTB0'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_87009
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_87009.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-RDRTB0/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_87009.dir/test_mpi.cpp.o -o cmTC_87009  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-h6L3tI"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-h6L3tI"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-h6L3tI'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_2480d
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_2480d.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-h6L3tI/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_2480d.dir/test_mpi.cpp.o -o cmTC_2480d  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9XWyVK"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9XWyVK"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9XWyVK'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_8bca5
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_8bca5.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9XWyVK/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_8bca5.dir/test_mpi.cpp.o -o cmTC_8bca5  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-6trYEa"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-6trYEa"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-6trYEa'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_0f6f6
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_0f6f6.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-6trYEa/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_0f6f6.dir/test_mpi.cpp.o -o cmTC_0f6f6  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HTv79w"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HTv79w"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HTv79w'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_d7034
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_d7034.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HTv79w/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_d7034.dir/test_mpi.cpp.o -o cmTC_d7034  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P3rbgK"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P3rbgK"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P3rbgK'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_51d2c
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_51d2c.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P3rbgK/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_51d2c.dir/test_mpi.cpp.o -o cmTC_51d2c  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-cqayuW"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-cqayuW"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-cqayuW'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_948ef
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_948ef.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-cqayuW/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_948ef.dir/test_mpi.cpp.o -o cmTC_948ef  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HZ7C3R"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HZ7C3R"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HZ7C3R'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_46df4
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_46df4.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-HZ7C3R/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_46df4.dir/test_mpi.cpp.o -o cmTC_46df4  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MNmS9O"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MNmS9O"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MNmS9O'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_bc5d6
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_bc5d6.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MNmS9O/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_bc5d6.dir/test_mpi.cpp.o -o cmTC_bc5d6  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GqFvRe"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GqFvRe"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GqFvRe'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_bce3e
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_bce3e.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GqFvRe/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_bce3e.dir/test_mpi.cpp.o -o cmTC_bce3e  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-tOXtZN"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-tOXtZN"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-tOXtZN'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_e1a99
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_e1a99.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-tOXtZN/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_e1a99.dir/test_mpi.cpp.o -o cmTC_e1a99  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eIA3Ov"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eIA3Ov"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eIA3Ov'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_4f0b8
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_4f0b8.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eIA3Ov/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_4f0b8.dir/test_mpi.cpp.o -o cmTC_4f0b8  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eRp7qB"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eRp7qB"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eRp7qB'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_eec65
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_eec65.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-eRp7qB/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_eec65.dir/test_mpi.cpp.o -o cmTC_eec65  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-86c9Dh"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-86c9Dh"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-86c9Dh'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_9370e
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_9370e.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-86c9Dh/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_9370e.dir/test_mpi.cpp.o -o cmTC_9370e  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-OoCdo2"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-OoCdo2"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-OoCdo2'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_d344e
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_d344e.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-OoCdo2/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_d344e.dir/test_mpi.cpp.o -o cmTC_d344e  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-uU7b1E"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-uU7b1E"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-uU7b1E'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_ecb46
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_ecb46.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-uU7b1E/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_ecb46.dir/test_mpi.cpp.o -o cmTC_ecb46  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zX9MYI"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zX9MYI"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zX9MYI'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_4b578
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_4b578.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-zX9MYI/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_4b578.dir/test_mpi.cpp.o -o cmTC_4b578  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-E2W8WD"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-E2W8WD"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-E2W8WD'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_6b151
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_6b151.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-E2W8WD/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_6b151.dir/test_mpi.cpp.o -o cmTC_6b151  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2wngrZ"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2wngrZ"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2wngrZ'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_a52ee
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_a52ee.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-2wngrZ/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_a52ee.dir/test_mpi.cpp.o -o cmTC_a52ee  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bkWohy"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bkWohy"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bkWohy'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_3ffc6
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_3ffc6.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-bkWohy/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_3ffc6.dir/test_mpi.cpp.o -o cmTC_3ffc6  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fAEMUZ"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fAEMUZ"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fAEMUZ'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_fcb89
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_fcb89.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-fAEMUZ/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_fcb89.dir/test_mpi.cpp.o -o cmTC_fcb89  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-txQv4C"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-txQv4C"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-txQv4C'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_93c23
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_93c23.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-txQv4C/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_93c23.dir/test_mpi.cpp.o -o cmTC_93c23  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qb7RLg"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qb7RLg"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qb7RLg'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_72978
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_72978.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qb7RLg/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_72978.dir/test_mpi.cpp.o -o cmTC_72978  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-USYzvH"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-USYzvH"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-USYzvH'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_fcc9c
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_fcc9c.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-USYzvH/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_fcc9c.dir/test_mpi.cpp.o -o cmTC_fcc9c  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Y4Lvvo"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Y4Lvvo"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Y4Lvvo'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_f060a
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_f060a.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Y4Lvvo/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_f060a.dir/test_mpi.cpp.o -o cmTC_f060a  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7QwJx0"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7QwJx0"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7QwJx0'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_1b70b
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_1b70b.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-7QwJx0/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_1b70b.dir/test_mpi.cpp.o -o cmTC_1b70b  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MSxAAD"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MSxAAD"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MSxAAD'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_54b16
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_54b16.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-MSxAAD/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_54b16.dir/test_mpi.cpp.o -o cmTC_54b16  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-erEUxp"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-erEUxp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-erEUxp'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_ef333
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_ef333.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-erEUxp/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_ef333.dir/test_mpi.cpp.o -o cmTC_ef333  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9LYdtT"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9LYdtT"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9LYdtT'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_0386a
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_0386a.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-9LYdtT/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_0386a.dir/test_mpi.cpp.o -o cmTC_0386a  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-y9jWQq"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-y9jWQq"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-y9jWQq'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_1a823
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_1a823.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-y9jWQq/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_1a823.dir/test_mpi.cpp.o -o cmTC_1a823  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P02qBP"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P02qBP"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P02qBP'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_da8ab
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_da8ab.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-P02qBP/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_da8ab.dir/test_mpi.cpp.o -o cmTC_da8ab  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-NskUVe"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-NskUVe"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-NskUVe'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_481a1
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_481a1.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-NskUVe/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_481a1.dir/test_mpi.cpp.o -o cmTC_481a1  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ezzq7R"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ezzq7R"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ezzq7R'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_6b59f
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_6b59f.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-ezzq7R/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_6b59f.dir/test_mpi.cpp.o -o cmTC_6b59f  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XKU3b4"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XKU3b4"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XKU3b4'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_65ffa
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_65ffa.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-XKU3b4/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_65ffa.dir/test_mpi.cpp.o -o cmTC_65ffa  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GYru63"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GYru63"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GYru63'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_1556b
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_1556b.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-GYru63/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_1556b.dir/test_mpi.cpp.o -o cmTC_1556b  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-29ysK9"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-29ysK9"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-29ysK9'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_8ede6
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_8ede6.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-29ysK9/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_8ede6.dir/test_mpi.cpp.o -o cmTC_8ede6  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-m9SnVv"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-m9SnVv"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-m9SnVv'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_4745a
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_4745a.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-m9SnVv/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_4745a.dir/test_mpi.cpp.o -o cmTC_4745a  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-8CO46q"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-8CO46q"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-8CO46q'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_48bad
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_48bad.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-8CO46q/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_48bad.dir/test_mpi.cpp.o -o cmTC_48bad  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnmqfh"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnmqfh"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnmqfh'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_e4fda
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_e4fda.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-Qnmqfh/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_e4fda.dir/test_mpi.cpp.o -o cmTC_e4fda  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-UJYpd8"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-UJYpd8"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-UJYpd8'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_4dc1e
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_4dc1e.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-UJYpd8/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_4dc1e.dir/test_mpi.cpp.o -o cmTC_4dc1e  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4ygwFe"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4ygwFe"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4ygwFe'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_db3ad
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_db3ad.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-4ygwFe/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_db3ad.dir/test_mpi.cpp.o -o cmTC_db3ad  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-dlcVsZ"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-dlcVsZ"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-dlcVsZ'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_95577
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_95577.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-dlcVsZ/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_95577.dir/test_mpi.cpp.o -o cmTC_95577  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-KK32FU"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-KK32FU"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-KK32FU'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_ed369
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_ed369.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-KK32FU/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_ed369.dir/test_mpi.cpp.o -o cmTC_ed369  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1322 (_MPI_try_staged_settings)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1645 (_MPI_check_lang_works)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode normal"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vraxX2"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vraxX2"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_normal"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vraxX2'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_af220
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_af220.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-vraxX2/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_af220.dir/test_mpi.cpp.o -o cmTC_af220  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1278 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/FindMPI.cmake:1672 (_MPI_try_staged_settings)"
+      - "CMakeLists.txt:7 (find_package)"
+    description: "The MPI test test_mpi for CXX in mode MPICXX"
+    directories:
+      source: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-DWVEMK"
+      binary: "/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-DWVEMK"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "MPI_RESULT_CXX_test_mpi_MPICXX"
+      cached: true
+      stdout: |
+        Change Dir: '/common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-DWVEMK'
+        
+        Run Build Command(s): /usr/bin/ninja -v cmTC_79414
+        [1/2] /usr/bin/g++  -isystem /usr/lib/x86_64-linux-gnu/openmpi/include -isystem /usr/lib/x86_64-linux-gnu/openmpi/include/openmpi -std=gnu++17 -o CMakeFiles/cmTC_79414.dir/test_mpi.cpp.o -c /common/home/rvk22/spaceforge-xai/build/CMakeFiles/CMakeScratch/TryCompile-DWVEMK/test_mpi.cpp
+        [2/2] : && /usr/bin/g++   CMakeFiles/cmTC_79414.dir/test_mpi.cpp.o -o cmTC_79414  -Wl,-rpath,/usr/lib/x86_64-linux-gnu/openmpi/lib  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi_cxx.so  /usr/lib/x86_64-linux-gnu/openmpi/lib/libmpi.so && :
+        
+      exitCode: 0
+...

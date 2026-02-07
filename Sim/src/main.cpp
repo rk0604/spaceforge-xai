@@ -279,7 +279,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs7.txt";
+        const std::string jobsPath = args.inputDir + "/jobs30.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -349,8 +349,8 @@ int main(int argc, char** argv) {
 
     // Electrical/power subsystems (independent of SPARTA)
     PowerBus bus;
-    const double SOLAR_EFFICIENCY   = 0.30;
-    const double SOLAR_BASE_INPUT_W = 8000.0; // example boost
+    const double SOLAR_EFFICIENCY   = 0.25;
+    const double SOLAR_BASE_INPUT_W = 8500.0; // example boost
 
     SolarArray solar(SOLAR_EFFICIENCY, SOLAR_BASE_INPUT_W);
     Battery battery;
