@@ -43,3 +43,19 @@
 spaceforge_old/
 
 data/
+Sim/
+input/
+
+# Build artifacts
+Sim/build/
+build/
+
+# Logs
+*.log
+logs/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
