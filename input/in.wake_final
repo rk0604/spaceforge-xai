@@ -28,14 +28,6 @@ mixture            mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
 
 # Superset mixture for collisions & computes (includes H2O)
 mixture            mixAll  O N2 He H2O
-
-# --- NEW: single-species mixtures for RGA partial pressures ---
-mixture            mixO    O
-mixture            mixN2   N2
-mixture            mixHe   He
-mixture            mixH2O  H2O
-# -------------------------------------------------------------
-
 collide            vss mixAll data/o.vss
 
 # ------------------------------------------------------------------
@@ -97,7 +89,7 @@ print "diag:pInf_Pa=${pInf}"          screen yes
 print "diag:nInf_m^-3=${nInf}"        screen yes
 
 # Macro weighting
-variable           FNUM          equal 1.0e13
+variable           FNUM          equal 1.0e15
 global             fnum ${FNUM}
 
 # Inlet at xlo for freestream
@@ -203,20 +195,6 @@ compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
 compute            pGapPt     reduce ave c_tGapPt[2]
 
-# ------------------------------------------------------------------
-# NEW: Residual Gas Analyzer (species partial pressures at wake probe)
-# NOTE: thermal/grid takes a MIXTURE ID, so we use mixO/mixN2/mixHe/mixH2O
-# ------------------------------------------------------------------
-compute            tWake_O    thermal/grid gWakePt    mixO   temp press
-compute            tWake_N2   thermal/grid gWakePt    mixN2  temp press
-compute            tWake_He   thermal/grid gWakePt    mixHe  temp press
-compute            tWake_H2O  thermal/grid gWakePt    mixH2O temp press
-
-compute            pWake_O    reduce ave c_tWake_O[2]
-compute            pWake_N2   reduce ave c_tWake_N2[2]
-compute            pWake_He   reduce ave c_tWake_He[2]
-compute            pWake_H2O  reduce ave c_tWake_H2O[2]
-
 # Initialize (0 steps) so everything is defined; no warm-up run here.
 run                0
 
@@ -232,12 +210,6 @@ fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
 fix                avgFree  ave/time 1 ${block} ${block} c_pFreePt
 fix                avgGap   ave/time 1 ${block} ${block} c_pGapPt
 
-# NEW: RGA per-block averaging (Pa)
-fix                avgWakeO    ave/time 1 ${block} ${block} c_pWake_O
-fix                avgWakeN2   ave/time 1 ${block} ${block} c_pWake_N2
-fix                avgWakeHe   ave/time 1 ${block} ${block} c_pWake_He
-fix                avgWakeH2O  ave/time 1 ${block} ${block} c_pWake_H2O
-
 variable           P_FRONT       equal f_avgFront
 variable           P_WAKE        equal f_avgWake
 variable           P_FREE        equal f_avgFree
@@ -247,12 +219,6 @@ variable           P_FRONT_Torr  equal v_Pa2Torr*v_P_FRONT
 variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
-
-# NEW: RGA partial pressures (Torr)
-variable           P_WAKE_O_Torr    equal v_Pa2Torr*f_avgWakeO
-variable           P_WAKE_N2_Torr   equal v_Pa2Torr*f_avgWakeN2
-variable           P_WAKE_He_Torr   equal v_Pa2Torr*f_avgWakeHe
-variable           P_WAKE_H2O_Torr  equal v_Pa2Torr*f_avgWakeH2O
 
 # ------------------------------------------------------------------
 # Cupola emission diagnostics aligned to block cadence
@@ -270,13 +236,6 @@ variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNU
 # between jobs.
 # ------------------------------------------------------------------
 fix out print ${block}  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
-
-# ------------------------------------------------------------------
-# NEW: Residual Gas Analyzer CSV (wake partial pressures by species)
-# Suggested header your C++ harness writes once:
-# tick,time_s_phys,p_O_Torr,p_N2_Torr,p_He_Torr,p_H2O_Torr
-# ------------------------------------------------------------------
-fix rga_out print ${block} "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
 
 # ------------------------------------------------------------------
 # Keep stats every block; ACTUAL stepping is driven by C++ harness,

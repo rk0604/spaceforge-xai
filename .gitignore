@@ -44,7 +44,6 @@ spaceforge_old/
 
 data/
 Sim/
-input/
 
 # Build artifacts
 Sim/build/
