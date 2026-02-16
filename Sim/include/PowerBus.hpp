@@ -1,3 +1,4 @@
+// Sim/include/PowerBus.hpp
 #pragma once
 #include "Subsystem.hpp"
 #include "TickContext.hpp"
@@ -20,7 +21,13 @@ public:
     // Called by main to link the battery
     void setBattery(Battery* batt);
 
+    // Remaining bus power (should be ~0 after tick because we reset each tick)
     double getAvailablePower() const;
+
+    // ---- THESE MUST BE PUBLIC ----
+    double getRequestedThisTickW() const { return requested_this_tick_; }
+    double getGrantedThisTickW()  const { return granted_this_tick_; }
+    double getAddedThisTickW()    const { return added_this_tick_; }
 
 private:
     void logRow_(int tick, double time);

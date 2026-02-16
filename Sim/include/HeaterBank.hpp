@@ -5,15 +5,22 @@
 #include "Logger.hpp"
 #include <mutex>
 
-class EffusionCell; // forward declare
+class EffusionCell;
+class SubstrateHeater;
 
 class HeaterBank : public Subsystem {
 public:
-    HeaterBank(double maxDraw = 200.0);
+    explicit HeaterBank(double maxDraw = 4000.0); // upgraded realistic max
 
     void setPowerBus(PowerBus* bus);
-    void setDemand(double watts);
-    void setEffusionCell(EffusionCell* eff);  // optional hookup
+
+    void setEffusionCell(EffusionCell* eff);
+    void setSubstrateHeater(SubstrateHeater* sub);
+
+    void setEffusionDemand(double watts);
+    void setSubstrateDemand(double watts);
+
+    void setPrioritySubstrate(bool priority);
 
     void initialize() override;
     void tick(const TickContext& ctx) override;
@@ -22,10 +29,14 @@ public:
 private:
     PowerBus* bus_ = nullptr;
     EffusionCell* effusion_ = nullptr;
+    SubstrateHeater* substrate_ = nullptr;
 
     double maxDraw_;
-    double demand_ = 0.0;
-    double lastConsumed_ = 0.0;
+
+    double effusionDemand_  = 0.0;
+    double substrateDemand_ = 0.0;
+
+    bool prioritySubstrate_ = false;
 
     std::mutex demandMtx_;
 };

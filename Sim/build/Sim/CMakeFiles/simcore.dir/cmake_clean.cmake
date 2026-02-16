@@ -21,6 +21,8 @@ file(REMOVE_RECURSE
   "CMakeFiles/simcore.dir/src/SpartaBridge.cpp.o.d"
   "CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o"
   "CMakeFiles/simcore.dir/src/SpartaDiag.cpp.o.d"
+  "CMakeFiles/simcore.dir/src/SubstrateHeater.cpp.o"
+  "CMakeFiles/simcore.dir/src/SubstrateHeater.cpp.o.d"
   "CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o"
   "CMakeFiles/simcore.dir/src/TickPhaseEngine.cpp.o.d"
   "CMakeFiles/simcore.dir/src/WakeChamber.cpp.o"

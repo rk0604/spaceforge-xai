@@ -17,14 +17,14 @@ public:
     void setTickStep(double dt);
     void shutdown();
 
-    // Called by main.cpp when a job is declared failed.
-    // This will cause job_failed = 1.0 to appear in the next
-    // SimulationEngine.csv row that gets logged.
     void markJobFailedThisTick();
+
+    // Set spacecraft housekeeping power draw (W)
+    void setBaseLoadW(double w);
 
 private:
     std::vector<Subsystem*> subsystems_;
-    TickPhaseEngine tickEngine_;   // kept for future use (not required here)
+    TickPhaseEngine tickEngine_;
 
     Battery*    battery_   = nullptr;
     SolarArray* solar_     = nullptr;
@@ -33,11 +33,19 @@ private:
 
     int    tick_count_ = 0;
     double sim_time_   = 0.0;
-    double tick_step_  = 60.0;   // seconds per tick (match your CSV cadence)
+    double tick_step_  = 60.0;
 
-    // Flag that a job failed during this tick; logged once then cleared.
     bool job_failed_flag_ = false;
 
-    // helper to emit one wide row for the engine snapshot
+    // Spacecraft baseline power draw
+    double base_load_W_  = 400.0; // commanded housekeeping draw
+    double base_drawn_W_ = 0.0;   // actually granted by bus/battery this tick
+
+    // ---- Latched values captured BEFORE PowerBus::tick() resets counters ----
+    double latched_bus_remaining_W_   = 0.0;
+    double latched_total_requested_W_ = 0.0;
+    double latched_total_granted_W_   = 0.0;
+    double latched_total_generated_W_ = 0.0;
+
     void logRow_(int tick, double time);
 };

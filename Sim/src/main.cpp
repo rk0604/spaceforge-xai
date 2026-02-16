@@ -43,6 +43,8 @@ Run (from build/, headless):
 #include "Logger.hpp"        // for Orbit.csv logging
 #include "GrowthMonitor.hpp" // wafer dose / heatmap tracker
 #include "helpers.hpp"       // new helpers split from main
+#include "SubstrateHeater.hpp"
+
 
 // Bring helper types/functions into local scope
 using SimHelpers::Args;
@@ -360,25 +362,55 @@ int main(int argc, char** argv) {
     HeaterBank    heater(/*maxDraw=*/2000.0);
     EffusionCell  effCell;
     GrowthMonitor growth(/*gridN=*/32);
+    SubstrateHeater substrateHeater(/*maxPowerW=*/2200.0, /*wafer_radius_m=*/0.15);
 
+  
     solar.setPowerBus(&bus);
     battery.setPowerBus(&bus);
     heater.setPowerBus(&bus);
     heater.setEffusionCell(&effCell);     // Heater warms the effusion cell
+    heater.setSubstrateHeater(&substrateHeater); // heater warms up the substrate as well
     growth.setPowerBus(&bus);             // Film/growth monitor draws instrument power
 
     // GrowthMonitor should only log + write CSV on leader, but engine tick
     // will be called on all ranks.
     growth.setIsLeader(rank == 0);
-    growth.setNumJobs(jobs.size());
+    substrateHeater.setIsLeader(rank == 0);
+    growth.setNumJobs(njobs);
+
+    /**
+     * old order 
+        engine.addSubsystem(&solar);      // 1) power source
+        engine.addSubsystem(&battery);    // 2) storage update
+        engine.addSubsystem(&heater);     // 3) power load
+        engine.addSubsystem(&substrateHeater);
+        engine.addSubsystem(&effCell);    // 4) heat response (after heater!)
+        engine.addSubsystem(&bus);        // 5) bookkeeping on power totals
+        engine.addSubsystem(&growth);     // 6) sensors/aux
+     * 
+     */
 
     SimulationEngine engine;
-    engine.addSubsystem(&solar);      // 1) power source
-    engine.addSubsystem(&battery);    // 2) storage update
-    engine.addSubsystem(&heater);     // 3) power load
-    engine.addSubsystem(&effCell);    // 4) heat response (after heater!)
-    engine.addSubsystem(&bus);        // 5) bookkeeping on power totals
-    engine.addSubsystem(&growth);     // 6) sensors/aux
+
+    // 1) Solar generates power and adds it to the bus early in the tick
+    engine.addSubsystem(&solar);
+
+    // 2) Loads draw power during the tick
+    engine.addSubsystem(&heater);
+
+    // 3) These must tick AFTER heater because heater.applyHeat() happens inside HeaterBank::tick()
+    engine.addSubsystem(&substrateHeater);
+    engine.addSubsystem(&effCell);
+
+    // 4) GrowthMonitor draws instrument power (so it MUST be before bus bookkeeping)
+    engine.addSubsystem(&growth);
+
+    // 5) Bus bookkeeping MUST be after all producers/consumers have run
+    engine.addSubsystem(&bus);
+
+    // 6) Battery logs LAST so it reflects the post-bus charge/discharge state for the tick
+    engine.addSubsystem(&battery);
+
 
     const double dt = args.dt;
     engine.setTickStep(dt);
@@ -417,7 +449,9 @@ int main(int argc, char** argv) {
               << " t=" << t_phys << " s : calling engine.tick()\n";
           log_msg(oss.str());
 
-          heater.setDemand(1500.0); // representative kW-scale test
+          heater.setEffusionDemand(1500.0);
+          heater.setSubstrateDemand(0.0);
+          heater.setPrioritySubstrate(false);
           // No jobs in power-only mode -> growth monitor gets jobIndex=-1, mbeOff.
           growth.setBeamState(-1, false, 0.0);
           engine.tick();
@@ -459,7 +493,12 @@ int main(int argc, char** argv) {
       MPI_Bcast(&initial_Fwafer, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
       // Beam off initially (mbe_active = 0), but flux positive so mixture is legal
+      double last_Fwafer_sent = std::numeric_limits<double>::quiet_NaN();
+      double last_mbe_sent    = std::numeric_limits<double>::quiet_NaN(); 
+      
       write_params_inc(initial_Fwafer, 0.0, rank, args.inputDir, log_msg);
+      last_Fwafer_sent = initial_Fwafer;
+      last_mbe_sent    = 0.0;
 
       if (rank == 0) {
         log_msg("[info] Constructing WakeChamber and calling wake.init(...)\n");
@@ -491,9 +530,10 @@ int main(int argc, char** argv) {
       // Track which job and parameters are currently active (leader only).
       const Job* currentJob = nullptr;
       int        currentJobIndex = -1;
-      double     last_heater_set   = std::numeric_limits<double>::quiet_NaN();
-      double     last_Fwafer_sent  = std::numeric_limits<double>::quiet_NaN();
-      double     last_mbe_sent     = std::numeric_limits<double>::quiet_NaN();
+      double last_heater_set      = std::numeric_limits<double>::quiet_NaN();
+      double last_effusion_set    = std::numeric_limits<double>::quiet_NaN();
+      double last_substrate_set   = std::numeric_limits<double>::quiet_NaN();
+
 
       // Job health tracking (leader only)
       std::vector<bool> jobAborted(jobs.size(), false);
@@ -595,45 +635,118 @@ int main(int argc, char** argv) {
           }
 
           // ---- 2) Decide heater demand, Fwafer, and mbe_active for this tick ----
-          double heaterDemand_W = 1500.0;   // baseline if no jobs.txt
-          double Fwafer_cmd     = std::numeric_limits<double>::quiet_NaN();
-          double mbe_flag       = 0.0;     // 0 = beam off, 1 = beam on
-          double target_T_K     = 300.0;   // idle baseline target
+          // double heaterDemand_W = 1500.0;   // baseline if no jobs.txt
+          // double Fwafer_cmd     = std::numeric_limits<double>::quiet_NaN();
+          // double mbe_flag       = 0.0;     // 0 = beam off, 1 = beam on
+          // double target_T_K     = 300.0;   // idle baseline target
 
-          if (!jobs.empty()) {
-            if (currentJob) {
-              Fwafer_cmd     = currentJob->Fwafer_cm2s;
-              heaterDemand_W = fluxToHeaterPower(Fwafer_cmd);
-              mbe_flag       = 1.0;
+          double effusionDemand_W  = 0.0;     // heater power request for effusion cell
+          double substrateDemand_W = 0.0;     // heater power request for wafer/chuck
+          double Fwafer_cmd        = std::numeric_limits<double>::quiet_NaN();
+          double mbe_flag          = 0.0;     // beam on/off
+          double target_T_K        = 300.0;   // effusion "desired" (logging only)
+          bool   wafer_ready       = true;
 
-              // Target temperature derived directly from the job's flux.
-              if (currentJob->Fwafer_cm2s > 0.0) {
-                target_T_K = targetTempForFlux(currentJob->Fwafer_cm2s);
-              }
-            } else {
-              // Outside any job window or after abort: effusion off, heater 0
-              heaterDemand_W = 0.0;
-              // We do NOT set Fwafer_cmd to 0.0; that would kill mixture.
-              // Instead, keep last flux (or floor) and just set mbe_active = 0.
-              if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
-                Fwafer_cmd = FWAFFER_FLOOR_CM2S;
-              } else {
-                Fwafer_cmd = last_Fwafer_sent;
-              }
-              mbe_flag   = 0.0;
-              target_T_K = 300.0; // idle target when no job is active
+          // Decide heater demands, flux command, and mbe_active for this tick.
+          //
+          // States:
+          //   A) currentJob != nullptr     -> active job
+          //   B) currentJob == nullptr but jobs not empty -> idle between job windows
+          //   C) jobs empty                -> baseline / power-test behavior
+          //
+          if (currentJob) {
+            // ---------------- A) Active job ----------------
+            Fwafer_cmd = currentJob->Fwafer_cm2s;
+            if (!std::isfinite(Fwafer_cmd) || Fwafer_cmd <= 0.0) {
+              // Keep mixture legal even if jobs file has garbage
+              Fwafer_cmd = FWAFFER_FLOOR_CM2S;
             }
-          } else {
-            // No jobs.txt: keep baseline heater and floor flux, beam off
-            heaterDemand_W = 1500.0;
+
+            // Effusion heater demand: either use job.heater_W if valid, else infer from flux
+            if (std::isfinite(currentJob->heater_W) && currentJob->heater_W > 0.0) {
+              effusionDemand_W = currentJob->heater_W;
+            } else {
+              effusionDemand_W = fluxToHeaterPower(Fwafer_cmd);
+            }
+            if (!std::isfinite(effusionDemand_W) || effusionDemand_W < 0.0) {
+                effusionDemand_W = 0.0;
+            }
+
+            // Effusion "desired" temperature (logging only)
+            if (Fwafer_cmd > 0.0) {
+              target_T_K = targetTempForFlux(Fwafer_cmd);
+            } else {
+              target_T_K = 300.0;
+            }
+
+            // Substrate heater target + dynamic power request (per-job)
+            substrateHeater.setJobState(currentJobIndex, /*job_active=*/true, Fwafer_cmd);
+            substrateDemand_W = substrateHeater.computePowerRequestW();
+
+            // Gate: do NOT start MBE until wafer is at target band
+            wafer_ready = substrateHeater.isAtTarget();
+            mbe_flag    = wafer_ready ? 1.0 : 0.0;
+
+          } else if (!jobs.empty()) {
+            // ---------------- B) Jobs exist, but no active job right now ----------------
+            // Beam off; keep mixture legal using last flux (or floor).
             if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
               Fwafer_cmd = FWAFFER_FLOOR_CM2S;
             } else {
               Fwafer_cmd = last_Fwafer_sent;
             }
+
             mbe_flag   = 0.0;
-            target_T_K = 300.0; // idle baseline when running with no jobs.txt
+            target_T_K = 300.0;
+
+            // Heaters idle (simple realism)
+            effusionDemand_W = 0.0;
+
+            // Substrate heater inactive when no job is active
+            substrateHeater.setJobState(-1, /*job_active=*/false, Fwafer_cmd);
+            substrateDemand_W = substrateHeater.computePowerRequestW(); // should be 0
+            wafer_ready = true;
+
+          } else {
+            // ---------------- C) No jobs.txt baseline behavior ----------------
+            // Keep floor flux so SPARTA mixture remains legal, beam off.
+            if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
+              Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+            } else {
+              Fwafer_cmd = last_Fwafer_sent;
+            }
+
+            mbe_flag   = 0.0;
+            target_T_K = 300.0;
+
+            // Optional baseline effusion load (set to 0.0 if you want truly idle)
+            effusionDemand_W = 1500.0;
+
+            // Substrate heater inactive when no jobs exist
+            substrateHeater.setJobState(-1, /*job_active=*/false, Fwafer_cmd);
+            substrateDemand_W = substrateHeater.computePowerRequestW(); // should be 0
+            wafer_ready = true;
           }
+            // // No jobs.txt: keep floor flux so mixture is legal, beam off
+            // if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
+            //   Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+            // } else {
+            //   Fwafer_cmd = last_Fwafer_sent;
+            // }
+
+            // mbe_flag   = 0.0;
+            // target_T_K = 300.0;
+
+            // // Optional: keep a simple baseline effusion load if you still want power-mode style heating
+            // // If you don't want that, set effusionDemand_W = 0.0 instead.
+            // effusionDemand_W = 1500.0;
+
+            // // Substrate heater inactive when no jobs exist
+            // substrateHeater.setJobState(-1, /*job_active=*/false, Fwafer_cmd);
+            // substrateDemand_W = substrateHeater.computePowerRequestW(); // becomes 0
+            // wafer_ready = true;
+          
+          
 
           // Inform EffusionCell of the "desired" crucible temperature implied
           // by the job's wafer flux. The cell will log target_temp_K alongside
@@ -645,6 +758,7 @@ int main(int argc, char** argv) {
           growth.setBeamState(jobIndexForGrowth,
                               mbe_flag > 0.5,
                               Fwafer_cmd);
+
 
           // ---- 3) Push Fwafer + mbe_active into params.inc when needed ----
           if (!std::isnan(Fwafer_cmd)) {
@@ -675,16 +789,27 @@ int main(int argc, char** argv) {
           }
 
           // ---- 4) Set heater demand (only log when it changes) ----
-          if (std::isnan(last_heater_set) ||
-              heaterDemand_W != last_heater_set) {
+          double totalHeaterDemand_W = effusionDemand_W + substrateDemand_W;
+
+          if (std::isnan(last_heater_set) || totalHeaterDemand_W != last_heater_set) {
             std::ostringstream oss;
             oss << "[job] tick=" << tickIndex
-                << " set heater demand=" << heaterDemand_W << " W\n";
+                << " heater demands: effusion=" << effusionDemand_W
+                << " W, substrate=" << substrateDemand_W
+                << " W, total=" << totalHeaterDemand_W
+                << " W, wafer_ready=" << (wafer_ready ? 1 : 0)
+                << "\n";
             log_msg(oss.str());
-            last_heater_set = heaterDemand_W;
+            last_heater_set = totalHeaterDemand_W;
           }
 
-          heater.setDemand(heaterDemand_W);
+          heater.setEffusionDemand(effusionDemand_W);
+          heater.setSubstrateDemand(substrateDemand_W);
+
+          // While wafer is not ready, prioritize wafer heating.
+          // (Once ready, HeaterBank can share or go proportional.)
+          heater.setPrioritySubstrate(!wafer_ready);
+
 
           // ---- 5) Tick harness + WakeChamber ----
           std::ostringstream oss;
@@ -706,7 +831,8 @@ int main(int argc, char** argv) {
           log_msg(oss2.str());
 
           // ---- 6) After ticking, evaluate job health (under-flux + temp gate)
-          if (currentJob && heaterDemand_W > 1e-6) {
+          if (currentJob && (effusionDemand_W > 1e-6 || substrateDemand_W > 1e-6)) {
+            bool wafer_gate_fail = substrateHeater.jobFailed();
             double P_actual = effCell.getLastHeatInputW();
 
             // 6a) Update RC temp proxy (same constants as EffusionCell::applyHeat).
@@ -729,13 +855,16 @@ int main(int argc, char** argv) {
                 currentJobIndex < static_cast<int>(jobWarmupTicks.size())) {
               warmup_ticks_for_job = jobWarmupTicks[currentJobIndex];
             }
-            bool gates_armed = (job_tick_counter > warmup_ticks_for_job) &&
-                               (target_T_K > 310.0); // ignore trivial ambient targets
+            bool wafer_ready_now = substrateHeater.isAtTarget(); // after engine.tick()
+            bool gates_armed = wafer_ready_now &&
+                              (job_tick_counter > warmup_ticks_for_job) &&
+                              (target_T_K > 310.0);
+
 
             // 6c) Under-flux gate (power-based), only once gates are armed.
             double flux_ratio = 1.0;
-            if (heaterDemand_W > 0.0) {
-              flux_ratio = P_actual / heaterDemand_W;
+            if (effusionDemand_W > 0.0) {
+              flux_ratio = P_actual / effusionDemand_W;
             }
             if (!std::isfinite(flux_ratio)) {
               flux_ratio = 0.0;
@@ -782,30 +911,33 @@ int main(int argc, char** argv) {
             g_temp_miss_streak_for_log = temp_miss_streak;
 
             // 6e) Abort if either gate fails, but only once per job.
-            if ((flux_gate_fail || temp_gate_fail) &&
-                currentJobIndex >= 0 &&
-                currentJobIndex < static_cast<int>(jobAborted.size()) &&
-                !jobAborted[currentJobIndex]) {
+            if ((flux_gate_fail || temp_gate_fail || wafer_gate_fail) &&
+              currentJobIndex >= 0 &&
+              currentJobIndex < static_cast<int>(jobAborted.size()) &&
+              !jobAborted[currentJobIndex]) {
 
               jobAborted[currentJobIndex] = true;
 
               std::ostringstream joss;
               joss << "[job] tick=" << tickIndex
-                   << " ABORTING job index " << currentJobIndex
-                   << " due to ";
-              if (flux_gate_fail && temp_gate_fail) {
-                joss << "under-flux AND temperature-miss";
-              } else if (flux_gate_fail) {
-                joss << "under-flux";
-              } else {
-                joss << "temperature-miss";
-              }
+                  << " ABORTING job index " << currentJobIndex
+                  << " due to ";
+
+              bool any = false;
+              if (flux_gate_fail)  { joss << (any ? " + " : "") << "under-flux";        any = true; }
+              if (temp_gate_fail)  { joss << (any ? " + " : "") << "temperature-miss";  any = true; }
+              if (wafer_gate_fail) { joss << (any ? " + " : "") << "wafer-temp-miss";   any = true; }
+
               joss << " (underflux_streak=" << underflux_streak
-                   << ", temp_miss_streak=" << temp_miss_streak
-                   << ", temp_proxy_K=" << temp_proxy_K
-                   << ", target_T_K=" << target_T_K
-                   << ", flux_ratio=" << flux_ratio
-                   << ")\n";
+                  << ", temp_miss_streak=" << temp_miss_streak
+                  << ", temp_proxy_K=" << temp_proxy_K
+                  << ", target_T_K=" << target_T_K
+                  << ", flux_ratio=" << flux_ratio
+                  << ", T_sub_K=" << substrateHeater.substrateTempK()
+                  << ", T_sub_target_K=" << substrateHeater.targetTempK()
+                  << ", sub_temp_miss_streak=" << substrateHeater.tempMissStreak()
+                  << ")\n";
+
               log_msg(joss.str());
 
               // Tell GrowthMonitor that this job got aborted (it will still
@@ -835,6 +967,9 @@ int main(int argc, char** argv) {
               g_temp_miss_streak_for_log = 0;
               temp_proxy_K     = 300.0;
               last_heater_set  = std::numeric_limits<double>::quiet_NaN();
+              last_effusion_set  = std::numeric_limits<double>::quiet_NaN();
+              last_substrate_set = std::numeric_limits<double>::quiet_NaN();
+
             }
           } else {
             // No active job or zero heater demand: clear temp streaks in logs.
@@ -905,4 +1040,4 @@ int main(int argc, char** argv) {
     MPI_Abort(MPI_COMM_WORLD, 1);
     return EXIT_FAILURE;
   }
-}
+ }

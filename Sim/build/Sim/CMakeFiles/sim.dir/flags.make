@@ -4,7 +4,7 @@
 # compile CXX with /usr/bin/mpicxx
 CXX_DEFINES = 
 
-CXX_INCLUDES = -I/common/home/rvk22/opt/sparta/src/src -I/common/home/rvk22/spaceforge-xai/Sim/include -isystem /common/home/rvk22/opt/sparta/src
+CXX_INCLUDES = -I/common/home/rvk22/opt/sparta/src/src -I/common/home/rvk22/spaceforge-xai-run3/Sim/include -isystem /common/home/rvk22/opt/sparta/src
 
 CXX_FLAGS = -O3 -DNDEBUG -std=gnu++17
 

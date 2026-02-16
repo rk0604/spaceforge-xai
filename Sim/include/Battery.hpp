@@ -7,7 +7,6 @@ class PowerBus;
 class Battery : public Subsystem {
 public:
     explicit Battery(double capacity = 6000.0);
-    explicit Battery(double capacity = 6000.0);
 
     void initialize() override;
     void tick(const TickContext& ctx) override;
