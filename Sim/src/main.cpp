@@ -431,6 +431,7 @@ int main(int argc, char** argv) {
     // MODE: power (C++ harness only, no SPARTA / no WakeChamber)
     // ======================================================================
     if (args.mode == "power") {
+      
       if (rank == 0) {
         log_msg("[info] Entering power-only mode (no SPARTA / no WakeChamber).\n");
       }
@@ -448,16 +449,15 @@ int main(int argc, char** argv) {
           oss << "[power] tick=" << tickIndex
               << " t=" << t_phys << " s : calling engine.tick()\n";
           log_msg(oss.str());
-
-          heater.setEffusionDemand(1500.0);
-          heater.setSubstrateDemand(0.0);
-          heater.setPrioritySubstrate(false);
-          // No jobs in power-only mode -> growth monitor gets jobIndex=-1, mbeOff.
-          growth.setBeamState(-1, false, 0.0);
-          engine.tick();
-        } else {
-          engine.tick();
         }
+
+        
+        heater.setEffusionDemand(1500.0);
+        heater.setSubstrateDemand(0.0);
+        heater.setPrioritySubstrate(false);
+        // No jobs in power-only mode -> growth monitor gets jobIndex=-1, mbeOff.
+        growth.setBeamState(-1, false, 0.0);
+        engine.tick();
         MPI_Barrier(MPI_COMM_WORLD);
       }
 
