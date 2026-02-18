@@ -1,12 +1,17 @@
-# --- LEO wake + pencil-beam MBE orifice: four-probe CSV (1 row/minute) ---
+# --- LEO wake + pencil-beam MBE orifice: four-probe CSV (harness-driven) ---
 # CSV columns (from fix out title):
-#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s
+#   tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,
+#   cup_scale_frac,cup_emit_real_per_s,Fwafer_log_cm2s,mbe_active
 
 units              si
 seed               12345
 dimension          3
 boundary           o o o
 timestep           1.0e-5
+
+# Bring in harness-driven variables: Fwafer_cm2s, mbe_active
+# (cupola orbit scaling is now internal to this deck)
+include params.inc
 
 # ------------------------------------------------------------------
 # Domain & grid
@@ -19,11 +24,19 @@ create_grid        96     56       40
 # ------------------------------------------------------------------
 species  data/o.species O N2 He H2O
 variable           Tgas          equal 800.0
-mixture  mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
+mixture            mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
 
 # Superset mixture for collisions & computes (includes H2O)
-mixture  mixAll  O N2 He H2O
-collide  vss mixAll data/o.vss
+mixture            mixAll  O N2 He H2O
+
+# --- NEW: single-species mixtures for RGA partial pressures ---
+mixture            mixO    O
+mixture            mixN2   N2
+mixture            mixHe   He
+mixture            mixH2O  H2O
+# -------------------------------------------------------------
+
+collide            vss mixAll data/o.vss
 
 # ------------------------------------------------------------------
 # Surfaces + groups
@@ -62,16 +75,29 @@ variable           pi            equal 3.141592653589793
 variable           mO            equal 2.66e-26
 variable           mH2O          equal 2.9915e-26
 
+# ------------------------------------------------------------------
+# User-tunable knobs with defaults (overridable via -var ... from run.sh)
+#   -var pTorrTarget  <Torr>
+#   -var Pcup_Torr    <Torr>
+#   -var Fwafer_cm2s  <cm^-2 s^-1>   (now supplied via params.inc / C++)
+#   -var runID        <label>
+# ------------------------------------------------------------------
+variable           pTorrTarget   index 1.0e-7
+variable           Pcup_Torr     index 9.0e-9
+# Fwafer_cm2s comes from params.inc (C++ harness); no hard-coded default here
+variable           runID         index run_default
+
+# ------------------------------------------------------------------
 # Freestream inflow (target ambient)
-variable           pTorrTarget   equal 1.0e-7
-variable           pInf          equal v_Torr2Pa*v_pTorrTarget
+# ------------------------------------------------------------------
+variable           pInf          equal ${Torr2Pa}*${pTorrTarget}
 variable           nInf          equal ${pInf}/(${kB}*${Tgas})
 print "diag:pInf_Torr=${pTorrTarget}" screen yes
 print "diag:pInf_Pa=${pInf}"          screen yes
 print "diag:nInf_m^-3=${nInf}"        screen yes
 
 # Macro weighting
-variable           FNUM          equal 1.0e15
+variable           FNUM          equal 1.0e13
 global             fnum ${FNUM}
 
 # Inlet at xlo for freestream
@@ -83,7 +109,7 @@ fix                in emit/face mixWake xlo
 # ------------------------------------------------------------------
 variable           Gcup           equal 0.078811435
 variable           kGauge         equal 2.63e-21
-variable           Pcup_Torr      equal 9.0e-9
+
 variable           Qcup_cm2s      equal ${Pcup_Torr}/(${kGauge}*${Gcup})
 variable           Qcup_m2s       equal ${Qcup_cm2s}*1.0e4
 
@@ -95,8 +121,7 @@ print "diag: Cupola outgas Q (cm^-2 s^-1) = ${Qcup_cm2s}" screen yes
 print "diag: Cupola outgas Q (m^-2 s^-1)  = ${Qcup_m2s}"  screen yes
 print "diag: Cupola target wake add (Torr)= ${Pcup_Torr}" screen yes
 
-mixture            mixCup  H2O  temp ${Tsurf}
-mixture            mixCup  nrho ${nrho_cup}
+mixture            mixCup  H2O  temp ${Tsurf} nrho ${nrho_cup}
 fix                cup_emit  emit/surf  mixCup  cupGrp  normal yes
 variable           emit_now  equal f_cup_emit[1]
 variable           emit_tot  equal f_cup_emit[2]
@@ -113,12 +138,15 @@ variable           R_orif        equal 0.5*${D_orif}
 variable           A_orif        equal ${pi}*${R_orif}*${R_orif}
 variable           Tbeam         equal 1200.0
 variable           cbar_beam     equal sqrt(8.0*${kB}*${Tbeam}/(${pi}*${mO}))
-variable           Fwafer_cm2s   equal 1.0e14
+
 variable           Fwafer_m2s    equal ${Fwafer_cm2s}*1.0e4
 variable           Qmbe_m2s      equal ${Fwafer_m2s}*${pi}*${d_orif_wafer}*${d_orif_wafer}/${A_orif}
 variable           nrho_mbe      equal 4.0*${Qmbe_m2s}/${cbar_beam}
-mixture            mixMBE O temp ${Tbeam}
-mixture            mixMBE nrho ${nrho_mbe}
+
+# Log-friendly "effective" wafer flux in cm^-2 s^-1 (0 when mbe_active=0)
+variable           Fwafer_log_cm2s equal ${Fwafer_cm2s}*${mbe_active}
+
+mixture            mixMBE O temp ${Tbeam} nrho ${nrho_mbe}
 fix                mbe_emit emit/surf mixMBE mbeNozzleGrp normal yes
 print "diag: MBE orifice @x=${x_orif} m, D=${D_orif} m, A=${A_orif} m^2" screen yes
 print "diag: target F_wafer_center=${Fwafer_cm2s} cm^-2 s^-1, d=${d_orif_wafer} m" screen yes
@@ -136,23 +164,32 @@ group    gWakePt       grid    region probe_wake  one
 region   probe_free    block   10.5  11.5   -0.60  0.60    2.00   5.00
 group    gFreePt       grid    region probe_free one
 
-# NEW wake-probe gap region (your updated dimensions)
+# NEW wake-probe gap region
 region   probe_gap  block  2.255  3.445   -1.65   1.65   -1.994642674   1.305357326
 group    gGapPt     grid   region probe_gap one
 
 # ------------------------------------------------------------------
-# Cadence & times: 1 CSV row/min, 94 rows/orbit
+# Cadence & times + sinusoidal orbit-driven cupola scale
+#   - block        : SPARTA steps per "tick" row in the CSV
+#   - tick         : harness tick index (1 tick = 60 s physical)
+#   - phys_time_s  : physical time used in CSV (tick * 60 s)
+#   - orbit_real_s : orbital period in seconds (94 min)
+#   - theta_orbit  : orbital phase angle (rad)
+#   - cup_scale    : sinusoidal 0..1 based on phase
 # ------------------------------------------------------------------
-variable           block   equal 2500
-variable           tick    equal floor(step/${block})
-variable           time_s  equal step*dt
-variable           orbit_blocks    equal 94
-variable           n_orbits        equal 20
-variable           orbit_real_s    equal 5640.0
-variable           t_block_s       equal ${block}*dt
-variable           orbit_sim_s     equal ${orbit_blocks}*${t_block_s}
-variable           time_scale      equal ${orbit_real_s}/${orbit_sim_s}
-variable           phys_time_s     equal step*dt*${time_scale}
+variable           block          equal 2500
+variable           tick           equal floor(step/${block})
+
+# Harness physical dt = 60 s per tick (from C++ sim)
+variable           dt_tick_s      equal 60.0
+variable           phys_time_s    equal v_tick*${dt_tick_s}
+
+# Fixed 94-minute orbit period (in seconds)
+variable           orbit_real_s   equal 5640.0
+
+# Orbital phase and sinusoidal sunlight scale in [0,1]
+variable           theta_orbit    equal 2.0*${pi}*v_phys_time_s/${orbit_real_s}
+variable           cup_scale      equal 0.5*(1.0+sin(v_theta_orbit))
 
 # ------------------------------------------------------------------
 # Thermo computes (pressure = n k_B T)  --> include H2O via mixAll
@@ -166,9 +203,23 @@ compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
 compute            pGapPt     reduce ave c_tGapPt[2]
 
-# Initialize + warm-up
+# ------------------------------------------------------------------
+# NEW: Residual Gas Analyzer (species partial pressures at wake probe)
+# NOTE: thermal/grid takes a MIXTURE ID, so we use mixO/mixN2/mixHe/mixH2O
+# ------------------------------------------------------------------
+compute            tWake_O    thermal/grid gWakePt    mixO   temp press
+compute            tWake_N2   thermal/grid gWakePt    mixN2  temp press
+compute            tWake_He   thermal/grid gWakePt    mixHe  temp press
+compute            tWake_H2O  thermal/grid gWakePt    mixH2O temp press
+
+compute            pWake_O    reduce ave c_tWake_O[2]
+compute            pWake_N2   reduce ave c_tWake_N2[2]
+compute            pWake_He   reduce ave c_tWake_He[2]
+compute            pWake_H2O  reduce ave c_tWake_H2O[2]
+
+# Initialize (0 steps) so everything is defined; no warm-up run here.
 run                0
-run                400
+
 variable           pFree_nowPa   equal c_pFreePt
 variable           pFree_nowTorr equal v_Pa2Torr*v_pFree_nowPa
 print              "diag:pFree_now_Pa=${pFree_nowPa}, pFree_now_Torr=${pFree_nowTorr}" screen yes
@@ -181,6 +232,12 @@ fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
 fix                avgFree  ave/time 1 ${block} ${block} c_pFreePt
 fix                avgGap   ave/time 1 ${block} ${block} c_pGapPt
 
+# NEW: RGA per-block averaging (Pa)
+fix                avgWakeO    ave/time 1 ${block} ${block} c_pWake_O
+fix                avgWakeN2   ave/time 1 ${block} ${block} c_pWake_N2
+fix                avgWakeHe   ave/time 1 ${block} ${block} c_pWake_He
+fix                avgWakeH2O  ave/time 1 ${block} ${block} c_pWake_H2O
+
 variable           P_FRONT       equal f_avgFront
 variable           P_WAKE        equal f_avgWake
 variable           P_FREE        equal f_avgFree
@@ -191,6 +248,12 @@ variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
 
+# NEW: RGA partial pressures (Torr)
+variable           P_WAKE_O_Torr    equal v_Pa2Torr*f_avgWakeO
+variable           P_WAKE_N2_Torr   equal v_Pa2Torr*f_avgWakeN2
+variable           P_WAKE_He_Torr   equal v_Pa2Torr*f_avgWakeHe
+variable           P_WAKE_H2O_Torr  equal v_Pa2Torr*f_avgWakeH2O
+
 # ------------------------------------------------------------------
 # Cupola emission diagnostics aligned to block cadence
 # ------------------------------------------------------------------
@@ -198,47 +261,28 @@ fix                avgCupEmit  ave/time 1 ${block} ${block} f_cup_emit[1]
 variable           CUP_EMIT_macro_per_step equal f_avgCupEmit
 variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNUM}/dt
 
-# Ensure cup_scale exists before first use by fix out
-variable           cup_scale equal 1.0
+# NOTE: mbe_active is supplied by params.inc (from the C++ harness)
 
 # ------------------------------------------------------------------
-# CSV output (one line per minute), header via title, true append
-# (LEAVE UNCHANGED AS REQUESTED)
+# CSV output (one line per block).
+# Header row is written once by the C++ harness; SPARTA ONLY appends data.
+# Using ONLY 'append' avoids truncating the CSV when the deck is reloaded
+# between jobs.
 # ------------------------------------------------------------------
-fix                out print ${block} "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s}" file ../data/raw/wake_4probes.csv screen no append ../data/raw/wake_4probes.csv title "tick,time_s_phys,p_front_Torr,p_wake_Torr,p_free_Torr,p_gap_Torr,cup_scale_frac,cup_emit_real_per_s"
+fix out print ${block}  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
 
 # ------------------------------------------------------------------
-# Sinusoidal modulation of cupola outgassing over a 94-min orbit
+# NEW: Residual Gas Analyzer CSV (wake partial pressures by species)
+# Suggested header your C++ harness writes once:
+# tick,time_s_phys,p_O_Torr,p_N2_Torr,p_He_Torr,p_H2O_Torr
+# ------------------------------------------------------------------
+fix rga_out print ${block} "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
+
+# ------------------------------------------------------------------
+# Keep stats every block; ACTUAL stepping is driven by C++ harness,
+# which will call 'run ${maxSteps}' through SpartaBridge.
 # ------------------------------------------------------------------
 stats              ${block}
 
-# user-tunable knobs
-variable           cup_amp_scale   equal 0.50
-variable           cup_base_scale  equal 1.00
-variable           phase0          equal 0.0
-
-# outer loop over orbits
-variable           io loop ${n_orbits}
-label              orbit_loop
-
-  # inner loop: one iteration per "minute" (block)
-  variable         j loop ${orbit_blocks}
-  label            block_loop
-
-    # compute sinusoidal scale for this block
-    variable       phase     equal 2.0*${pi}*(${j}-1.0)/${orbit_blocks}+${phase0}
-    variable       cup_scale equal ${cup_base_scale}+${cup_amp_scale}*sin(${phase})
-
-    # re-issue cupola emitter at updated density (H2O)
-    unfix          cup_emit
-    mixture        mixCup nrho ${nrho_cup}*${cup_scale}
-    fix            cup_emit emit/surf mixCup cupGrp normal yes
-
-    # advance exactly one averaging block
-    run            ${block}
-
-  next             j
-  jump             SELF block_loop
-
-next io
-jump SELF orbit_loop
+# Harness-controlled step count; default 0 so a bare spa_ run does nothing.
+variable           maxSteps index 0

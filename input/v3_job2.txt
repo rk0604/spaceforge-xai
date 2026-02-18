@@ -1,0 +1,18 @@
+# start_tick   end_tick   wafer_flux_cm2s   heater_W     # Notes
+0             90         0.0e0              850         # Pumpdown settle + initial warm-up, shutters closed (no deposition)
+90            210        0.0e0              1450        # Outgassing/soak at temperature, shutters closed
+210           270        0.0e0              1750        # Surface prep / desorb window (material-dependent), shutters closed
+270           305        2.3e12             1650        # Low-flux conditioning pre-exposure (optional), reduce nucleation transients
+305           355        6.6e12             1740        # Nucleation (step 1), gentle start for 300 mm uniformity
+355           420        7.4e12             1760        # Nucleation (step 2), small trim (feedback/drift analogue)
+420           520        1.55e13            1850        # Transition ramp into growth, gradual increase to protect morphology
+520           690        2.70e13            1940        # Main growth plateau (A1), steady baseline (sunlit)
+690           730        0.0e0              1500        # Planned LEO power hold (~40 min): shutters closed, thermal hold for continuity
+730           835        2.75e13            1950        # Main growth plateau (B1), resume after hold
+835           905        2.95e13            1975        # Main growth plateau (B2), small correction for rate/uniformity
+905           975        3.25e13            2000        # Mild throughput push (sunlit margin), bounded to avoid roughening
+975           1045       2.60e13            1900        # Recovery / re-equilibration, reduce supersaturation and defect incorporation
+1045          1110       2.10e13            1800        # Taper-down finish (step 1), smoothing-focused segment
+1110          1155       1.85e13            1750        # Taper-down finish (step 2), gentle termination approach
+1155          1185       0.0e0              1600        # Termination + short anneal/soak, shutters closed (surface relaxation)
+1185          1195       0.0e0              1200        # Controlled cool-down start, shutters closed (stress/bow management)

@@ -26,15 +26,12 @@ species  data/o.species O N2 He H2O
 variable           Tgas          equal 800.0
 mixture            mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
 
-# Superset mixture for collisions & computes (includes H2O)
+# Superset mixture for collisions & "total" thermo computes (includes H2O)
 mixture            mixAll  O N2 He H2O
 
-# --- NEW: single-species mixtures for RGA partial pressures ---
-mixture            mixO    O
-mixture            mixN2   N2
-mixture            mixHe   He
-mixture            mixH2O  H2O
-# -------------------------------------------------------------
+# RGA mixture: split into per-species groups in a single mixture (stable ordering)
+# We will compute species number density per group, then form p_s = n_s kB T (T from mixAll thermal temp)
+mixture            mixRGA  O N2 He H2O group SELF
 
 collide            vss mixAll data/o.vss
 
@@ -198,24 +195,35 @@ compute            tFrontPt   thermal/grid gFrontPt   mixAll temp press
 compute            tWakePt    thermal/grid gWakePt    mixAll temp press
 compute            tFreePt    thermal/grid gFreePt    mixAll temp press
 compute            tGapPt     thermal/grid gGapPt     mixAll temp press
+
 compute            pFrontPt   reduce ave c_tFrontPt[2]
 compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
 compute            pGapPt     reduce ave c_tGapPt[2]
 
 # ------------------------------------------------------------------
-# NEW: Residual Gas Analyzer (species partial pressures at wake probe)
-# NOTE: thermal/grid takes a MIXTURE ID, so we use mixO/mixN2/mixHe/mixH2O
+# FIXED RGA: consistent partials via number density * kB * T
+#   p_s = n_s * kB * T_wake
+# Where:
+#   - n_s comes from compute grid ... nrho using mixRGA (one group per species)
+#   - T_wake comes from thermal/grid temp for mixAll at the wake probe cell
+# This makes sum(partials) track the same "n kB T" definition used for total pressure.
 # ------------------------------------------------------------------
-compute            tWake_O    thermal/grid gWakePt    mixO   temp press
-compute            tWake_N2   thermal/grid gWakePt    mixN2  temp press
-compute            tWake_He   thermal/grid gWakePt    mixHe  temp press
-compute            tWake_H2O  thermal/grid gWakePt    mixH2O temp press
+# Per-species number density at wake probe (nrho = #/m^3)
+compute            nWakeRGA   grid       gWakePt  mixRGA  nrho
+compute            nWake_O    reduce ave c_nWakeRGA[1]
+compute            nWake_N2   reduce ave c_nWakeRGA[2]
+compute            nWake_He   reduce ave c_nWakeRGA[3]
+compute            nWake_H2O  reduce ave c_nWakeRGA[4]
 
-compute            pWake_O    reduce ave c_tWake_O[2]
-compute            pWake_N2   reduce ave c_tWake_N2[2]
-compute            pWake_He   reduce ave c_tWake_He[2]
-compute            pWake_H2O  reduce ave c_tWake_H2O[2]
+# Thermal temperature at wake probe (K) from mixAll
+compute            TWakePt    reduce ave c_tWakePt[1]
+
+# Instantaneous partial pressures in Pa (evaluated each step)
+variable           pO_nowPa     equal c_nWake_O*${kB}*c_TWakePt
+variable           pN2_nowPa    equal c_nWake_N2*${kB}*c_TWakePt
+variable           pHe_nowPa    equal c_nWake_He*${kB}*c_TWakePt
+variable           pH2O_nowPa   equal c_nWake_H2O*${kB}*c_TWakePt
 
 # Initialize (0 steps) so everything is defined; no warm-up run here.
 run                0
@@ -232,11 +240,11 @@ fix                avgWake  ave/time 1 ${block} ${block} c_pWakePt
 fix                avgFree  ave/time 1 ${block} ${block} c_pFreePt
 fix                avgGap   ave/time 1 ${block} ${block} c_pGapPt
 
-# NEW: RGA per-block averaging (Pa)
-fix                avgWakeO    ave/time 1 ${block} ${block} c_pWake_O
-fix                avgWakeN2   ave/time 1 ${block} ${block} c_pWake_N2
-fix                avgWakeHe   ave/time 1 ${block} ${block} c_pWake_He
-fix                avgWakeH2O  ave/time 1 ${block} ${block} c_pWake_H2O
+# RGA per-block averaging (Pa) of partial pressures
+fix                avg_pO    ave/time 1 ${block} ${block} v_pO_nowPa
+fix                avg_pN2   ave/time 1 ${block} ${block} v_pN2_nowPa
+fix                avg_pHe   ave/time 1 ${block} ${block} v_pHe_nowPa
+fix                avg_pH2O  ave/time 1 ${block} ${block} v_pH2O_nowPa
 
 variable           P_FRONT       equal f_avgFront
 variable           P_WAKE        equal f_avgWake
@@ -248,11 +256,14 @@ variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
 
-# NEW: RGA partial pressures (Torr)
-variable           P_WAKE_O_Torr    equal v_Pa2Torr*f_avgWakeO
-variable           P_WAKE_N2_Torr   equal v_Pa2Torr*f_avgWakeN2
-variable           P_WAKE_He_Torr   equal v_Pa2Torr*f_avgWakeHe
-variable           P_WAKE_H2O_Torr  equal v_Pa2Torr*f_avgWakeH2O
+# RGA partial pressures (Torr)
+variable           P_WAKE_O_Torr    equal v_Pa2Torr*f_avg_pO
+variable           P_WAKE_N2_Torr   equal v_Pa2Torr*f_avg_pN2
+variable           P_WAKE_He_Torr   equal v_Pa2Torr*f_avg_pHe
+variable           P_WAKE_H2O_Torr  equal v_Pa2Torr*f_avg_pH2O
+
+# Optional debug sum (Torr): should now track P_WAKE_Torr much better (sampling noise aside)
+variable           P_WAKE_RGA_SUM_Torr equal ${P_WAKE_O_Torr}+${P_WAKE_N2_Torr}+${P_WAKE_He_Torr}+${P_WAKE_H2O_Torr}
 
 # ------------------------------------------------------------------
 # Cupola emission diagnostics aligned to block cadence
@@ -272,11 +283,11 @@ variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*${FNU
 fix out print ${block}  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
 
 # ------------------------------------------------------------------
-# NEW: Residual Gas Analyzer CSV (wake partial pressures by species)
-# Suggested header your C++ harness writes once:
-# tick,time_s_phys,p_O_Torr,p_N2_Torr,p_He_Torr,p_H2O_Torr
+# Residual Gas Analyzer CSV (wake partial pressures by species)
+# Suggested header your C++ harness writes once (UPDATED):
+# tick,time_s_phys,p_O_Torr,p_N2_Torr,p_He_Torr,p_H2O_Torr,p_sum_Torr,p_total_Torr
 # ------------------------------------------------------------------
-fix rga_out print ${block} "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
+fix rga_out print ${block} "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr},${P_WAKE_RGA_SUM_Torr},${P_WAKE_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
 
 # ------------------------------------------------------------------
 # Keep stats every block; ACTUAL stepping is driven by C++ harness,

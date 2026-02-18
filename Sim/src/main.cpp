@@ -281,7 +281,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs30.txt";
+        const std::string jobsPath = args.inputDir + "/v3_job2.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;

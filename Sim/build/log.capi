@@ -24,8 +24,8 @@ create_box         -13.0  12.0    -5.0  5.0    -5.0  5.0
 Created orthogonal box = (-13 -5 -5) to (12 5 5)
 create_grid        96     56       40
 Created 215040 child grid cells
-  CPU time = 0.0613344 secs
-  create/ghost percent = 42.1531 57.8469
+  CPU time = 0.0567283 secs
+  create/ghost percent = 42.6914 57.3086
 
 # ------------------------------------------------------------------
 # Gas & flow (DSMC with VSS)
@@ -35,15 +35,12 @@ variable           Tgas          equal 800.0
 mixture            mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
 mixture            mixWake O N2 He temp 800 vstream 7500.0 0.0 0.0
 
-# Superset mixture for collisions & computes (includes H2O)
+# Superset mixture for collisions & "total" thermo computes (includes H2O)
 mixture            mixAll  O N2 He H2O
 
-# --- NEW: single-species mixtures for RGA partial pressures ---
-mixture            mixO    O
-mixture            mixN2   N2
-mixture            mixHe   He
-mixture            mixH2O  H2O
-# -------------------------------------------------------------
+# RGA mixture: split into per-species groups in a single mixture (stable ordering)
+# We will compute species number density per group, then form p_s = n_s kB T (T from mixAll thermal temp)
+mixture            mixRGA  O N2 He H2O group SELF
 
 collide            vss mixAll data/o.vss
 
@@ -62,10 +59,10 @@ read_surf          surf/cupola.surf                 # Cupola
   214298 209 533 = cells outside/inside/overlapping surfs
   530 3 = surf cells with 1,2,etc splits
   2495.89 2495.89 = cell-wise and global flow volume
-  CPU time = 0.061897 secs
-  read/check/sort/surf2grid/ghost/inout/particle percent = 0.808805 0.120804 4.54057 47.069 47.4608 23.6105 0.000374816
-  surf2grid time = 0.0291343 secs
-  map/comm1/comm2/comm3/comm4/split percent = 33.829 0.0613126 31.6232 3.69912 5.42211 14.5
+  CPU time = 0.0523025 secs
+  read/check/sort/surf2grid/ghost/inout/particle percent = 0.622603 0.111379 4.84955 46.4968 47.9197 25.4113 0.000307825
+  surf2grid time = 0.024319 secs
+  map/comm1/comm2/comm3/comm4/split percent = 32.9936 0.0700317 31.0669 4.09312 5.98296 14.9872
 read_surf          surf/mbe_orifice_10mm.surf       # 10 mm orifice (+x)
   64 triangles
   1.6112 1.6122 xlo xhi
@@ -78,10 +75,10 @@ read_surf          surf/mbe_orifice_10mm.surf       # 10 mm orifice (+x)
   214298 209 533 = cells outside/inside/overlapping surfs
   530 3 = surf cells with 1,2,etc splits
   2495.89 2495.89 = cell-wise and global flow volume
-  CPU time = 0.0552859 secs
-  read/check/sort/surf2grid/ghost/inout/particle percent = 1.44057 0.102287 5.34629 42.8772 50.2337 26.8063 0.000616794
-  surf2grid time = 0.023705 secs
-  map/comm1/comm2/comm3/comm4/split percent = 25.1011 0.0722168 31.77 4.79361 6.84129 17.9095
+  CPU time = 0.0478578 secs
+  read/check/sort/surf2grid/ghost/inout/particle percent = 1.69322 0.102318 5.9136 41.0855 51.2054 27.3897 0.000323876
+  surf2grid time = 0.0196626 secs
+  map/comm1/comm2/comm3/comm4/split percent = 24.4916 0.0725743 30.9862 5.12811 7.52812 18.207
 read_surf          surf/wafer_300mm.surf trans 3.6 0.0 0.0   # Wafer -> x+3.6 m
   20 triangles
   3.995 4.005 xlo xhi
@@ -94,10 +91,10 @@ read_surf          surf/wafer_300mm.surf trans 3.6 0.0 0.0   # Wafer -> x+3.6 m
   214294 209 537 = cells outside/inside/overlapping surfs
   534 3 = surf cells with 1,2,etc splits
   2495.88 2495.88 = cell-wise and global flow volume
-  CPU time = 0.0493957 secs
-  read/check/sort/surf2grid/ghost/inout/particle percent = 1.46887 0.133748 6.20143 47.5093 44.6867 29.5787 0.00101628
-  surf2grid time = 0.0234676 secs
-  map/comm1/comm2/comm3/comm4/split percent = 25.1694 0.0857269 31.5453 4.58366 6.95232 18.0962
+  CPU time = 0.0434829 secs
+  read/check/sort/surf2grid/ghost/inout/particle percent = 1.58481 0.12668 6.78152 45.2635 46.2435 30.1611 0.000361061
+  surf2grid time = 0.0196819 secs
+  map/comm1/comm2/comm3/comm4/split percent = 24.029 0.0909414 31.3306 5.06211 7.58276 18.4657
 
 region rCupola block  -2.9  1.61095   -5.0  5.0   -5.0  5.0
 group  cupGrp  surf   clear
@@ -328,24 +325,39 @@ compute            tFrontPt   thermal/grid gFrontPt   mixAll temp press
 compute            tWakePt    thermal/grid gWakePt    mixAll temp press
 compute            tFreePt    thermal/grid gFreePt    mixAll temp press
 compute            tGapPt     thermal/grid gGapPt     mixAll temp press
+
 compute            pFrontPt   reduce ave c_tFrontPt[2]
 compute            pWakePt    reduce ave c_tWakePt[2]
 compute            pFreePt    reduce ave c_tFreePt[2]
 compute            pGapPt     reduce ave c_tGapPt[2]
 
 # ------------------------------------------------------------------
-# NEW: Residual Gas Analyzer (species partial pressures at wake probe)
-# NOTE: thermal/grid takes a MIXTURE ID, so we use mixO/mixN2/mixHe/mixH2O
+# FIXED RGA: consistent partials via number density * kB * T
+#   p_s = n_s * kB * T_wake
+# Where:
+#   - n_s comes from compute grid ... nrho using mixRGA (one group per species)
+#   - T_wake comes from thermal/grid temp for mixAll at the wake probe cell
+# This makes sum(partials) track the same "n kB T" definition used for total pressure.
 # ------------------------------------------------------------------
-compute            tWake_O    thermal/grid gWakePt    mixO   temp press
-compute            tWake_N2   thermal/grid gWakePt    mixN2  temp press
-compute            tWake_He   thermal/grid gWakePt    mixHe  temp press
-compute            tWake_H2O  thermal/grid gWakePt    mixH2O temp press
+# Per-species number density at wake probe (nrho = #/m^3)
+compute            nWakeRGA   grid       gWakePt  mixRGA  nrho
+compute            nWake_O    reduce ave c_nWakeRGA[1]
+compute            nWake_N2   reduce ave c_nWakeRGA[2]
+compute            nWake_He   reduce ave c_nWakeRGA[3]
+compute            nWake_H2O  reduce ave c_nWakeRGA[4]
 
-compute            pWake_O    reduce ave c_tWake_O[2]
-compute            pWake_N2   reduce ave c_tWake_N2[2]
-compute            pWake_He   reduce ave c_tWake_He[2]
-compute            pWake_H2O  reduce ave c_tWake_H2O[2]
+# Thermal temperature at wake probe (K) from mixAll
+compute            TWakePt    reduce ave c_tWakePt[1]
+
+# Instantaneous partial pressures in Pa (evaluated each step)
+variable           pO_nowPa     equal c_nWake_O*${kB}*c_TWakePt
+variable           pO_nowPa     equal c_nWake_O*1.380649e-23*c_TWakePt
+variable           pN2_nowPa    equal c_nWake_N2*${kB}*c_TWakePt
+variable           pN2_nowPa    equal c_nWake_N2*1.380649e-23*c_TWakePt
+variable           pHe_nowPa    equal c_nWake_He*${kB}*c_TWakePt
+variable           pHe_nowPa    equal c_nWake_He*1.380649e-23*c_TWakePt
+variable           pH2O_nowPa   equal c_nWake_H2O*${kB}*c_TWakePt
+variable           pH2O_nowPa   equal c_nWake_H2O*1.380649e-23*c_TWakePt
 
 # Initialize (0 steps) so everything is defined; no warm-up run here.
 run                0
@@ -353,10 +365,10 @@ Memory usage per proc in Mbytes:
   particles (ave,min,max) = 0 0 0
   grid      (ave,min,max) = 39.2638 39.2638 39.2638
   surf      (ave,min,max) = 0.0143509 0.0143509 0.0143509
-  total     (ave,min,max) = 118.03 118.03 118.03
+  total     (ave,min,max) = 85.2169 85.2169 85.2169
 Step CPU Np 
        0            0        0 
-Loop time of 4.58e-07 on 1 procs for 0 steps with 0 particles
+Loop time of 5.02e-07 on 1 procs for 0 steps with 0 particles
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
@@ -367,7 +379,7 @@ Sort    | 0          | 0          | 0          |   0.0 |  0.00
 Comm    | 0          | 0          | 0          |   0.0 |  0.00
 Modify  | 0          | 0          | 0          |   0.0 |  0.00
 Output  | 0          | 0          | 0          |   0.0 |  0.00
-Other   |            | 4.58e-07   |            |       |100.00
+Other   |            | 5.02e-07   |            |       |100.00
 
 Particle moves    = 0 (0K)
 Cells touched     = 0 (0K)
@@ -431,19 +443,19 @@ fix                avgGap   ave/time 1 ${block} ${block} c_pGapPt
 fix                avgGap   ave/time 1 2500 ${block} c_pGapPt
 fix                avgGap   ave/time 1 2500 2500 c_pGapPt
 
-# NEW: RGA per-block averaging (Pa)
-fix                avgWakeO    ave/time 1 ${block} ${block} c_pWake_O
-fix                avgWakeO    ave/time 1 2500 ${block} c_pWake_O
-fix                avgWakeO    ave/time 1 2500 2500 c_pWake_O
-fix                avgWakeN2   ave/time 1 ${block} ${block} c_pWake_N2
-fix                avgWakeN2   ave/time 1 2500 ${block} c_pWake_N2
-fix                avgWakeN2   ave/time 1 2500 2500 c_pWake_N2
-fix                avgWakeHe   ave/time 1 ${block} ${block} c_pWake_He
-fix                avgWakeHe   ave/time 1 2500 ${block} c_pWake_He
-fix                avgWakeHe   ave/time 1 2500 2500 c_pWake_He
-fix                avgWakeH2O  ave/time 1 ${block} ${block} c_pWake_H2O
-fix                avgWakeH2O  ave/time 1 2500 ${block} c_pWake_H2O
-fix                avgWakeH2O  ave/time 1 2500 2500 c_pWake_H2O
+# RGA per-block averaging (Pa) of partial pressures
+fix                avg_pO    ave/time 1 ${block} ${block} v_pO_nowPa
+fix                avg_pO    ave/time 1 2500 ${block} v_pO_nowPa
+fix                avg_pO    ave/time 1 2500 2500 v_pO_nowPa
+fix                avg_pN2   ave/time 1 ${block} ${block} v_pN2_nowPa
+fix                avg_pN2   ave/time 1 2500 ${block} v_pN2_nowPa
+fix                avg_pN2   ave/time 1 2500 2500 v_pN2_nowPa
+fix                avg_pHe   ave/time 1 ${block} ${block} v_pHe_nowPa
+fix                avg_pHe   ave/time 1 2500 ${block} v_pHe_nowPa
+fix                avg_pHe   ave/time 1 2500 2500 v_pHe_nowPa
+fix                avg_pH2O  ave/time 1 ${block} ${block} v_pH2O_nowPa
+fix                avg_pH2O  ave/time 1 2500 ${block} v_pH2O_nowPa
+fix                avg_pH2O  ave/time 1 2500 2500 v_pH2O_nowPa
 
 variable           P_FRONT       equal f_avgFront
 variable           P_WAKE        equal f_avgWake
@@ -455,11 +467,18 @@ variable           P_WAKE_Torr   equal v_Pa2Torr*v_P_WAKE
 variable           P_FREE_Torr   equal v_Pa2Torr*v_P_FREE
 variable           P_GAP_Torr    equal v_Pa2Torr*v_P_GAP
 
-# NEW: RGA partial pressures (Torr)
-variable           P_WAKE_O_Torr    equal v_Pa2Torr*f_avgWakeO
-variable           P_WAKE_N2_Torr   equal v_Pa2Torr*f_avgWakeN2
-variable           P_WAKE_He_Torr   equal v_Pa2Torr*f_avgWakeHe
-variable           P_WAKE_H2O_Torr  equal v_Pa2Torr*f_avgWakeH2O
+# RGA partial pressures (Torr)
+variable           P_WAKE_O_Torr    equal v_Pa2Torr*f_avg_pO
+variable           P_WAKE_N2_Torr   equal v_Pa2Torr*f_avg_pN2
+variable           P_WAKE_He_Torr   equal v_Pa2Torr*f_avg_pHe
+variable           P_WAKE_H2O_Torr  equal v_Pa2Torr*f_avg_pH2O
+
+# Optional debug sum (Torr): should now track P_WAKE_Torr much better (sampling noise aside)
+variable           P_WAKE_RGA_SUM_Torr equal ${P_WAKE_O_Torr}+${P_WAKE_N2_Torr}+${P_WAKE_He_Torr}+${P_WAKE_H2O_Torr}
+variable           P_WAKE_RGA_SUM_Torr equal 0+${P_WAKE_N2_Torr}+${P_WAKE_He_Torr}+${P_WAKE_H2O_Torr}
+variable           P_WAKE_RGA_SUM_Torr equal 0+0+${P_WAKE_He_Torr}+${P_WAKE_H2O_Torr}
+variable           P_WAKE_RGA_SUM_Torr equal 0+0+0+${P_WAKE_H2O_Torr}
+variable           P_WAKE_RGA_SUM_Torr equal 0+0+0+0
 
 # ------------------------------------------------------------------
 # Cupola emission diagnostics aligned to block cadence
@@ -481,16 +500,16 @@ variable           CUP_EMIT_real_per_s     equal v_CUP_EMIT_macro_per_step*10000
 # ------------------------------------------------------------------
 fix out print ${block}  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
 fix out print 2500  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/${runID}/wake_4probes.csv screen no
-fix out print 2500  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/TESTING_V3/wake_4probes.csv screen no
+fix out print 2500  "${tick},${phys_time_s},${P_FRONT_Torr},${P_WAKE_Torr},${P_FREE_Torr},${P_GAP_Torr},${cup_scale},${CUP_EMIT_real_per_s},${Fwafer_log_cm2s},${mbe_active}" append ../data/raw/V3_TESTING/wake_4probes.csv screen no
 
 # ------------------------------------------------------------------
-# NEW: Residual Gas Analyzer CSV (wake partial pressures by species)
-# Suggested header your C++ harness writes once:
-# tick,time_s_phys,p_O_Torr,p_N2_Torr,p_He_Torr,p_H2O_Torr
+# Residual Gas Analyzer CSV (wake partial pressures by species)
+# Suggested header your C++ harness writes once (UPDATED):
+# tick,time_s_phys,p_O_Torr,p_N2_Torr,p_He_Torr,p_H2O_Torr,p_sum_Torr,p_total_Torr
 # ------------------------------------------------------------------
-fix rga_out print ${block} "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
-fix rga_out print 2500 "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
-fix rga_out print 2500 "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr}" append ../data/raw/TESTING_V3/residualGasAnalyzer.csv screen no
+fix rga_out print ${block} "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr},${P_WAKE_RGA_SUM_Torr},${P_WAKE_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
+fix rga_out print 2500 "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr},${P_WAKE_RGA_SUM_Torr},${P_WAKE_Torr}" append ../data/raw/${runID}/residualGasAnalyzer.csv screen no
+fix rga_out print 2500 "${tick},${phys_time_s},${P_WAKE_O_Torr},${P_WAKE_N2_Torr},${P_WAKE_He_Torr},${P_WAKE_H2O_Torr},${P_WAKE_RGA_SUM_Torr},${P_WAKE_Torr}" append ../data/raw/V3_TESTING/residualGasAnalyzer.csv screen no
 
 # ------------------------------------------------------------------
 # Keep stats every block; ACTUAL stepping is driven by C++ harness,
@@ -506,22 +525,22 @@ Memory usage per proc in Mbytes:
   particles (ave,min,max) = 0 0 0
   grid      (ave,min,max) = 39.2638 39.2638 39.2638
   surf      (ave,min,max) = 0.0143509 0.0143509 0.0143509
-  total     (ave,min,max) = 118.03 118.03 118.03
+  total     (ave,min,max) = 85.2169 85.2169 85.2169
 Step CPU Np 
        0            0        0 
-    2500    85.751304   299365 
-Loop time of 85.7513 on 1 procs for 2500 steps with 299365 particles
+    2500    107.78758   299365 
+Loop time of 107.788 on 1 procs for 2500 steps with 299365 particles
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Move    | 19.421     | 19.421     | 19.421     |   0.0 | 22.65
-Coll    | 4.3243     | 4.3243     | 4.3243     |   0.0 |  5.04
-Sort    | 6.2414     | 6.2414     | 6.2414     |   0.0 |  7.28
-Comm    | 0.032627   | 0.032627   | 0.032627   |   0.0 |  0.04
-Modify  | 55.732     | 55.732     | 55.732     |   0.0 | 64.99
-Output  | 1.6799e-05 | 1.6799e-05 | 1.6799e-05 |   0.0 |  0.00
-Other   |            | 0.0009457  |            |       |  0.00
+Move    | 17.389     | 17.389     | 17.389     |   0.0 | 16.13
+Coll    | 3.6844     | 3.6844     | 3.6844     |   0.0 |  3.42
+Sort    | 5.8772     | 5.8772     | 5.8772     |   0.0 |  5.45
+Comm    | 0.031107   | 0.031107   | 0.031107   |   0.0 |  0.03
+Modify  | 80.805     | 80.805     | 80.805     |   0.0 | 74.97
+Output  | 1.1496e-05 | 1.1496e-05 | 1.1496e-05 |   0.0 |  0.00
+Other   |            | 0.0006573  |            |       |  0.00
 
 Particle moves    = 657524865 (658M)
 Cells touched     = 849403988 (849M)
@@ -537,7 +556,7 @@ Reactions         = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
-Particle-moves/CPUsec/proc: 7.66781e+06
+Particle-moves/CPUsec/proc: 6.10019e+06
 Particle-moves/step: 263010
 Cell-touches/particle/step: 1.29182
 Particle comm iterations/step: 1
@@ -568,22 +587,22 @@ Memory usage per proc in Mbytes:
   particles (ave,min,max) = 29.6875 29.6875 29.6875
   grid      (ave,min,max) = 39.2638 39.2638 39.2638
   surf      (ave,min,max) = 0.0143509 0.0143509 0.0143509
-  total     (ave,min,max) = 147.718 147.718 147.718
+  total     (ave,min,max) = 114.904 114.904 114.904
 Step CPU Np 
     2500            0   299365 
-    5000    94.034452   303206 
-Loop time of 94.0345 on 1 procs for 2500 steps with 303206 particles
+    5000    120.39234   303206 
+Loop time of 120.392 on 1 procs for 2500 steps with 303206 particles
 
 MPI task timing breakdown:
 Section |  min time  |  avg time  |  max time  |%varavg| %total
 ---------------------------------------------------------------
-Move    | 21.778     | 21.778     | 21.778     |   0.0 | 23.16
-Coll    | 4.9281     | 4.9281     | 4.9281     |   0.0 |  5.24
-Sort    | 6.9107     | 6.9107     | 6.9107     |   0.0 |  7.35
-Comm    | 0.037419   | 0.037419   | 0.037419   |   0.0 |  0.04
-Modify  | 60.379     | 60.379     | 60.379     |   0.0 | 64.21
-Output  | 9.233e-06  | 9.233e-06  | 9.233e-06  |   0.0 |  0.00
-Other   |            | 0.0009405  |            |       |  0.00
+Move    | 19.352     | 19.352     | 19.352     |   0.0 | 16.07
+Coll    | 4.2165     | 4.2165     | 4.2165     |   0.0 |  3.50
+Sort    | 6.6985     | 6.6985     | 6.6985     |   0.0 |  5.56
+Comm    | 0.036264   | 0.036264   | 0.036264   |   0.0 |  0.03
+Modify  | 90.088     | 90.088     | 90.088     |   0.0 | 74.83
+Output  | 1.0967e-05 | 1.0967e-05 | 1.0967e-05 |   0.0 |  0.00
+Other   |            | 0.0006679  |            |       |  0.00
 
 Particle moves    = 756867402 (757M)
 Cells touched     = 962635238 (963M)
@@ -599,7 +618,7 @@ Reactions         = 0 (0K)
 Particles stuck   = 0
 Axisymm bad moves = 0
 
-Particle-moves/CPUsec/proc: 8.04883e+06
+Particle-moves/CPUsec/proc: 6.28667e+06
 Particle-moves/step: 302747
 Cell-touches/particle/step: 1.27187
 Particle comm iterations/step: 1
