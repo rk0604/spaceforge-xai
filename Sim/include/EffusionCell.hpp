@@ -1,3 +1,4 @@
+// Sim/include/EffusionCell.hpp
 #pragma once
 #include <filesystem>
 #include <mutex>
@@ -21,9 +22,6 @@ public:
     void setSpartaCtrl(WakeChamber* wc) { sparta_ctrl_ = wc; }
 
     // Target crucible temperature (K) implied by the job's flux.
-    // This does NOT affect the internal temperature integration; it is
-    // simply recorded so that we can compare "desired" vs "achieved"
-    // temperatures in the EffusionCell CSV.
     void setTargetTempK(double T_K) { target_temp_K_ = T_K; }
 
     // Read-only accessors used by main.cpp / diagnostics
@@ -31,7 +29,6 @@ public:
     double getTargetTempK() const { return target_temp_K_; }
 
     // Actual heater power that was applied on the last tick (W).
-    // This is what main.cpp uses to compare against the requested power.
     double getLastHeatInputW() const { return last_heat_W_; }
 
 private:
@@ -41,8 +38,13 @@ private:
     double last_heat_W_{0.0};       // last-applied power (from HeaterBank)
     double heat_input_w_{0.0};      // what we log as heatInput
 
-    double c_j_per_k_ = 800.0;      // represents the amount of energy (Joules) required to raise the cell's temperature by 1 Kelvin
-    double h_w_per_k_ = 0.8;        // heat loss to environment
+    // Energy balance tracking for diagnostics
+    double last_p_loss_W_{0.0};     // W (Heat lost to space this tick)
+    double last_net_W_{0.0};        // W (Net power available for dT)
+
+    // Physical constants synced with main.cpp shadow proxy
+    double c_j_per_k_ = 800.0;      // Thermal mass
+    double h_w_per_k_ = 0.8;        // Insulation loss factor
 
     // Push-to-SPARTA cadence
     int    push_every_ticks_{10};
@@ -51,7 +53,7 @@ private:
 
     WakeChamber* sparta_ctrl_{nullptr};
 
-    // SPARTA diagnostic CSV path (currently unused, kept for future expansion)
+    // SPARTA diagnostic CSV path
     std::filesystem::path diag_path_ =
         std::filesystem::path("data") / "tmp" / "effusion_diag.csv";
 };
