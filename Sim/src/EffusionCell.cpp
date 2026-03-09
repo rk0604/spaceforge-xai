@@ -37,14 +37,18 @@ void EffusionCell::tick(const TickContext& ctx) {
         "EffusionCell",
         ctx.tick_index,
         ctx.time,
-        {"status", "act_temp_K", "target_temp_K", "heatInput_w",
-         "underflux_streak", "temp_miss_streak"},
-        { 1.0,
-          temperature_,
-          target_temp_K_,
-          heat_input_w_,
-          static_cast<double>(g_underflux_streak_for_log),
-          static_cast<double>(g_temp_miss_streak_for_log) }
+        {
+            "status", "act_temp_K", "target_temp_K", "heatInput_w",
+            "underflux_streak", "temp_miss_streak", "C_J_per_K", "h_W_per_k"},
+            { 1.0,
+            temperature_,
+            target_temp_K_,
+            heat_input_w_,
+            static_cast<double>(g_underflux_streak_for_log),
+            static_cast<double>(g_temp_miss_streak_for_log),
+            c_j_per_k_, // Header name: c_j_per_k_
+            h_w_per_k_  // Header name: h_w_per_k_
+        }
     );
 
     // Optionally push updated setpoint into SPARTA at a cadence.
@@ -67,27 +71,22 @@ void EffusionCell::shutdown() {
 }
 
 void EffusionCell::applyHeat(double watts, double dt) {
-    // Physical-ish RC model: C dT/dt = P_in - h (T - T_env)
-    // Tuned for kW-class heater so we can reach ~1100–1300 K in typical job windows.
-    const double C_J_per_K = 1000.0;   // thermal capacitance of the cell
-    const double h_W_per_K = 1.5;      // heat loss to environment
-    const double T_env_K   = 300.0;    // ambient/environment temperature
+    const double T_env_K = 300.0; 
 
     watts = std::max(0.0, watts);
     const double dt_pos = std::max(0.0, dt);
 
-    const double net_W = watts - h_W_per_K * (temperature_ - T_env_K);
-    const double dT    = (net_W / C_J_per_K) * dt_pos;
+    // FIX: Changed from h_W_per_K to h_w_per_k_
+    const double net_W = watts - h_w_per_k_ * (temperature_ - T_env_K);
+    
+    // FIX: Changed from C_J_per_K to c_j_per_k_
+    const double dT    = (net_W / c_j_per_k_) * dt_pos;
 
     temperature_ += dT;
 
-    // Basic safety clamps
     if (!std::isfinite(temperature_)) temperature_ = T_env_K;
     if (temperature_ < 0.0)           temperature_ = 0.0;
 
     last_heat_W_  = watts;
-    heat_input_w_ = watts; // logged on this tick; cleared at end of tick()
-
-    // NOTE: target_temp_K_ is NOT updated here.
-    // It is driven externally (from main.cpp) based on the flux schedule.
+    heat_input_w_ = watts; 
 }

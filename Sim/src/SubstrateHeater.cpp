@@ -54,8 +54,10 @@ double SubstrateHeater::fluxToTargetTemp(double F) const {
   // Intended to produce substrate targets in the ~700–850 K range for typical growth fluxes.
   if (!std::isfinite(F) || F <= 0.0) return 300.0;
 
-  const double F_low  = 5.0e13;
-  const double F_high = 1.2e14;
+  // const double F_low  = 5.0e13;
+  // const double F_high = 1.2e14;
+  const double F_low  = 2.0e12; // Lower design flux
+  const double F_high = 9.0e13; // Upper design flux
   const double T_low  = 700.0;
   const double T_high = 850.0;
 

@@ -35,7 +35,7 @@ private:
 
     // Raised from 200 W -> 800 W so the battery can actually bank solar surplus.
     // This should improve job survival but still allow failures under bad timing/eclipses.
-    double max_charge_rate_W_    = 1600.0;
+    double max_charge_rate_W_    = 3500.0;
 
-    double max_discharge_rate_W_ = 1200.0;  // battery can output up to 2 kW
+    double max_discharge_rate_W_ = 1500.0;  // battery can output up to 2 kW
 };

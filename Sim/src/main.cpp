@@ -67,10 +67,9 @@ double g_orbit_solar_scale = 1.0;
 
 // ---------------------------------------------------------------------------
 // Map wafer flux (cm^-2 s^-1) from jobs.txt to a notional effusion-cell
-// target temperature (K). This does NOT enforce the temperature; it simply
-// provides a "desired" setpoint that we log as target_temp_K in EffusionCell.
-// This is the original 1100–1300 K mapping you already had.
-// ---------------------------------------------------------------------------
+// target temperature (K). This does NOT enforce the temperature; it simply provides a "desired" setpoint that we log as target_temp_K in EffusionCell.
+// This is the original 1100–1300 K mapping
+/* ------------------------------ below is the old version with the floor set too high for the jobs
 static double targetTempForFlux(double Fwafer_cm2s) {
   // Idle / no-flux baseline
   if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
@@ -81,7 +80,7 @@ static double targetTempForFlux(double Fwafer_cm2s) {
   const double F_low  = 5e13;   // lower design flux (cm^-2 s^-1)
   const double F_high = 1e14;   // upper design flux (cm^-2 s^-1)
   const double T_low  = 1100.0; // effusion temp at F_low (K)
-  const double T_high = 1300.0; // effusion temp at F_high (K)
+  const double T_high = 1500.0; // effusion temp at F_high (K) - was originally 1300
 
   // Clamp flux to the design band.
   double F_clamped = std::clamp(Fwafer_cm2s, F_low, F_high);
@@ -99,6 +98,40 @@ static double targetTempForFlux(double Fwafer_cm2s) {
 
   return T_low + alpha * (T_high - T_low);
 }
+--------------------------------------------------------------------------- */
+
+static double targetTempForFlux(double Fwafer_cm2s) {
+  // 1. Idle / no-flux baseline
+  if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 1e-15) {
+    return 300.0;
+  }
+
+  // 2. Updated Design Anchors to match jobs file range:
+  // F_low is your minimum growth flux (2.0e12)
+  // F_high is your maximum growth flux (3.3e13)
+  const double F_low  = 2e12;   
+  const double F_high = 9.0e13; 
+  const double T_low  = 1100.0; // minimum temp if flux is < f_low
+  const double T_high = 1500.0; // max temp if flux is > f_high; was originally 1300, but increased to allow higher temps for the same flux given the new heater model and job range. Adjust as needed based on your specific requirements and the expected flux range in your jobs.txt file.
+
+  // 3. Clamp flux so values outside this range don't break the log math
+  double F_clamped = std::clamp(Fwafer_cm2s, F_low, F_high);
+
+  // 4. Logarithmic interpolation
+  double logF     = std::log(F_clamped);
+  double logFlow  = std::log(F_low);
+  double logFhigh = std::log(F_high);
+  double denom    = (logFhigh - logFlow);
+
+  double alpha = 0.0;
+  if (denom > 0.0) {
+    alpha = (logF - logFlow) / denom;
+  }
+  alpha = std::clamp(alpha, 0.0, 1.0);
+
+  // 5. Calculate exact target temp
+  return T_low + alpha * (T_high - T_low);
+}
 
 // ---------------------------------------------------------------------------
 // Estimate how many ticks of "warm-up" to ignore gate penalties for a job,
@@ -108,8 +141,8 @@ static double targetTempForFlux(double Fwafer_cm2s) {
 // ---------------------------------------------------------------------------
 static int estimateWarmupTicksForFlux(double Fwafer_cm2s, double dt_s) {
   // Same RC constants as in the temp_proxy_K update below.
-  const double C_J_PER_K = 1000.0;
-  const double H_W_PER_K = 1.5;
+  const double C_J_PER_K = 800.0; // Was 1000.0
+  const double H_W_PER_K = 0.8;  // Was 1.5
   const double T_ENV_K   = 300.0;
 
   if (!std::isfinite(dt_s) || dt_s <= 0.0) {
@@ -281,7 +314,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/v3_job2.txt";
+        const std::string jobsPath = args.inputDir + "/jobs24.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -352,17 +385,17 @@ int main(int argc, char** argv) {
     // Electrical/power subsystems (independent of SPARTA)
     PowerBus bus;
     const double SOLAR_EFFICIENCY   = 0.25;
-    const double SOLAR_BASE_INPUT_W = 8500.0; // example boost
+    const double SOLAR_BASE_INPUT_W = 30000.0; // example boost
 
     SolarArray solar(SOLAR_EFFICIENCY, SOLAR_BASE_INPUT_W);
     Battery battery;
 
     bus.setBattery(&battery);
     // Bigger heater: can draw up to 2 kW from the bus.
-    HeaterBank    heater(/*maxDraw=*/2000.0);
+    HeaterBank    heater(/*maxDraw=*/5000.0);
     EffusionCell  effCell;
     GrowthMonitor growth(/*gridN=*/32);
-    SubstrateHeater substrateHeater(/*maxPowerW=*/2200.0, /*wafer_radius_m=*/0.15);
+    SubstrateHeater substrateHeater(/*maxPowerW=*/2000.0, /*wafer_radius_m=*/0.15);
 
   
     solar.setPowerBus(&bus);
@@ -837,8 +870,8 @@ int main(int argc, char** argv) {
 
             // 6a) Update RC temp proxy (same constants as EffusionCell::applyHeat).
             {
-              const double C_J_PER_K = 1000.0;
-              const double H_W_PER_K = 1.5;
+              const double C_J_PER_K = 800.0; // Was 1000.0
+              const double H_W_PER_K = 0.8;  // Was 1.5
               const double T_ENV_K   = 300.0;
 
               double net_W = P_actual - H_W_PER_K * (temp_proxy_K - T_ENV_K);

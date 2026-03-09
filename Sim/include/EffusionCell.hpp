@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <mutex>
 #include "Subsystem.hpp"
-#include "TickContext.hpp"
+#include "TickContext.hpp"  
 
 class WakeChamber; // fwd
 
@@ -40,6 +40,9 @@ private:
 
     double last_heat_W_{0.0};       // last-applied power (from HeaterBank)
     double heat_input_w_{0.0};      // what we log as heatInput
+
+    double c_j_per_k_ = 800.0;      // represents the amount of energy (Joules) required to raise the cell's temperature by 1 Kelvin
+    double h_w_per_k_ = 0.8;        // heat loss to environment
 
     // Push-to-SPARTA cadence
     int    push_every_ticks_{10};
