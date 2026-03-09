@@ -11,8 +11,8 @@ static int s_last_logged_tick = -1;
 
 // Gate streaks are computed in main.cpp; we mirror them here so they appear
 // in EffusionCell.csv without changing any public API.
-extern int g_underflux_streak_for_log;
-extern int g_temp_miss_streak_for_log;
+int g_underflux_streak_for_log = 0;
+int g_temp_miss_streak_for_log = 0;
 
 void EffusionCell::initialize() {
     last_heat_W_   = 0.0;
