@@ -98,35 +98,51 @@ void write_params_inc(double Fwafer_cm2s,
                       int rank,
                       const std::string& inputDir,
                       LogFn log_fn) {
-  // Clamp flux to positive floor
+  // Clamp flux to positive floor for SPARTA mixture legality
   if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
     Fwafer_cm2s = FWAFFER_FLOOR_CM2S;
   }
+
+  // Sanitize beam flag
   if (!std::isfinite(mbe_active)) {
     mbe_active = 0.0;
   }
+  mbe_active = (mbe_active > 0.5) ? 1.0 : 0.0;
 
-  if (rank == 0) {
-    std::string path = inputDir + "/params.inc";
-    std::ofstream out(path);
-    if (!out) {
-      std::ostringstream oss;
-      oss << "[fatal] Cannot open " << path << " for writing.\n";
-      if (log_fn) log_fn(oss.str());
-      throw std::runtime_error("Failed to write params.inc");
-    }
-    out << "variable Fwafer_cm2s  equal " << Fwafer_cm2s  << "\n";
-    out << "variable mbe_active   equal " << mbe_active   << "\n";
-    out.close();
-
-    std::ostringstream oss;
-    oss << "[params] Wrote params.inc: Fwafer_cm2s=" << Fwafer_cm2s
-        << ", mbe_active=" << mbe_active << "\n";
-    if (log_fn) log_fn(oss.str());
+  // Only rank 0 writes params.inc.
+  // IMPORTANT: no MPI collective belongs in this function because this
+  // helper is called from leader-only control flow in main.cpp.
+  if (rank != 0) {
+    return;
   }
 
-  // Make sure all ranks wait until file is written
-  MPI_Barrier(MPI_COMM_WORLD);
+  const std::string path = inputDir + "/params.inc";
+
+  std::ofstream out(path, std::ios::out | std::ios::trunc);
+  if (!out) {
+    std::ostringstream oss;
+    oss << "[fatal] Cannot open " << path << " for writing.\n";
+    if (log_fn) log_fn(oss.str());
+    throw std::runtime_error("Failed to open params.inc for writing");
+  }
+
+  out << "variable Fwafer_cm2s  equal " << Fwafer_cm2s << "\n";
+  out << "variable mbe_active   equal " << mbe_active  << "\n";
+  out.flush();
+
+  if (!out) {
+    std::ostringstream oss;
+    oss << "[fatal] Failed while writing " << path << ".\n";
+    if (log_fn) log_fn(oss.str());
+    throw std::runtime_error("Failed while writing params.inc");
+  }
+
+  out.close();
+
+  std::ostringstream oss;
+  oss << "[params] Wrote params.inc: Fwafer_cm2s=" << Fwafer_cm2s
+      << ", mbe_active=" << mbe_active << "\n";
+  if (log_fn) log_fn(oss.str());
 }
 
 } // namespace SimHelpers

@@ -4,7 +4,8 @@
 #SBATCH --error=logs/sf_orbit1_v3_job24re_run_%j.err
 #SBATCH --time=100:00:00
 #SBATCH --mem=32g
-#SBATCH -c 8
+#SBATCH --ntasks=8
+#SBATCH --cpus-per-task=1
 
 cd /common/home/rvk22/spaceforge-xai-run3/Sim
 

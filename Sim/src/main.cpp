@@ -230,6 +230,42 @@ int main(int argc, char** argv) {
     }
   };
 
+    // ------------------------------------------------------------------------
+  // Per-rank progress logger for MPI debugging.
+  // Writes one file per rank so we can see where each rank stops.
+  // ------------------------------------------------------------------------
+  std::ofstream rankProgressLog;
+  {
+    const char* env_run_id = std::getenv("RUN_ID");
+    std::string run_id     = env_run_id ? env_run_id : "norunid";
+    std::string mode_tag   = args.mode.empty() ? "nomode" : args.mode;
+
+    std::string rank_filename =
+        "sim_rank_progress_r" + std::to_string(rank) +
+        "_" + run_id + "_" + mode_tag + ".log";
+
+    rankProgressLog.open(rank_filename, std::ios::out | std::ios::app);
+    if (!rankProgressLog) {
+      std::cerr << "[warn] rank " << rank
+                << " failed to open " << rank_filename << " for writing.\n";
+      std::cerr.flush();
+    }
+  }
+
+  auto log_rank_progress = [&](int tick, const std::string& phase) {
+    std::ostringstream oss;
+    oss << "[rank " << rank << "] tick=" << tick
+        << " phase=" << phase << "\n";
+
+    std::cerr << oss.str();
+    std::cerr.flush();
+
+    if (rankProgressLog.is_open()) {
+      rankProgressLog << oss.str();
+      rankProgressLog.flush();
+    }
+  };
+
   // Open log file on rank 0 after we know the mode/env.
   if (rank == 0) {
     const char* env_run_id = std::getenv("RUN_ID");
@@ -529,15 +565,23 @@ int main(int argc, char** argv) {
       double last_Fwafer_sent = std::numeric_limits<double>::quiet_NaN();
       double last_mbe_sent    = std::numeric_limits<double>::quiet_NaN(); 
       
+      log_rank_progress(0, "before-initial-write_params_inc");
       write_params_inc(initial_Fwafer, 0.0, rank, args.inputDir, log_msg);
+      log_rank_progress(0, "after-initial-write_params_inc");
+
       last_Fwafer_sent = initial_Fwafer;
       last_mbe_sent    = 0.0;
 
       if (rank == 0) {
         log_msg("[info] Constructing WakeChamber and calling wake.init(...)\n");
       }
+
       WakeChamber wake(MPI_COMM_WORLD, "WakeChamber");
+      log_rank_progress(0, "before-wake-init");
       wake.init(args.wakeDeck.c_str(), args.inputDir.c_str());
+      log_rank_progress(0, "after-wake-init");
+
+
       if (rank == 0) {
         log_msg("[info] wake.init() returned; entering main wake loop.\n");
       }
@@ -587,6 +631,7 @@ int main(int argc, char** argv) {
       for (int i = 0; i < NTICKS; ++i) {
         const int tickIndex = i + 1;
         const double t_phys = tickIndex * dt;
+        log_rank_progress(tickIndex, "loop-top");
 
         // ---------------- leader: orbit, job schedule, per-tick harness -----
         if (isLeader) {
@@ -813,8 +858,13 @@ int main(int argc, char** argv) {
                   << ", mbe_active=" << mbe_flag << "\n";
               log_msg(oss.str());
 
+              log_rank_progress(tickIndex, "before-write_params_inc");
               write_params_inc(Fwafer_cmd, mbe_flag, rank, args.inputDir, log_msg);
+              log_rank_progress(tickIndex, "after-write_params_inc");
+
+              log_rank_progress(tickIndex, "before-markDirtyReload");
               wake.markDirtyReload();
+              log_rank_progress(tickIndex, "after-markDirtyReload");
 
               last_Fwafer_sent = Fwafer_cmd;
               last_mbe_sent    = mbe_flag;
@@ -852,10 +902,14 @@ int main(int argc, char** argv) {
           log_msg(oss.str());
 
           // C++ harness first, then SPARTA
+          log_rank_progress(tickIndex, "before-engine-tick");
           engine.tick();
+          log_rank_progress(tickIndex, "after-engine-tick");
 
           TickContext ctx{ tickIndex, t_phys, dt };
+          log_rank_progress(tickIndex, "before-wake-tick");
           wake.tick(ctx);
+          log_rank_progress(tickIndex, "after-wake-tick");
 
           std::ostringstream oss2;
           oss2 << "[wake] tick=" << tickIndex
@@ -985,8 +1039,15 @@ int main(int argc, char** argv) {
               if (!std::isfinite(F_for_abort) || F_for_abort <= 0.0) {
                 F_for_abort = FWAFFER_FLOOR_CM2S;
               }
+
+              log_rank_progress(tickIndex, "before-abort-write_params_inc");
               write_params_inc(F_for_abort, 0.0, rank, args.inputDir, log_msg);
+              log_rank_progress(tickIndex, "after-abort-write_params_inc");
+
+              log_rank_progress(tickIndex, "before-abort-markDirtyReload");
               wake.markDirtyReload();
+              log_rank_progress(tickIndex, "after-abort-markDirtyReload");
+
               last_Fwafer_sent = F_for_abort;
               last_mbe_sent    = 0.0;
 
@@ -1016,17 +1077,18 @@ int main(int argc, char** argv) {
           if (isLeader) {
             std::ostringstream oss;
             oss << "[cpl] tick=" << (i + 1)
-                << " ENTER wake.runIfDirtyOrAdvance(spartaBlock="
+                << " ENTER wake.runIfDirtyOrAdvanceCollective(spartaBlock="
                 << args.spartaBlock << ")\n";
             log_msg(oss.str());
           }
 
-          wake.runIfDirtyOrAdvance(args.spartaBlock);
+          // wake.runIfDirtyOrAdvance(args.spartaBlock);
+          wake.runIfDirtyOrAdvanceCollective(args.spartaBlock);
 
           if (isLeader) {
             std::ostringstream oss;
             oss << "[cpl] tick=" << (i + 1)
-                << " EXIT  wake.runIfDirtyOrAdvance(...)\n";
+                << " EXIT  wake.runIfDirtyOrAdvanceCollective(...)\n";
             log_msg(oss.str());
           }
         }
