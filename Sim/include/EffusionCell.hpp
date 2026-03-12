@@ -1,11 +1,10 @@
-// Sim/include/EffusionCell.hpp
 #pragma once
-#include <filesystem>
-#include <mutex>
-#include "Subsystem.hpp"
-#include "TickContext.hpp"  
 
-class WakeChamber; // fwd
+#include <filesystem>
+#include "Subsystem.hpp"
+#include "TickContext.hpp"
+
+class WakeChamber; // forward declaration
 
 class EffusionCell : public Subsystem {
 public:
@@ -15,45 +14,69 @@ public:
     void tick(const TickContext& ctx) override;
     void shutdown() override;
 
-    // Called by HeaterBank to apply power (watts) for dt seconds
+    // Called by HeaterBank to apply heater power in watts for dt seconds.
     void applyHeat(double watts, double dt);
 
-    // Optional hookup to push parameters into the wake SPARTA instance
+    // Optional hookup to push parameters into the wake SPARTA instance.
     void setSpartaCtrl(WakeChamber* wc) { sparta_ctrl_ = wc; }
 
-    // Target crucible temperature (K) implied by the job's flux.
-    void setTargetTempK(double T_K) { target_temp_K_ = T_K; }
+    // Set the desired effusion-cell target temperature in kelvin.
+    // main.cpp uses this to express the process target for the current tick.
+    void setTargetTempK(double T_K);
 
-    // Read-only accessors used by main.cpp / diagnostics
-    double getTemperature() const { return temperature_; }
+    // Read-only accessors used by main.cpp and diagnostics.
+    double getTemperatureK() const { return temperature_; }
     double getTargetTempK() const { return target_temp_K_; }
 
-    // Actual heater power that was applied on the last tick (W).
+    // Backward-compatible accessor in case existing code still uses this name.
+    double getTemperature() const { return getTemperatureK(); }
+
+    // Actual heater power applied during the most recent applyHeat() call.
     double getLastHeatInputW() const { return last_heat_W_; }
 
+    // Returns true when the current target is a real heating target rather than
+    // the idle baseline. This prevents 300 K idle states from being treated as
+    // deposition-readiness targets.
+    bool hasMeaningfulTarget() const;
+
+    // Returns true when the current temperature is close enough to the current
+    // target temperature for deposition readiness purposes.
+    //
+    // Default behavior:
+    // - If the target is idle or not meaningful, returns true.
+    // - Otherwise requires temperature >= readiness_fraction * target.
+    bool isAtTarget(double readiness_fraction = 0.90) const;
+
 private:
-    double temperature_{300.0};     // K (achieved crucible temperature)
-    double target_temp_K_{300.0};   // K (desired temperature from flux schedule)
+    // Actual effusion-cell temperature in kelvin.
+    double temperature_{300.0};
 
-    double last_heat_W_{0.0};       // last-applied power (from HeaterBank)
-    double heat_input_w_{0.0};      // what we log as heatInput
+    // Desired target temperature in kelvin.
+    // This is provided by main.cpp from process control logic.
+    double target_temp_K_{300.0};
 
-    // Energy balance tracking for diagnostics
-    double last_p_loss_W_{0.0};     // W (Heat lost to space this tick)
-    double last_net_W_{0.0};        // W (Net power available for dT)
+    // Last-applied heater power in watts from HeaterBank.
+    double last_heat_W_{0.0};
 
-    // Physical constants synced with main.cpp shadow proxy
-    double c_j_per_k_ = 800.0;      // Thermal mass
-    double h_w_per_k_ = 0.8;        // Insulation loss factor
+    // Per-tick heat input reported into logging.
+    double heat_input_w_{0.0};
 
-    // Push-to-SPARTA cadence
+    // Thermal diagnostics logged each tick.
+    double last_p_loss_W_{0.0};
+    double last_net_W_{0.0};
+
+    // Thermal model constants.
+    double c_j_per_k_{800.0};
+    double h_w_per_k_{0.8};
+
+    // Push-to-SPARTA cadence controls.
     int    push_every_ticks_{10};
     double push_threshold_K_{1.0};
     double last_pushed_temp_{300.0};
 
     WakeChamber* sparta_ctrl_{nullptr};
 
-    // SPARTA diagnostic CSV path
+    // Optional diagnostic path retained for compatibility with the existing class.
     std::filesystem::path diag_path_ =
         std::filesystem::path("data") / "tmp" / "effusion_diag.csv";
 };

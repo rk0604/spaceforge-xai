@@ -9,5 +9,5 @@
 
 cd /common/home/rvk22/spaceforge-xai-run3/Sim
 
-RUN_ID=V3_Job24_ReRun MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=8 \
+RUN_ID=V4_testing_2 MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=8 \
   ./run.sh --nticks 1250 --couple-every 1 --sparta-block 2500

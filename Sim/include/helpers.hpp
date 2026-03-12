@@ -28,10 +28,10 @@ struct Args {
 // Job schedule for effusion
 // ---------------------------
 struct Job {
-  int    start_tick = 0;      // inclusive
-  int    end_tick   = -1;     // inclusive
-  double Fwafer_cm2s = 0.0;   // effusion flux to send to SPARTA
-  double heater_W    = 0.0;   // (legacy) heater demand in watts
+  int    start_tick   = 0;      // inclusive
+  int    end_tick     = -1;     // inclusive
+  double Fwafer_cm2s  = 0.0;    // effusion flux to send to SPARTA
+  double heater_W     = 0.0;    // (legacy) heater demand in watts
 };
 
 // Global floor so Fwafer_cm2s never goes fully to zero in SPARTA mixture.
@@ -47,7 +47,15 @@ void print_usage();
 // Physics helper
 double fluxToHeaterPower(double Fwafer_cm2s);
 
-// params.inc writer (wraps old lambda, keeps behavior identical)
+/*
+    Rewrite inputDir/params.inc with the latest wake parameters.
+
+    MPI behavior:
+    - Only rank 0 writes the file.
+    - This function performs no MPI collectives and no barrier.
+    - Synchronization is handled later by the caller via the collective
+      SPARTA reload path.
+*/
 void write_params_inc(double Fwafer_cm2s,
                       double mbe_active,
                       int rank,

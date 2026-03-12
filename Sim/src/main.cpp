@@ -350,7 +350,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs24.txt";
+        const std::string jobsPath = args.inputDir + "/test_job.txt";
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
@@ -551,9 +551,12 @@ int main(int argc, char** argv) {
       // Seed params.inc BEFORE the first SPARTA deck load.
       double initial_Fwafer = FWAFFER_FLOOR_CM2S;
       if (rank == 0 && !jobs.empty()) {
-        // Use first job's flux as a reasonable starting point
-        initial_Fwafer = jobs.front().Fwafer_cm2s;
-        if (!std::isfinite(initial_Fwafer) || initial_Fwafer <= 0.0) {
+        // Seed SPARTA with a legal positive mixture flux.
+        // This is NOT a statement that physical deposition is active.
+        double first_raw_flux = jobs.front().Fwafer_cm2s;
+        if (std::isfinite(first_raw_flux) && first_raw_flux > 0.0) {
+          initial_Fwafer = first_raw_flux;
+        } else {
           initial_Fwafer = FWAFFER_FLOOR_CM2S;
         }
       }
@@ -718,12 +721,18 @@ int main(int argc, char** argv) {
           // double mbe_flag       = 0.0;     // 0 = beam off, 1 = beam on
           // double target_T_K     = 300.0;   // idle baseline target
 
+          double raw_job_flux_cm2s = 0.0;     // physical deposition request from jobs24.txt
+          double sparta_flux_cm2s  = FWAFFER_FLOOR_CM2S; // SPARTA-safe legal mixture flux only
+          bool   deposition_requested = false; // true only when raw physical deposition is requested
+
           double effusionDemand_W  = 0.0;     // heater power request for effusion cell
           double substrateDemand_W = 0.0;     // heater power request for wafer/chuck
-          double Fwafer_cmd        = std::numeric_limits<double>::quiet_NaN();
-          double mbe_flag          = 0.0;     // beam on/off
-          double target_T_K        = 300.0;   // effusion "desired" (logging only)
+
+          double mbe_flag          = 0.0;     // 0 = shutters/beam closed, 1 = open
+          double target_T_K        = 300.0;   // effusion "desired" target for logging only
+
           bool   wafer_ready       = true;
+          bool   effusion_ready    = true;    // temporary conservative placeholder until EffusionCell readiness is exposed
 
           // Decide heater demands, flux command, and mbe_active for this tick.
           //
@@ -734,116 +743,216 @@ int main(int argc, char** argv) {
           //
           if (currentJob) {
             // ---------------- A) Active job ----------------
-            Fwafer_cmd = currentJob->Fwafer_cm2s;
-            if (!std::isfinite(Fwafer_cmd) || Fwafer_cmd <= 0.0) {
-              // Keep mixture legal even if jobs file has garbage
-              Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+            // Preserve the physical job request exactly as written in jobs24.txt.
+            raw_job_flux_cm2s = currentJob->Fwafer_cm2s;
+            if (!std::isfinite(raw_job_flux_cm2s) || raw_job_flux_cm2s < 0.0) {
+              raw_job_flux_cm2s = 0.0;
             }
 
-            // Effusion heater demand: either use job.heater_W if valid, else infer from flux
+            // Deposition is requested ONLY when the physical job flux is positive.
+            deposition_requested = (raw_job_flux_cm2s > 0.0);
+
+            // SPARTA legality is a separate concern from physical process intent.
+            // Keep the mixture legal even during shutter-closed / zero-flux windows.
+            sparta_flux_cm2s = deposition_requested ? raw_job_flux_cm2s : FWAFFER_FLOOR_CM2S;
+
+            // Effusion heater demand is now temperature-error-aware.
+            //
+            // Current interpretation:
+            // - target_T_K expresses the desired effusion temperature for this tick.
+            // - heater_W, if > 0, is treated as a per-job max power cap.
+            // - if heater_W <= 0, fall back to a default controller max.
+            //
+            // This is a simple feed-forward + proportional controller:
+            //   demand = estimated_loss_at_target + Kp * positive_temp_error
+            //
+            // It heats aggressively when far below target, then backs off as the
+            // effusion cell approaches target so temperature can settle instead of
+            // endlessly climbing under fixed power.
+            const double EFF_T_ENV_K        = 300.0;
+            const double EFF_H_W_PER_K      = 0.8;    // must match EffusionCell thermal loss model
+            const double EFF_KP_W_PER_K     = 8.0;    // proportional gain; tune later if needed
+            const double EFF_DEFAULT_MAX_W  = 2000.0; // default controller ceiling
+
+            double eff_temp_K = effCell.getTemperatureK();
+            double eff_temp_error_K = target_T_K - eff_temp_K;
+
+            // Use job.heater_W as an optional max-power cap when provided.
+            // This preserves some meaning for the existing jobs file without forcing
+            // heater_W to be a blind fixed-power command.
+            double effusionMaxPower_W = EFF_DEFAULT_MAX_W;
             if (std::isfinite(currentJob->heater_W) && currentJob->heater_W > 0.0) {
-              effusionDemand_W = currentJob->heater_W;
-            } else {
-              effusionDemand_W = fluxToHeaterPower(Fwafer_cmd);
-            }
-            if (!std::isfinite(effusionDemand_W) || effusionDemand_W < 0.0) {
-                effusionDemand_W = 0.0;
+              effusionMaxPower_W = currentJob->heater_W;
             }
 
-            // Effusion "desired" temperature (logging only)
-            if (Fwafer_cmd > 0.0) {
-              target_T_K = targetTempForFlux(Fwafer_cmd);
+            if (target_T_K <= 310.0) {
+              // No meaningful target -> keep effusion heater idle.
+              effusionDemand_W = 0.0;
+            } else {
+              // Feed-forward term estimates the power needed to hold the target
+              // against thermal losses near that temperature.
+              double p_ff_W = EFF_H_W_PER_K * std::max(0.0, target_T_K - EFF_T_ENV_K);
+
+              // Proportional term adds extra push only when below target.
+              double p_p_W = (eff_temp_error_K > 0.0) ? (EFF_KP_W_PER_K * eff_temp_error_K) : 0.0;
+
+              effusionDemand_W = std::clamp(p_ff_W + p_p_W, 0.0, effusionMaxPower_W);
+            }
+
+            if (!std::isfinite(effusionDemand_W) || effusionDemand_W < 0.0) {
+              effusionDemand_W = 0.0;
+            }
+
+            if (!std::isfinite(effusionDemand_W) || effusionDemand_W < 0.0) {
+              effusionDemand_W = 0.0;
+            }
+
+            // Effusion target temperature is derived from the PHYSICAL deposition request only.
+            // Zero-flux prep/soak/desorb jobs must not get a growth-like target temperature.
+            if (deposition_requested) {
+              target_T_K = targetTempForFlux(raw_job_flux_cm2s);
             } else {
               target_T_K = 300.0;
             }
 
-            // Substrate heater target + dynamic power request (per-job)
-            substrateHeater.setJobState(currentJobIndex, /*job_active=*/true, Fwafer_cmd);
+            // Push the current tick's effusion target into the effusion-cell model
+            // before checking readiness.
+            effCell.setTargetTempK(target_T_K);
+
+            // Substrate control should follow the physical job request, not the SPARTA legality floor.
+            substrateHeater.setJobState(currentJobIndex, /*job_active=*/true, raw_job_flux_cm2s);
             substrateDemand_W = substrateHeater.computePowerRequestW();
 
-            // Gate: do NOT start MBE until wafer is at target band
+            // Readiness gates:
             wafer_ready = substrateHeater.isAtTarget();
-            mbe_flag    = wafer_ready ? 1.0 : 0.0;
+            effusion_ready = effCell.isAtTarget();
+
+            // MBE/shutter-open state:
+            // ONLY turn on when physical deposition is requested AND all required gates pass.
+            mbe_flag = (deposition_requested && wafer_ready && effusion_ready) ? 1.0 : 0.0;
 
           } else if (!jobs.empty()) {
             // ---------------- B) Jobs exist, but no active job right now ----------------
-            // Beam off; keep mixture legal using last flux (or floor).
+            // No physical deposition request between job windows.
+            raw_job_flux_cm2s    = 0.0;
+            deposition_requested = false;
+
+            // Keep SPARTA mixture legal while shutters remain closed.
             if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
-              Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+              sparta_flux_cm2s = FWAFFER_FLOOR_CM2S;
             } else {
-              Fwafer_cmd = last_Fwafer_sent;
+              sparta_flux_cm2s = last_Fwafer_sent;
             }
 
             mbe_flag   = 0.0;
             target_T_K = 300.0;
 
-            // Heaters idle (simple realism)
+            // Idle heaters between jobs.
             effusionDemand_W = 0.0;
 
-            // Substrate heater inactive when no job is active
-            substrateHeater.setJobState(-1, /*job_active=*/false, Fwafer_cmd);
-            substrateDemand_W = substrateHeater.computePowerRequestW(); // should be 0
-            wafer_ready = true;
+            substrateHeater.setJobState(-1, /*job_active=*/false, raw_job_flux_cm2s);
+            substrateDemand_W = substrateHeater.computePowerRequestW(); // should stay 0
+            wafer_ready    = true;
+            effusion_ready = true;
 
           } else {
             // ---------------- C) No jobs.txt baseline behavior ----------------
-            // Keep floor flux so SPARTA mixture remains legal, beam off.
+            // No physical deposition request.
+            raw_job_flux_cm2s    = 0.0;
+            deposition_requested = false;
+
+            // Keep SPARTA mixture legal, beam off.
             if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
-              Fwafer_cmd = FWAFFER_FLOOR_CM2S;
+              sparta_flux_cm2s = FWAFFER_FLOOR_CM2S;
             } else {
-              Fwafer_cmd = last_Fwafer_sent;
+              sparta_flux_cm2s = last_Fwafer_sent;
             }
 
             mbe_flag   = 0.0;
             target_T_K = 300.0;
 
-            // Optional baseline effusion load (set to 0.0 if you want truly idle)
+            // Preserve your existing baseline behavior when no jobs file exists.
             effusionDemand_W = 1500.0;
 
-            // Substrate heater inactive when no jobs exist
-            substrateHeater.setJobState(-1, /*job_active=*/false, Fwafer_cmd);
-            substrateDemand_W = substrateHeater.computePowerRequestW(); // should be 0
-            wafer_ready = true;
+            substrateHeater.setJobState(-1, /*job_active=*/false, raw_job_flux_cm2s);
+            substrateDemand_W = substrateHeater.computePowerRequestW(); // should stay 0
+            wafer_ready    = true;
+            effusion_ready = true;
           }
-            // // No jobs.txt: keep floor flux so mixture is legal, beam off
-            // if (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0) {
-            //   Fwafer_cmd = FWAFFER_FLOOR_CM2S;
-            // } else {
-            //   Fwafer_cmd = last_Fwafer_sent;
-            // }
-
-            // mbe_flag   = 0.0;
-            // target_T_K = 300.0;
-
-            // // Optional: keep a simple baseline effusion load if you still want power-mode style heating
-            // // If you don't want that, set effusionDemand_W = 0.0 instead.
-            // effusionDemand_W = 1500.0;
-
-            // // Substrate heater inactive when no jobs exist
-            // substrateHeater.setJobState(-1, /*job_active=*/false, Fwafer_cmd);
-            // substrateDemand_W = substrateHeater.computePowerRequestW(); // becomes 0
-            // wafer_ready = true;
-          
-          
 
           // Inform EffusionCell of the "desired" crucible temperature implied
           // by the job's wafer flux. The cell will log target_temp_K alongside
           // act_temp_K so the discrepancy is visible in EffusionCell.csv.
-          effCell.setTargetTempK(target_T_K);
+          // effCell.setTargetTempK(target_T_K);
 
           // Inform GrowthMonitor about the beam/job state for this tick
           int jobIndexForGrowth = currentJob ? currentJobIndex : -1;
+
+          // GrowthMonitor should see the physical deposition flux, not the SPARTA legality floor.
+          // When shutters are closed, pass 0.0 so no accidental "ghost" growth is implied.
+          double growth_flux_cm2s = (mbe_flag > 0.5) ? raw_job_flux_cm2s : 0.0;
+
           growth.setBeamState(jobIndexForGrowth,
                               mbe_flag > 0.5,
-                              Fwafer_cmd);
+                              growth_flux_cm2s);
 
+          Logger::instance().log_wide(
+            "TrainingState",
+            tickIndex,
+            t_phys,
+            {
+                "job_index",
+                "job_active",
+                "raw_job_flux_cm2s",
+                "sparta_flux_cm2s",
+                "deposition_requested",
+                "effusionDemand_W",
+                "substrateDemand_W",
+                "effusion_temp_K",
+                "effusion_target_K",
+                "effusion_temp_error_K",
+                "effusion_requested_cap_W",
+                "effusion_target_meaningful",
+                "substrate_temp_K",
+                "substrate_target_K",
+                "effusion_ready",
+                "wafer_ready",
+                "mbe_flag",
+                "effusion_delivered_W",
+                "substrate_delivered_W",
+                "underflux_streak",
+                "temp_miss_streak",
+                "job_tick_counter"
+            },
+            {
+                static_cast<double>(jobIndexForGrowth),
+                currentJob ? 1.0 : 0.0,
+                raw_job_flux_cm2s,
+                sparta_flux_cm2s,
+                deposition_requested ? 1.0 : 0.0,
+                effusionDemand_W,
+                substrateDemand_W,
+                effCell.getTemperatureK(),
+                effCell.getTargetTempK(),
+                substrateHeater.substrateTempK(),
+                substrateHeater.targetTempK(),
+                effusion_ready ? 1.0 : 0.0,
+                wafer_ready ? 1.0 : 0.0,
+                mbe_flag,
+                effCell.getLastHeatInputW(),
+                substrateHeater.deliveredPowerW(),
+                static_cast<double>(underflux_streak),
+                static_cast<double>(temp_miss_streak),
+                static_cast<double>(job_tick_counter)
+            }
+        );
 
           // ---- 3) Push Fwafer + mbe_active into params.inc when needed ----
-          if (!std::isnan(Fwafer_cmd)) {
+          if (std::isfinite(sparta_flux_cm2s) && sparta_flux_cm2s > 0.0) {
             bool need_update = false;
 
             if (std::isnan(last_Fwafer_sent) ||
-                Fwafer_cmd != last_Fwafer_sent) {
+                sparta_flux_cm2s != last_Fwafer_sent) {
               need_update = true;
             }
             if (std::isnan(last_mbe_sent) ||
@@ -854,19 +963,21 @@ int main(int argc, char** argv) {
             if (need_update) {
               std::ostringstream oss;
               oss << "[job] tick=" << tickIndex
-                  << " update params.inc: Fwafer_cm2s=" << Fwafer_cmd
+                  << " update params.inc: raw_job_flux_cm2s=" << raw_job_flux_cm2s
+                  << ", sparta_flux_cm2s=" << sparta_flux_cm2s
+                  << ", deposition_requested=" << (deposition_requested ? 1 : 0)
                   << ", mbe_active=" << mbe_flag << "\n";
               log_msg(oss.str());
 
               log_rank_progress(tickIndex, "before-write_params_inc");
-              write_params_inc(Fwafer_cmd, mbe_flag, rank, args.inputDir, log_msg);
+              write_params_inc(sparta_flux_cm2s, mbe_flag, rank, args.inputDir, log_msg);
               log_rank_progress(tickIndex, "after-write_params_inc");
 
               log_rank_progress(tickIndex, "before-markDirtyReload");
               wake.markDirtyReload();
               log_rank_progress(tickIndex, "after-markDirtyReload");
 
-              last_Fwafer_sent = Fwafer_cmd;
+              last_Fwafer_sent = sparta_flux_cm2s;
               last_mbe_sent    = mbe_flag;
             }
           }
@@ -877,10 +988,16 @@ int main(int argc, char** argv) {
           if (std::isnan(last_heater_set) || totalHeaterDemand_W != last_heater_set) {
             std::ostringstream oss;
             oss << "[job] tick=" << tickIndex
-                << " heater demands: effusion=" << effusionDemand_W
-                << " W, substrate=" << substrateDemand_W
-                << " W, total=" << totalHeaterDemand_W
-                << " W, wafer_ready=" << (wafer_ready ? 1 : 0)
+                << " control_state:"
+                << " raw_job_flux_cm2s=" << raw_job_flux_cm2s
+                << ", sparta_flux_cm2s=" << sparta_flux_cm2s
+                << ", deposition_requested=" << (deposition_requested ? 1 : 0)
+                << ", effusionDemand_W=" << effusionDemand_W
+                << ", substrateDemand_W=" << substrateDemand_W
+                << ", totalHeaterDemand_W=" << totalHeaterDemand_W
+                << ", wafer_ready=" << (wafer_ready ? 1 : 0)
+                << ", effusion_ready=" << (effusion_ready ? 1 : 0)
+                << ", mbe_flag=" << mbe_flag
                 << "\n";
             log_msg(oss.str());
             last_heater_set = totalHeaterDemand_W;
@@ -918,7 +1035,7 @@ int main(int argc, char** argv) {
           log_msg(oss2.str());
 
           // ---- 6) After ticking, evaluate job health (under-flux + temp gate)
-          if (currentJob && (effusionDemand_W > 1e-6 || substrateDemand_W > 1e-6)) {
+          if (currentJob && deposition_requested && (effusionDemand_W > 1e-6 || substrateDemand_W > 1e-6)) {
             bool wafer_gate_fail = substrateHeater.jobFailed();
             double P_actual = effCell.getLastHeatInputW();
 
@@ -1074,23 +1191,26 @@ int main(int argc, char** argv) {
 
         // ---------------- SPARTA coupling block ----------------
         if (i % args.coupleEvery == 0) {
+          log_rank_progress(tickIndex, "before-runIfDirtyOrAdvanceCollective");
+
           if (isLeader) {
             std::ostringstream oss;
-            oss << "[cpl] tick=" << (i + 1)
+            oss << "[cpl] tick=" << tickIndex
                 << " ENTER wake.runIfDirtyOrAdvanceCollective(spartaBlock="
                 << args.spartaBlock << ")\n";
             log_msg(oss.str());
           }
 
-          // wake.runIfDirtyOrAdvance(args.spartaBlock);
           wake.runIfDirtyOrAdvanceCollective(args.spartaBlock);
 
           if (isLeader) {
             std::ostringstream oss;
-            oss << "[cpl] tick=" << (i + 1)
+            oss << "[cpl] tick=" << tickIndex
                 << " EXIT  wake.runIfDirtyOrAdvanceCollective(...)\n";
             log_msg(oss.str());
           }
+
+          log_rank_progress(tickIndex, "after-runIfDirtyOrAdvanceCollective");
         }
 
         // Ensure all ranks stay roughly in sync
