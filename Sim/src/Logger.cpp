@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
+#include <sstream>
 
 namespace {
 namespace fs = std::filesystem;
@@ -47,6 +48,40 @@ fs::path resolve_base_dir() {
         if (*run) base /= run;
     }
     return base;
+}
+
+// Escape a CSV field if needed.
+//
+// Rules:
+// - If the field contains comma, quote, newline, or carriage return,
+//   wrap it in double quotes.
+// - Any embedded double quote becomes two double quotes.
+std::string escape_csv_field(const std::string& s) {
+    bool needs_quotes = false;
+    for (char ch : s) {
+        if (ch == ',' || ch == '"' || ch == '\n' || ch == '\r') {
+            needs_quotes = true;
+            break;
+        }
+    }
+
+    if (!needs_quotes) {
+        return s;
+    }
+
+    std::string out;
+    out.reserve(s.size() + 8);
+    out.push_back('"');
+    for (char ch : s) {
+        if (ch == '"') {
+            out.push_back('"');
+            out.push_back('"');
+        } else {
+            out.push_back(ch);
+        }
+    }
+    out.push_back('"');
+    return out;
 }
 
 // Get or open the per-subsystem CSV file.
@@ -88,7 +123,7 @@ std::ofstream& get_stream_for_subsystem(
         out << "tick,time_s";
         if (wide_cols) {
             for (const auto& c : *wide_cols) {
-                out << ',' << c;
+                out << ',' << escape_csv_field(c);
             }
         }
         out << '\n';
@@ -133,12 +168,15 @@ void Logger::log(const std::string& subsystem,
 
     for (const auto& kv : values) {
         out << tick << ',' << time << ','
-            << kv.first << ',' << kv.second << '\n';
+            << escape_csv_field(kv.first) << ',' << kv.second << '\n';
     }
     out.flush();
 }
 
-// Wide format: one row per tick with multiple named columns
+// Wide format: one row per tick with multiple named NUMERIC columns
+//
+// This is the original API. It is intentionally preserved so existing code
+// continues to compile and behave exactly as before.
 void Logger::log_wide(const std::string& subsystem,
                       int tick, double time,
                       const std::vector<std::string>& cols,
@@ -156,6 +194,32 @@ void Logger::log_wide(const std::string& subsystem,
     for (std::size_t i = 0; i < cols.size(); ++i) {
         double v = (i < vals.size() ? vals[i] : 0.0);
         out << ',' << v;
+    }
+    out << '\n';
+    out.flush();
+}
+
+// Wide format overload: one row per tick with multiple named STRING columns
+//
+// This is additive and does not affect the numeric overload above.
+// Values are CSV-escaped so commas/quotes/newlines are safe.
+void Logger::log_wide(const std::string& subsystem,
+                      int tick, double time,
+                      const std::vector<std::string>& cols,
+                      const std::vector<std::string>& vals) {
+    std::lock_guard<std::mutex> lock(mtx_);
+
+    std::ofstream& out = get_stream_for_subsystem(
+        subsystem,
+        per_node_,
+        &cols,
+        /*is_wide=*/true
+    );
+
+    out << tick << ',' << time;
+    for (std::size_t i = 0; i < cols.size(); ++i) {
+        const std::string v = (i < vals.size() ? vals[i] : std::string{});
+        out << ',' << escape_csv_field(v);
     }
     out << '\n';
     out.flush();

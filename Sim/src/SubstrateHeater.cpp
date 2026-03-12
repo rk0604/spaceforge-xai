@@ -31,6 +31,12 @@ void SubstrateHeater::shutdown() {}
 
 void SubstrateHeater::setJobState(int job_index, bool job_active, double raw_job_flux_cm2s) {
   // Reset per-job fault tracking whenever the job identity or active state changes.
+  //
+  // Important scheduler note:
+  // This reset should happen only when the controlling job identity changes or
+  // the substrate is explicitly taken out of active job control. Future
+  // scheduler state transitions within the SAME controlling job (queued ->
+  // warmup -> cooldown -> live) should continue to present the same job_index.
   if (job_index != job_index_ || job_active != job_active_) {
     temp_miss_streak_ = 0;
     job_failed_       = false;
@@ -94,6 +100,9 @@ double SubstrateHeater::computePowerRequestW() {
   const double P_ff = lossPowerW(T_sub_K_);
 
   // Simple proportional heating term only when below target.
+  // There is intentionally no active cooling path here; cooldown is passive
+  // through thermal loss and must be interpreted by the scheduler via the
+  // thermal band helpers below.
   const double P_p = (err_K > 0.0) ? (Kp_W_per_K_ * err_K) : 0.0;
 
   P_requested_W_ = std::clamp(P_ff + P_p, 0.0, maxPower_W_);
@@ -116,18 +125,74 @@ void SubstrateHeater::applyHeat(double watts, double dt_s) {
   T_sub_K_ = std::max(0.0, T_sub_K_);
 }
 
+bool SubstrateHeater::hasMeaningfulTarget() const {
+  return job_active_ && std::isfinite(T_target_K_) && (T_target_K_ > (kIdleTempK + 10.0));
+}
+
 bool SubstrateHeater::isAtTarget() const {
-  // Idle or zero-flux job states should not block deposition gating.
-  if (!job_active_ || T_target_K_ <= (kIdleTempK + 10.0)) {
+  // Preserve the legacy one-sided readiness behavior for existing callers.
+  if (!hasMeaningfulTarget()) {
     return true;
   }
 
   return (T_sub_K_ >= (T_target_K_ - READY_BAND_K_));
 }
 
+SubstrateHeater::ThermalBandState
+SubstrateHeater::getThermalBandState(double lower_band_K,
+                                     double upper_band_K) const {
+  // Idle or non-meaningful targets should not block scheduler readiness.
+  if (!hasMeaningfulTarget()) {
+    return ThermalBandState::Idle;
+  }
+
+  if (!std::isfinite(T_sub_K_) || !std::isfinite(T_target_K_)) {
+    // Conservative choice: invalid thermal state should not be treated as ready.
+    return ThermalBandState::BelowTargetBand;
+  }
+
+  double lower = lower_band_K;
+  double upper = upper_band_K;
+
+  if (!std::isfinite(lower) || lower < 0.0) {
+    lower = READY_BAND_K_;
+  }
+  if (!std::isfinite(upper) || upper < 0.0) {
+    upper = READY_BAND_K_;
+  }
+
+  const double lower_bound_K = T_target_K_ - lower;
+  const double upper_bound_K = T_target_K_ + upper;
+
+  if (T_sub_K_ < lower_bound_K) {
+    return ThermalBandState::BelowTargetBand;
+  }
+  if (T_sub_K_ > upper_bound_K) {
+    return ThermalBandState::AboveTargetBand;
+  }
+
+  return ThermalBandState::WithinTargetBand;
+}
+
+bool SubstrateHeater::isBelowTargetBand(double lower_band_K) const {
+  return getThermalBandState(lower_band_K, READY_BAND_K_)
+         == ThermalBandState::BelowTargetBand;
+}
+
+bool SubstrateHeater::isWithinTargetBand(double lower_band_K,
+                                         double upper_band_K) const {
+  return getThermalBandState(lower_band_K, upper_band_K)
+         == ThermalBandState::WithinTargetBand;
+}
+
+bool SubstrateHeater::isAboveTargetBand(double upper_band_K) const {
+  return getThermalBandState(READY_BAND_K_, upper_band_K)
+         == ThermalBandState::AboveTargetBand;
+}
+
 void SubstrateHeater::tick(const TickContext& ctx) {
   // Only accumulate misses when a meaningful substrate-heating target exists.
-  if (job_active_ && T_target_K_ > (kIdleTempK + 10.0)) {
+  if (hasMeaningfulTarget()) {
     if (T_sub_K_ < (T_target_K_ - READY_BAND_K_)) {
       temp_miss_streak_ += 1;
     } else {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+
 #include "Subsystem.hpp"
 #include "TickContext.hpp"
 
@@ -8,6 +9,29 @@ class WakeChamber; // forward declaration
 
 class EffusionCell : public Subsystem {
 public:
+    /*
+        Thermal-band classification for scheduler/control logic.
+
+        Why this exists:
+        The old interface only exposed a one-sided readiness check
+        ("hot enough"), which was sufficient for warmup gating but not for the
+        new scheduler semantics. The scheduler now needs to distinguish:
+
+        - BelowTargetBand  -> warmup still needed
+        - WithinTargetBand -> thermally ready for live deposition
+        - AboveTargetBand  -> cooldown still needed
+        - Idle             -> no meaningful deposition/heating target exists
+
+        main.cpp should use this to decide whether the controlling job is in
+        warmup, cooldown, generic thermal prep, or live deposition.
+    */
+    enum class ThermalBandState {
+        Idle = 0,
+        BelowTargetBand,
+        WithinTargetBand,
+        AboveTargetBand
+    };
+
     EffusionCell() : Subsystem("EffusionCell") {}
 
     void initialize() override;
@@ -34,18 +58,59 @@ public:
     // Actual heater power applied during the most recent applyHeat() call.
     double getLastHeatInputW() const { return last_heat_W_; }
 
-    // Returns true when the current target is a real heating target rather than
-    // the idle baseline. This prevents 300 K idle states from being treated as
-    // deposition-readiness targets.
+    /*
+        Returns true when the current target is a real heating target rather
+        than the idle baseline.
+
+        This prevents 300 K idle states from being treated as
+        deposition-readiness targets.
+    */
     bool hasMeaningfulTarget() const;
 
-    // Returns true when the current temperature is close enough to the current
-    // target temperature for deposition readiness purposes.
-    //
-    // Default behavior:
-    // - If the target is idle or not meaningful, returns true.
-    // - Otherwise requires temperature >= readiness_fraction * target.
+    /*
+        Backward-compatible one-sided readiness check.
+
+        Existing behavior is preserved:
+        - If the target is idle or not meaningful, returns true.
+        - Otherwise requires temperature >= readiness_fraction * target.
+
+        Important:
+        This function does NOT distinguish "too hot" from "ready".
+        Scheduler code that needs warmup vs cooldown semantics should use
+        getThermalBandState() instead.
+    */
     bool isAtTarget(double readiness_fraction = 0.90) const;
+
+    /*
+        Scheduler-grade thermal-band query.
+
+        lower_readiness_fraction:
+          Minimum acceptable fraction of target temperature to be considered in-band.
+
+        upper_readiness_fraction:
+          Maximum acceptable fraction of target temperature to be considered in-band.
+          Values above this are treated as overheated for the current target and
+          therefore imply cooldown rather than readiness.
+
+        Default semantics:
+        - Idle target       -> Idle
+        - T < lower*target  -> BelowTargetBand
+        - lower*target <= T <= upper*target -> WithinTargetBand
+        - T > upper*target  -> AboveTargetBand
+
+        Notes:
+        - Fractions are clamped to sensible ranges internally.
+        - If upper_readiness_fraction < lower_readiness_fraction, it will be
+          promoted to the lower value to avoid invalid bands.
+    */
+    ThermalBandState getThermalBandState(double lower_readiness_fraction = 0.90,
+                                         double upper_readiness_fraction = 1.05) const;
+
+    // Convenience helpers for clearer scheduler code in main.cpp.
+    bool isBelowTargetBand(double lower_readiness_fraction = 0.90) const;
+    bool isWithinTargetBand(double lower_readiness_fraction = 0.90,
+                            double upper_readiness_fraction = 1.05) const;
+    bool isAboveTargetBand(double upper_readiness_fraction = 1.05) const;
 
 private:
     // Actual effusion-cell temperature in kelvin.

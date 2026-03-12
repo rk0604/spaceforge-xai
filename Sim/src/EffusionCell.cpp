@@ -21,15 +21,15 @@ constexpr double kMeaningfulTargetMarginK = 10.0;
 }
 
 void EffusionCell::initialize() {
-    last_heat_W_       = 0.0;
-    heat_input_w_      = 0.0;
-    last_p_loss_W_     = 0.0;
-    last_net_W_        = 0.0;
+    last_heat_W_      = 0.0;
+    heat_input_w_     = 0.0;
+    last_p_loss_W_    = 0.0;
+    last_net_W_       = 0.0;
 
     // Keep the target equal to the initial temperature at startup so the cell
     // begins in an idle, already-satisfied state.
-    target_temp_K_     = temperature_;
-    last_pushed_temp_  = temperature_;
+    target_temp_K_    = temperature_;
+    last_pushed_temp_ = temperature_;
 }
 
 void EffusionCell::tick(const TickContext& ctx) {
@@ -130,7 +130,7 @@ bool EffusionCell::hasMeaningfulTarget() const {
 }
 
 bool EffusionCell::isAtTarget(double readiness_fraction) const {
-    // Idle or non-meaningful targets should not block process readiness.
+    // Preserve legacy one-sided readiness semantics for existing callers.
     if (!hasMeaningfulTarget()) {
         return true;
     }
@@ -139,7 +139,6 @@ bool EffusionCell::isAtTarget(double readiness_fraction) const {
         return false;
     }
 
-    // Clamp the caller-provided fraction to a sensible range.
     double frac = readiness_fraction;
     if (!std::isfinite(frac)) {
         frac = 0.90;
@@ -147,4 +146,66 @@ bool EffusionCell::isAtTarget(double readiness_fraction) const {
     frac = std::clamp(frac, 0.0, 1.0);
 
     return temperature_ >= (frac * target_temp_K_);
+}
+
+EffusionCell::ThermalBandState
+EffusionCell::getThermalBandState(double lower_readiness_fraction,
+                                  double upper_readiness_fraction) const {
+    // No meaningful target means the cell is operationally idle.
+    // This should not block scheduler readiness.
+    if (!hasMeaningfulTarget()) {
+        return ThermalBandState::Idle;
+    }
+
+    if (!std::isfinite(temperature_) || !std::isfinite(target_temp_K_)) {
+        // Conservative choice: if state is invalid, treat as below target so
+        // the scheduler does not incorrectly declare readiness.
+        return ThermalBandState::BelowTargetBand;
+    }
+
+    double lower = lower_readiness_fraction;
+    double upper = upper_readiness_fraction;
+
+    if (!std::isfinite(lower)) {
+        lower = 0.90;
+    }
+    if (!std::isfinite(upper)) {
+        upper = 1.05;
+    }
+
+    lower = std::clamp(lower, 0.0, 1.0);
+    upper = std::max(upper, lower);
+
+    const double lower_bound_K = lower * target_temp_K_;
+    const double upper_bound_K = upper * target_temp_K_;
+
+    if (temperature_ < lower_bound_K) {
+        return ThermalBandState::BelowTargetBand;
+    }
+    if (temperature_ > upper_bound_K) {
+        return ThermalBandState::AboveTargetBand;
+    }
+
+    return ThermalBandState::WithinTargetBand;
+}
+
+bool EffusionCell::isBelowTargetBand(double lower_readiness_fraction) const {
+    return getThermalBandState(lower_readiness_fraction, std::max(1.05, lower_readiness_fraction))
+           == ThermalBandState::BelowTargetBand;
+}
+
+bool EffusionCell::isWithinTargetBand(double lower_readiness_fraction,
+                                      double upper_readiness_fraction) const {
+    return getThermalBandState(lower_readiness_fraction, upper_readiness_fraction)
+           == ThermalBandState::WithinTargetBand;
+}
+
+bool EffusionCell::isAboveTargetBand(double upper_readiness_fraction) const {
+    double upper = upper_readiness_fraction;
+    if (!std::isfinite(upper)) {
+        upper = 1.05;
+    }
+    upper = std::max(upper, 0.90);
+
+    return getThermalBandState(0.90, upper) == ThermalBandState::AboveTargetBand;
 }

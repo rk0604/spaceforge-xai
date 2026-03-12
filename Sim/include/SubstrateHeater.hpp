@@ -1,4 +1,3 @@
-// Sim/include/SubstrateHeater.hpp
 #pragma once
 
 #include <algorithm>
@@ -11,25 +10,50 @@
 
 class SubstrateHeater : public Subsystem {
 public:
+  /*
+      Scheduler-facing thermal band state.
+
+      Why this exists:
+      The old interface only exposed a lower-bound readiness check
+      ("warm enough"), which is not sufficient for the new queued scheduler.
+      The scheduler now needs to distinguish:
+
+      - BelowTargetBand  -> warmup still needed
+      - WithinTargetBand -> thermally ready for live deposition
+      - AboveTargetBand  -> cooldown still needed
+      - Idle             -> no meaningful heating target exists
+
+      main.cpp should use this state to classify the controlling job as
+      warming, cooling, generic thermal prep, or ready/live.
+  */
+  enum class ThermalBandState {
+    Idle = 0,
+    BelowTargetBand,
+    WithinTargetBand,
+    AboveTargetBand
+  };
+
   explicit SubstrateHeater(double maxPower_W = 2200.0, double wafer_radius_m = 0.15);
 
   // Only the leader should emit CSV rows to avoid duplicate logs.
   void setIsLeader(bool isLeader) { is_leader_ = isLeader; }
 
-  // Update the current process-job state.
-  //
-  // Important:
-  // - raw_job_flux_cm2s is the physical deposition request from the jobs file.
-  // - This value must NOT be the SPARTA legality floor.
-  // - Zero-flux jobs intentionally map to an idle substrate target for now.
-  //
-  // Current interim design:
-  // - If job_active is false, target returns to idle baseline.
-  // - If job_active is true and raw_job_flux_cm2s > 0, substrate target is
-  //   derived from the requested deposition flux.
-  // - If job_active is true and raw_job_flux_cm2s <= 0, substrate target stays
-  //   at idle baseline because the jobs file does not yet expose an explicit
-  //   substrate setpoint for prep or soak windows.
+  /*
+      Update the current process-job state.
+
+      Important:
+      - raw_job_flux_cm2s is the PHYSICAL deposition request from the jobs file.
+      - This value must NOT be the SPARTA legality floor.
+      - Zero-flux jobs intentionally map to an idle substrate target for now.
+
+      Current interim design:
+      - If job_active is false, target returns to idle baseline.
+      - If job_active is true and raw_job_flux_cm2s > 0, substrate target is
+        derived from the requested deposition flux.
+      - If job_active is true and raw_job_flux_cm2s <= 0, substrate target stays
+        at idle baseline because the jobs file does not yet expose an explicit
+        substrate setpoint for prep or soak windows.
+  */
   void setJobState(int job_index, bool job_active, double raw_job_flux_cm2s);
 
   // Compute how much substrate-heater power is requested this tick.
@@ -38,8 +62,55 @@ public:
   // Apply delivered heater power over dt seconds.
   void applyHeat(double watts, double dt_s);
 
-  // Readiness and failure state used by main.cpp.
+  /*
+      Backward-compatible one-sided readiness check.
+
+      Existing behavior is preserved:
+      - If there is no meaningful target, returns true.
+      - Otherwise returns true once the substrate reaches the lower readiness band.
+
+      Important:
+      This function does NOT distinguish "too hot" from "ready".
+      New scheduler logic should prefer getThermalBandState() when it needs
+      warmup vs cooldown semantics.
+  */
   bool isAtTarget() const;
+
+  // Returns true when a meaningful non-idle substrate target exists.
+  bool hasMeaningfulTarget() const;
+
+  /*
+      Scheduler-grade thermal-band query.
+
+      lower_band_K:
+        Absolute margin below target that is still considered acceptable.
+
+      upper_band_K:
+        Absolute margin above target that is still considered acceptable.
+        Values above this are treated as overheated for the current target and
+        should be interpreted by the scheduler as cooldown, not readiness.
+
+      Default semantics:
+      - Idle target                         -> Idle
+      - T_sub < target - lower_band_K       -> BelowTargetBand
+      - target-lower <= T_sub <= target+upper -> WithinTargetBand
+      - T_sub > target + upper_band_K       -> AboveTargetBand
+
+      Notes:
+      - This uses absolute kelvin margins because the substrate target range is
+        relatively narrow compared to the effusion cell and an absolute band is
+        easy to reason about operationally.
+      - If upper_band_K is negative, it will be clamped internally.
+  */
+  ThermalBandState getThermalBandState(double lower_band_K = READY_BAND_K_,
+                                       double upper_band_K = READY_BAND_K_) const;
+
+  // Convenience helpers for clearer scheduler code in main.cpp.
+  bool isBelowTargetBand(double lower_band_K = READY_BAND_K_) const;
+  bool isWithinTargetBand(double lower_band_K = READY_BAND_K_,
+                          double upper_band_K = READY_BAND_K_) const;
+  bool isAboveTargetBand(double upper_band_K = READY_BAND_K_) const;
+
   bool jobFailed() const { return job_failed_; }
 
   // Diagnostics accessors.

@@ -25,6 +25,9 @@ create_grid        96     56       40
 species  data/o.species O N2 He H2O
 variable           Tgas          equal 800.0
 mixture            mixWake O N2 He temp ${Tgas} vstream 7500.0 0.0 0.0
+mixture            mixWake O  frac 0.893
+mixture            mixWake N2 frac 0.087
+mixture            mixWake He frac 0.020
 
 # Superset mixture for collisions & "total" thermo computes (includes H2O)
 mixture            mixAll  O N2 He H2O

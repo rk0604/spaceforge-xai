@@ -1,0 +1,4 @@
+# start_tick  end_tick  wafer_flux_cm2s  heater_W
+1            190       8.0e13           1   # Wafer 0: moderate flux
+220          430       1.0e14           1   # Wafer 1: high flux
+460          760       6.0e13           1   # Wafer 2: lower flux, longer run
