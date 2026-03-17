@@ -16,13 +16,13 @@ void PowerBus::initialize() {
     granted_this_tick_            = 0.0;
     battery_discharged_this_tick_ = 0.0; // Initialize our new tracker
 
-    // Header/first row (kept consistent with your existing CSV schema)
+    // FIX: Match the new column names and initial values
     Logger::instance().log_wide(
         "PowerBus",
         0,
         0.0,
-        {"status","available_added","requested","granted","remaining"},
-        {1.0, 0.0, 0.0, 0.0, available_power_}
+        {"status","solar_added","requested","granted","batt_drawn"},
+        {1.0, 0.0, 0.0, 0.0, 0.0}
     );
 }
 
