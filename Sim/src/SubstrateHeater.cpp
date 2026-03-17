@@ -26,6 +26,7 @@ void SubstrateHeater::initialize() {
   substrate_control_on_   = false;
   temp_miss_streak_       = 0;
   job_failed_             = false;
+  failure_monitor_armed_   = false;
 }
 
 void SubstrateHeater::shutdown() {}
@@ -39,8 +40,9 @@ void SubstrateHeater::setJobState(int job_index,
   // active status changes. Transitions inside the same controlling job should
   // preserve fault history.
   if (job_index != job_index_ || job_active != job_active_) {
-    temp_miss_streak_ = 0;
-    job_failed_       = false;
+    temp_miss_streak_      = 0;
+    job_failed_            = false;
+    failure_monitor_armed_ = false;
   }
 
   job_index_            = job_index;
@@ -69,6 +71,14 @@ void SubstrateHeater::setJobState(int job_index,
   // Fallback to the legacy growth-like flux mapping when no explicit target is
   // available. This preserves old behavior for deposition-oriented rows.
   T_target_K_ = fluxToTargetTemp(raw_job_flux_cm2s);
+}
+
+void SubstrateHeater::setFailureMonitorArmed(bool armed) {
+  failure_monitor_armed_ = armed;
+
+  if (!failure_monitor_armed_) {
+    temp_miss_streak_ = 0;
+  }
 }
 
 double SubstrateHeater::fluxToTargetTemp(double raw_job_flux_cm2s) const {
@@ -207,8 +217,10 @@ bool SubstrateHeater::isAboveTargetBand(double upper_band_K) const {
 }
 
 void SubstrateHeater::tick(const TickContext& ctx) {
-  // Only accumulate misses when a meaningful substrate-heating target exists.
-  if (hasMeaningfulTarget()) {
+  // Only accumulate misses when:
+  // 1) this job actually has a meaningful substrate target, and
+  // 2) the scheduler has armed execution-time failure monitoring.
+  if (failure_monitor_armed_ && hasMeaningfulTarget()) {
     if (T_sub_K_ < (T_target_K_ - READY_BAND_K_)) {
       temp_miss_streak_ += 1;
     } else {

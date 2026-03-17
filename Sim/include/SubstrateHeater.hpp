@@ -80,6 +80,8 @@ public:
                    bool substrate_control_on,
                    double explicit_target_K);
 
+    void setFailureMonitorArmed(bool armed);
+
   // Compute how much substrate-heater power is requested this tick.
   double computePowerRequestW();
 
@@ -163,6 +165,7 @@ private:
   int  temp_miss_streak_       = 0;
   bool job_failed_             = false;
   bool is_leader_              = false;
+  bool failure_monitor_armed_  = false;
 
   // Physical constants.
   static constexpr double sigma_      = 5.670374419e-8;

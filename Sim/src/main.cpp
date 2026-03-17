@@ -624,7 +624,7 @@ int main(int argc, char** argv) {
     HeaterBank    heater(/*maxDraw=*/5000.0);
     EffusionCell  effCell;
     GrowthMonitor growth(/*gridN=*/32);
-    SubstrateHeater substrateHeater(/*maxPowerW=*/2000.0, /*wafer_radius_m=*/0.15);
+    SubstrateHeater substrateHeater(/*maxPowerW=*/3000.0, /*wafer_radius_m=*/0.15);
 
   
     solar.setPowerBus(&bus);
@@ -1592,6 +1592,13 @@ int main(int argc, char** argv) {
                 }
               }
 
+              const bool substrate_execution_monitor_active =
+                  (rj.state == JobRunState::LiveDeposition) ||
+                  (rj.state == JobRunState::ThermalPrep && !deposition_requested && phase_ready_for_execution);
+
+              substrateHeater.setFailureMonitorArmed(
+                  substrate_execution_monitor_active);
+
               if (rj.state != oldState) {
                 std::ostringstream oss;
                 oss << "[sched] tick=" << tickIndex
@@ -1818,8 +1825,10 @@ int main(int argc, char** argv) {
                  !deposition_requested &&
                  phase_ready_for_execution_log > 0.5);
 
+            bool wafer_gate_fail = substrateHeater.jobFailed();
+
+
             if (live_execution_active) {
-              bool wafer_gate_fail = substrateHeater.jobFailed();
               double P_actual = effCell.getLastHeatInputW();
 
               // Update RC temp proxy for the active live-deposition interval.
@@ -1984,47 +1993,94 @@ int main(int argc, char** argv) {
                 }
               }
             } else if (nongrowth_execution_active) {
-              // Beam-off timed phases consume phase time only.
-              underflux_streak = 0;
-              temp_miss_streak = 0;
-              g_underflux_streak_for_log = 0;
-              g_temp_miss_streak_for_log = 0;
+              if (wafer_gate_fail) {
+                rj.aborted = true;
+                rj.state   = JobRunState::Aborted;
 
-              rj.phase_ticks_completed += 1;
-              rj.remaining_phase_ticks -= 1;
+                std::ostringstream joss;
+                joss << "[job] tick=" << tickIndex
+                     << " ABORTING non-growth job index " << controllingJobIndex
+                     << " due to wafer-temp-miss"
+                     << " (T_sub_K=" << substrateHeater.substrateTempK()
+                     << ", T_sub_target_K=" << substrateHeater.targetTempK()
+                     << ", sub_temp_miss_streak=" << substrateHeater.tempMissStreak()
+                     << ")\n";
+                log_msg(joss.str());
 
-              std::ostringstream oss;
-              oss << "[sched] tick=" << tickIndex
-                  << " job " << controllingJobIndex
-                  << " completed one non-growth phase tick"
-                  << " (phase_completed=" << rj.phase_ticks_completed
-                  << ", phase_remaining=" << rj.remaining_phase_ticks
-                  << ")\n";
-              log_msg(oss.str());
+                growth.markJobAborted(controllingJobIndex);
+                engine.markJobFailedThisTick();
 
-              if (rj.remaining_phase_ticks <= 0) {
-                rj.done = true;
-                rj.state = JobRunState::Done;
-                rj.actual_phase_end_tick = tickIndex;
+                double F_for_abort = last_Fwafer_sent;
+                if (!std::isfinite(F_for_abort) || F_for_abort <= 0.0) {
+                  F_for_abort = FWAFFER_FLOOR_CM2S;
+                }
 
-                std::ostringstream done_oss;
-                done_oss << "[sched] tick=" << tickIndex
-                         << " job " << controllingJobIndex
-                         << " DONE"
-                         << " (requested_start=" << rj.requested_start_tick
-                         << ", actual_phase_start=" << rj.actual_phase_start_tick
-                         << ", actual_phase_end=" << rj.actual_phase_end_tick
-                         << ", phase_ticks_completed=" << rj.phase_ticks_completed
-                         << ", live_ticks_completed=" << rj.live_ticks_completed
-                         << ")\n";
-                log_msg(done_oss.str());
+                log_rank_progress(tickIndex, "before-abort-write_params_inc");
+                write_params_inc(F_for_abort, 0.0, rank, args.inputDir, log_msg);
+                log_rank_progress(tickIndex, "after-abort-write_params_inc");
 
+                log_rank_progress(tickIndex, "before-abort-markDirtyReload");
+                wake.markDirtyReload();
+                log_rank_progress(tickIndex, "after-abort-markDirtyReload");
+
+                last_Fwafer_sent = F_for_abort;
+                last_mbe_sent    = 0.0;
                 logJobIndexAfterAccounting = controllingJobIndex;
+
                 controllingJobIndex = -1;
+                underflux_streak = 0;
+                temp_miss_streak = 0;
+                g_underflux_streak_for_log = 0;
+                g_temp_miss_streak_for_log = 0;
+                temp_proxy_K = 300.0;
                 last_heater_set = std::numeric_limits<double>::quiet_NaN();
                 last_effusion_set = std::numeric_limits<double>::quiet_NaN();
                 last_substrate_set = std::numeric_limits<double>::quiet_NaN();
+
+              } else {
+                // Beam-off timed phases consume phase time only.
+                underflux_streak = 0;
+                temp_miss_streak = 0;
+                g_underflux_streak_for_log = 0;
+                g_temp_miss_streak_for_log = 0;
+
+                rj.phase_ticks_completed += 1;
+                rj.remaining_phase_ticks -= 1;
+
+                std::ostringstream oss;
+                oss << "[sched] tick=" << tickIndex
+                    << " job " << controllingJobIndex
+                    << " completed one non-growth phase tick"
+                    << " (phase_completed=" << rj.phase_ticks_completed
+                    << ", phase_remaining=" << rj.remaining_phase_ticks
+                    << ")\n";
+                log_msg(oss.str());
+
+                if (rj.remaining_phase_ticks <= 0) {
+                  rj.done = true;
+                  rj.state = JobRunState::Done;
+                  rj.actual_phase_end_tick = tickIndex;
+
+                  std::ostringstream done_oss;
+                  done_oss << "[sched] tick=" << tickIndex
+                           << " job " << controllingJobIndex
+                           << " DONE"
+                           << " (requested_start=" << rj.requested_start_tick
+                           << ", actual_phase_start=" << rj.actual_phase_start_tick
+                           << ", actual_phase_end=" << rj.actual_phase_end_tick
+                           << ", phase_ticks_completed=" << rj.phase_ticks_completed
+                           << ", live_ticks_completed=" << rj.live_ticks_completed
+                           << ")\n";
+                  log_msg(done_oss.str());
+
+                  logJobIndexAfterAccounting = controllingJobIndex;
+                  controllingJobIndex = -1;
+                  last_heater_set = std::numeric_limits<double>::quiet_NaN();
+                  last_effusion_set = std::numeric_limits<double>::quiet_NaN();
+                  last_substrate_set = std::numeric_limits<double>::quiet_NaN();
+                }
               }
+
             } else {
               // Queue, warmup, cooldown, and not-yet-ready thermal-prep ticks
               // do not consume execution time and do not accumulate live streaks.
