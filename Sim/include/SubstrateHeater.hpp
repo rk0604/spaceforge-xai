@@ -14,17 +14,19 @@ public:
       Scheduler-facing thermal band state.
 
       Why this exists:
-      The old interface only exposed a lower-bound readiness check
-      ("warm enough"), which is not sufficient for the new queued scheduler.
-      The scheduler now needs to distinguish:
+      The scheduler needs to distinguish these cases cleanly:
 
-      - BelowTargetBand  -> warmup still needed
-      - WithinTargetBand -> thermally ready for live deposition
-      - AboveTargetBand  -> cooldown still needed
-      - Idle             -> no meaningful heating target exists
+      - BelowTargetBand
+          More heating is still needed before the phase is thermally ready.
 
-      main.cpp should use this state to classify the controlling job as
-      warming, cooling, generic thermal prep, or ready/live.
+      - WithinTargetBand
+          The substrate is thermally ready for the current recipe phase.
+
+      - AboveTargetBand
+          The substrate is too hot for the current recipe phase and must cool.
+
+      - Idle
+          No meaningful substrate-heating target is currently active.
   */
   enum class ThermalBandState {
     Idle = 0,
@@ -39,22 +41,44 @@ public:
   void setIsLeader(bool isLeader) { is_leader_ = isLeader; }
 
   /*
-      Update the current process-job state.
+      Update the current scheduler-facing substrate control state.
 
-      Important:
-      - raw_job_flux_cm2s is the PHYSICAL deposition request from the jobs file.
-      - This value must NOT be the SPARTA legality floor.
-      - Zero-flux jobs intentionally map to an idle substrate target for now.
+      Inputs:
+      - job_index
+          Current controlling job identity.
 
-      Current interim design:
+      - job_active
+          True when a controlling row owns substrate control this tick.
+
+      - raw_job_flux_cm2s
+          Physical deposition flux request from the schedule row.
+          This remains useful as a fallback for growth-like rows.
+
+      - substrate_control_on
+          Explicit scheduler permission for substrate temperature control.
+          If false, the heater falls back to idle target behavior.
+
+      - explicit_target_K
+          Explicit recipe target for the substrate.
+          This allows beam-off timed phases to hold a real elevated target
+          even when deposition flux is zero.
+
+      Control policy:
       - If job_active is false, target returns to idle baseline.
-      - If job_active is true and raw_job_flux_cm2s > 0, substrate target is
-        derived from the requested deposition flux.
-      - If job_active is true and raw_job_flux_cm2s <= 0, substrate target stays
-        at idle baseline because the jobs file does not yet expose an explicit
-        substrate setpoint for prep or soak windows.
+      - If substrate_control_on is false, target returns to idle baseline.
+      - If an explicit non-idle target is supplied, that target is used.
+      - Otherwise the heater falls back to the legacy flux-derived target.
+
+      Fault-reset policy:
+      Per-job miss streaks are reset only when the controlling job identity
+      changes or when the active state changes. Scheduler transitions within
+      the same controlling job should not reset fault history.
   */
-  void setJobState(int job_index, bool job_active, double raw_job_flux_cm2s);
+  void setJobState(int job_index,
+                   bool job_active,
+                   double raw_job_flux_cm2s,
+                   bool substrate_control_on,
+                   double explicit_target_K);
 
   // Compute how much substrate-heater power is requested this tick.
   double computePowerRequestW();
@@ -69,10 +93,8 @@ public:
       - If there is no meaningful target, returns true.
       - Otherwise returns true once the substrate reaches the lower readiness band.
 
-      Important:
-      This function does NOT distinguish "too hot" from "ready".
-      New scheduler logic should prefer getThermalBandState() when it needs
-      warmup vs cooldown semantics.
+      This function does not distinguish "too hot" from "ready".
+      New scheduler logic should prefer getThermalBandState().
   */
   bool isAtTarget() const;
 
@@ -82,30 +104,22 @@ public:
   /*
       Scheduler-grade thermal-band query.
 
-      lower_band_K:
-        Absolute margin below target that is still considered acceptable.
+      lower_band_K
+          Absolute acceptable margin below target.
 
-      upper_band_K:
-        Absolute margin above target that is still considered acceptable.
-        Values above this are treated as overheated for the current target and
-        should be interpreted by the scheduler as cooldown, not readiness.
+      upper_band_K
+          Absolute acceptable margin above target.
 
-      Default semantics:
-      - Idle target                         -> Idle
-      - T_sub < target - lower_band_K       -> BelowTargetBand
+      Semantics:
+      - Idle target                           -> Idle
+      - T_sub < target - lower_band_K         -> BelowTargetBand
       - target-lower <= T_sub <= target+upper -> WithinTargetBand
-      - T_sub > target + upper_band_K       -> AboveTargetBand
-
-      Notes:
-      - This uses absolute kelvin margins because the substrate target range is
-        relatively narrow compared to the effusion cell and an absolute band is
-        easy to reason about operationally.
-      - If upper_band_K is negative, it will be clamped internally.
+      - T_sub > target + upper_band_K         -> AboveTargetBand
   */
   ThermalBandState getThermalBandState(double lower_band_K = READY_BAND_K_,
                                        double upper_band_K = READY_BAND_K_) const;
 
-  // Convenience helpers for clearer scheduler code in main.cpp.
+  // Convenience helpers for clearer scheduler code.
   bool isBelowTargetBand(double lower_band_K = READY_BAND_K_) const;
   bool isWithinTargetBand(double lower_band_K = READY_BAND_K_,
                           double upper_band_K = READY_BAND_K_) const;
@@ -120,6 +134,7 @@ public:
   double deliveredPowerW() const { return P_delivered_W_; }
   int tempMissStreak() const { return temp_miss_streak_; }
   bool jobActive() const { return job_active_; }
+  bool substrateControlOn() const { return substrate_control_on_; }
 
   void initialize() override;
   void tick(const TickContext& ctx) override;
@@ -142,11 +157,12 @@ private:
   double last_P_loss_W_ = 0.0;
 
   // Job state and health tracking.
-  int  job_index_         = -1;
-  bool job_active_        = false;
-  int  temp_miss_streak_  = 0;
-  bool job_failed_        = false;
-  bool is_leader_         = false;
+  int  job_index_              = -1;
+  bool job_active_             = false;
+  bool substrate_control_on_   = false;
+  int  temp_miss_streak_       = 0;
+  bool job_failed_             = false;
+  bool is_leader_              = false;
 
   // Physical constants.
   static constexpr double sigma_      = 5.670374419e-8;
@@ -160,7 +176,8 @@ private:
   static constexpr int    FAIL_LIMIT_TICKS_ = 20;
 
   // Map physical deposition flux to a substrate growth target temperature.
-  // This mapping is only meaningful for real deposition jobs.
+  // This is used as a fallback for growth-like rows when no explicit target
+  // is provided.
   double fluxToTargetTemp(double raw_job_flux_cm2s) const;
 
   // Estimate total thermal losses at a given substrate temperature.

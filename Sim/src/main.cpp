@@ -55,6 +55,14 @@ using SimHelpers::fluxToHeaterPower;
 using SimHelpers::write_params_inc;
 using SimHelpers::FWAFFER_FLOOR_CM2S;
 using SimHelpers::LogFn;
+using SimHelpers::PhaseCode;
+using SimHelpers::phaseCodeName;
+using SimHelpers::parseJobLine;
+using SimHelpers::derivePhaseDurationTicks;
+using SimHelpers::deriveLiveDepositionTicks;
+using SimHelpers::isGrowthPhase;
+using SimHelpers::isNonGrowthTimedPhase;
+using SimHelpers::DEFAULT_IDLE_SUBSTRATE_TARGET_K;
 
 // Globals defined in EffusionCell.cpp so streaks show up in EffusionCell.csv.
 extern int g_underflux_streak_for_log;
@@ -69,37 +77,6 @@ double g_orbit_solar_scale = 1.0;
 // Map wafer flux (cm^-2 s^-1) from jobs.txt to a notional effusion-cell
 // target temperature (K). This does NOT enforce the temperature; it simply provides a "desired" setpoint that we log as target_temp_K in EffusionCell.
 // This is the original 1100–1300 K mapping
-/* ------------------------------ below is the old version with the floor set too high for the jobs
-static double targetTempForFlux(double Fwafer_cm2s) {
-  // Idle / no-flux baseline
-  if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 0.0) {
-    return 300.0;
-  }
-
-  // Design anchors: tweak as desired.
-  const double F_low  = 5e13;   // lower design flux (cm^-2 s^-1)
-  const double F_high = 1e14;   // upper design flux (cm^-2 s^-1)
-  const double T_low  = 1100.0; // effusion temp at F_low (K)
-  const double T_high = 1500.0; // effusion temp at F_high (K) - was originally 1300
-
-  // Clamp flux to the design band.
-  double F_clamped = std::clamp(Fwafer_cm2s, F_low, F_high);
-
-  double logF     = std::log(F_clamped);
-  double logFlow  = std::log(F_low);
-  double logFhigh = std::log(F_high);
-  double denom    = (logFhigh - logFlow);
-
-  double alpha = 0.0;
-  if (denom > 0.0) {
-    alpha = (logF - logFlow) / denom;
-  }
-  alpha = std::clamp(alpha, 0.0, 1.0);
-
-  return T_low + alpha * (T_high - T_low);
-}
---------------------------------------------------------------------------- */
-
 static double targetTempForFlux(double Fwafer_cm2s) {
   // 1. Idle / no-flux baseline
   if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 1e-15) {
@@ -110,7 +87,7 @@ static double targetTempForFlux(double Fwafer_cm2s) {
   // F_low is your minimum growth flux (2.0e12)
   // F_high is your maximum growth flux (3.3e13)
   const double F_low  = 2e12;   
-  const double F_high = 9.0e13; 
+  const double F_high = 9.0e15; 
   const double T_low  = 1100.0; // minimum temp if flux is < f_low
   const double T_high = 1500.0; // max temp if flux is > f_high; was originally 1300, but increased to allow higher temps for the same flux given the new heater model and job range. Adjust as needed based on your specific requirements and the expected flux range in your jobs.txt file.
 
@@ -131,6 +108,56 @@ static double targetTempForFlux(double Fwafer_cm2s) {
 
   // 5. Calculate exact target temp
   return T_low + alpha * (T_high - T_low);
+}
+
+
+// ---------------------------------------------------------------------------
+// Map an explicit recipe row into scheduler control intent.
+//
+// This does not directly drive physical subsystem internals by itself.
+// It tells the scheduler whether the row is beam-enabled, whether substrate
+// control should be considered active, and which targets should be treated
+// as the intended operating point for readiness and logging.
+// ---------------------------------------------------------------------------
+struct PhaseControlIntent {
+  bool beam_allowed = false;
+  bool substrate_control_on = false;
+  bool growth_like_phase = false;
+
+  double effusion_target_K = 300.0;
+  double substrate_target_K = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
+};
+
+static PhaseControlIntent derivePhaseIntent(double raw_job_flux_cm2s,
+                                            int mbe_on,
+                                            int substrate_on,
+                                            PhaseCode phase_code,
+                                            double explicit_substrate_target_K) {
+  PhaseControlIntent out{};
+
+  out.beam_allowed = (mbe_on != 0);
+  out.substrate_control_on = (substrate_on != 0);
+  out.growth_like_phase = isGrowthPhase(phase_code);
+
+  // Effusion target remains flux-derived for beam-enabled growth-like phases.
+  // Beam-off thermal phases do not request a growth-temperature effusion target.
+  if (out.beam_allowed && out.growth_like_phase &&
+      std::isfinite(raw_job_flux_cm2s) && raw_job_flux_cm2s > 0.0) {
+    out.effusion_target_K = targetTempForFlux(raw_job_flux_cm2s);
+  } else {
+    out.effusion_target_K = 300.0;
+  }
+
+  // Substrate target becomes explicit for recipe-aware phases.
+  if (out.substrate_control_on &&
+      std::isfinite(explicit_substrate_target_K) &&
+      explicit_substrate_target_K > 0.0) {
+    out.substrate_target_K = explicit_substrate_target_K;
+  } else {
+    out.substrate_target_K = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
+  }
+
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -285,13 +312,25 @@ static double jobRunStateCode(JobRunState s) {
   return static_cast<double>(static_cast<int>(s));
 }
 
+
 struct RuntimeJobState {
   // Immutable requested plan
   int    requested_start_tick = 0;
   int    requested_end_tick = -1;
-  int    requested_duration_ticks = 0;   // derived as end - start
+
+  // Total scheduled recipe time represented by the row.
+  int    requested_phase_duration_ticks = 0;
+
+  // Beam-on deposition time owed by growth-like rows only.
+  int    requested_live_duration_ticks = 0;
+
   double requested_flux_cm2s = 0.0;
   double requested_heater_cap_W = 0.0;
+
+  int    requested_mbe_on = 0;
+  int    requested_substrate_on = 0;
+  PhaseCode requested_phase_code = PhaseCode::IDLE;
+  double requested_substrate_target_K = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
 
   // Runtime execution state
   JobRunState state = JobRunState::Pending;
@@ -304,36 +343,25 @@ struct RuntimeJobState {
   int actual_thermal_prep_start_tick = -1;
   int actual_warmup_start_tick = -1;
   int actual_cooldown_start_tick = -1;
+
+  // Realized start and end of the recipe phase once thermally executable.
+  int actual_phase_start_tick = -1;
+  int actual_phase_end_tick = -1;
+
+  // Realized beam-on deposition interval for growth-like rows.
   int actual_deposition_start_tick = -1;
   int actual_deposition_end_tick = -1;
+
+  // Total recipe phase accounting
+  int phase_ticks_completed = 0;
+  int remaining_phase_ticks = 0;
 
   // Guaranteed beam-on accounting
   int live_ticks_completed = 0;
   int remaining_live_ticks = 0;
 };
 
-static int deriveRequestedDurationTicks(const Job& j) {
-  // New scheduler semantics:
-  // ticks [20,40] mean a requested beam-on duration of 20 ticks, not 21.
-  //
-  // We interpret duration as end - start. For positive-flux deposition jobs,
-  // force at least 1 tick if the user gave a degenerate window.
-  int dur = j.end_tick - j.start_tick;
-  if (dur < 0) dur = 0;
-
-  if (std::isfinite(j.Fwafer_cm2s) && j.Fwafer_cm2s > 0.0) {
-    dur = std::max(1, dur);
-  } else {
-    // No physical deposition request -> do not owe beam-on time.
-    // This avoids zero-flux jobs hanging forever under guaranteed-deposition
-    // semantics. If you later want explicit timed soak/desorb jobs, that should
-    // become a separate recipe type rather than piggybacking on deposition jobs.
-    dur = 0;
-  }
-
-  return dur;
-}
-
+// earlier there was a deriveRequestedDurationTicks function but it was deleted because it collapses zero-flux rows to duration 0.
 // --------------------------------------------------------- main loop ---------------------------------------------------------
 int main(int argc, char** argv) {
   MPI_Init(&argc, &argv);
@@ -479,9 +507,9 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/jobs28.txt";
+        const std::string jobsPath = args.inputDir + "/job_paper1.txt";
         std::ifstream jf(jobsPath);
-        if (!jf) {
+        if (!jf) { 
           std::ostringstream oss;
           oss << "[info] No jobs.txt found at " << jobsPath
               << " — running with default heater/flux.\n";
@@ -494,16 +522,16 @@ int main(int argc, char** argv) {
             if (line.empty()) continue;
             if (line[0] == '#') continue;
 
-            std::istringstream iss(line);
             Job j{};
-            if (!(iss >> j.start_tick >> j.end_tick >> j.Fwafer_cm2s >> j.heater_W)) {
+            std::string parseErr;
+            if (!parseJobLine(line, j, parseErr)) {
               std::ostringstream oss;
               oss << "[warn] jobs.txt line " << lineno
-                  << " malformed, skipping: " << line << "\n";
+                  << " malformed, skipping: " << line
+                  << " | reason: " << parseErr << "\n";
               log_msg(oss.str());
               continue;
             }
-            if (j.end_tick < j.start_tick) std::swap(j.end_tick, j.start_tick);
             jobs.push_back(j);
           }
 
@@ -513,10 +541,16 @@ int main(int argc, char** argv) {
           for (std::size_t i = 0; i < jobs.size(); ++i) {
             const Job& j = jobs[i];
             std::ostringstream joss;
+
             joss << "  [job " << i
-                 << "] ticks " << j.start_tick << "-" << j.end_tick
-                 << ", Fwafer=" << j.Fwafer_cm2s
-                 << " cm^-2 s^-1, heater=" << j.heater_W << " W\n";
+                << "] ticks " << j.start_tick << "-" << j.end_tick
+                << ", Fwafer=" << j.Fwafer_cm2s
+                << " cm^-2 s^-1, heater_cap=" << j.heater_W
+                << " W, mbe_on=" << j.mbe_on
+                << ", substrate_on=" << j.substrate_on
+                << ", phase=" << phaseCodeName(j.phase_code)
+                << ", substrate_target_K=" << j.substrate_target_K
+                << "\n";
             log_msg(joss.str());
           }
         }
@@ -754,12 +788,25 @@ int main(int argc, char** argv) {
         const Job& j = jobs[i];
 
         RuntimeJobState rj;
-        rj.requested_start_tick      = j.start_tick;
-        rj.requested_end_tick        = j.end_tick;
-        rj.requested_duration_ticks  = deriveRequestedDurationTicks(j);
-        rj.requested_flux_cm2s       = j.Fwafer_cm2s;
-        rj.requested_heater_cap_W    = j.heater_W;
-        rj.remaining_live_ticks      = rj.requested_duration_ticks;
+
+        // Copy the immutable schedule request into runtime state.
+        rj.requested_start_tick         = j.start_tick;
+        rj.requested_end_tick           = j.end_tick;
+        rj.requested_phase_duration_ticks = derivePhaseDurationTicks(j);
+        rj.requested_live_duration_ticks  = deriveLiveDepositionTicks(j);
+
+        rj.requested_flux_cm2s          = j.Fwafer_cm2s;
+        rj.requested_heater_cap_W       = j.heater_W;
+        rj.requested_mbe_on             = j.mbe_on;
+        rj.requested_substrate_on       = j.substrate_on;
+        rj.requested_phase_code         = j.phase_code;
+        rj.requested_substrate_target_K = j.substrate_target_K;
+
+        // Phase time and live deposition time are tracked separately.
+        // Non-growth timed phases can now persist even when live deposition owed is zero.
+        rj.remaining_phase_ticks = rj.requested_phase_duration_ticks;
+        rj.remaining_live_ticks  = rj.requested_live_duration_ticks;
+
         runtimeJobs.push_back(rj);
       }
 
@@ -783,6 +830,302 @@ int main(int argc, char** argv) {
       // conservative temperature-health gate.
       double temp_proxy_K = 300.0;
 
+            auto emitPostAccountingLogs =
+          [&](int tickIndex,
+              double t_phys,
+              int controllingJobIndex_snapshot,
+              double raw_job_flux_cm2s_snapshot,
+              double sparta_flux_cm2s_snapshot,
+              bool deposition_requested_snapshot,
+              double effusionDemand_W_snapshot,
+              double substrateDemand_W_snapshot,
+              double target_T_K_snapshot,
+              double scheduler_substrate_target_K_log_snapshot,
+              double phase_ready_for_execution_log_snapshot,
+              double mbe_flag_snapshot,
+              bool effusion_ready_snapshot,
+              bool wafer_ready_snapshot) {
+
+        int log_job_index = controllingJobIndex_snapshot;
+
+        double scheduler_state_code_log = jobRunStateCode(JobRunState::Pending);
+        double prep_mode_code = 0.0;
+
+        double requested_start_tick_log           = -1.0;
+        double requested_end_tick_log             = -1.0;
+        double requested_phase_duration_ticks_log = 0.0;
+        double requested_live_duration_ticks_log  = 0.0;
+
+        double actual_queue_enter_tick_log        = -1.0;
+        double actual_thermal_prep_start_log      = -1.0;
+        double actual_warmup_start_tick_log       = -1.0;
+        double actual_cooldown_start_tick_log     = -1.0;
+        double actual_phase_start_tick_log        = -1.0;
+        double actual_phase_end_tick_log          = -1.0;
+        double actual_deposition_start_tick_log   = -1.0;
+        double actual_deposition_end_tick_log     = -1.0;
+
+        double phase_ticks_completed_log          = 0.0;
+        double remaining_phase_ticks_log          = 0.0;
+        double live_ticks_completed_log           = 0.0;
+        double remaining_live_ticks_log           = 0.0;
+        double delay_from_requested_start_log     = 0.0;
+
+        double phase_code_log                     = static_cast<double>(static_cast<int>(PhaseCode::IDLE));
+        double mbe_on_log                         = 0.0;
+        double substrate_on_log                   = 0.0;
+
+        double queued_active       = 0.0;
+        double warmup_active       = 0.0;
+        double cooldown_active     = 0.0;
+        double thermal_prep_active = 0.0;
+        double live_active         = 0.0;
+        double done_active         = 0.0;
+        double aborted_active      = 0.0;
+
+        std::string phase_name_log = "NONE";
+
+        if (log_job_index >= 0 &&
+            log_job_index < static_cast<int>(runtimeJobs.size())) {
+          const RuntimeJobState& rj = runtimeJobs[log_job_index];
+
+          scheduler_state_code_log = jobRunStateCode(rj.state);
+
+          requested_start_tick_log           = static_cast<double>(rj.requested_start_tick);
+          requested_end_tick_log             = static_cast<double>(rj.requested_end_tick);
+          requested_phase_duration_ticks_log = static_cast<double>(rj.requested_phase_duration_ticks);
+          requested_live_duration_ticks_log  = static_cast<double>(rj.requested_live_duration_ticks);
+
+          actual_queue_enter_tick_log        = static_cast<double>(rj.actual_queue_enter_tick);
+          actual_thermal_prep_start_log      = static_cast<double>(rj.actual_thermal_prep_start_tick);
+          actual_warmup_start_tick_log       = static_cast<double>(rj.actual_warmup_start_tick);
+          actual_cooldown_start_tick_log     = static_cast<double>(rj.actual_cooldown_start_tick);
+          actual_phase_start_tick_log        = static_cast<double>(rj.actual_phase_start_tick);
+          actual_phase_end_tick_log          = static_cast<double>(rj.actual_phase_end_tick);
+          actual_deposition_start_tick_log   = static_cast<double>(rj.actual_deposition_start_tick);
+          actual_deposition_end_tick_log     = static_cast<double>(rj.actual_deposition_end_tick);
+
+          phase_ticks_completed_log          = static_cast<double>(rj.phase_ticks_completed);
+          remaining_phase_ticks_log          = static_cast<double>(rj.remaining_phase_ticks);
+          live_ticks_completed_log           = static_cast<double>(rj.live_ticks_completed);
+          remaining_live_ticks_log           = static_cast<double>(rj.remaining_live_ticks);
+
+          phase_code_log                     = static_cast<double>(static_cast<int>(rj.requested_phase_code));
+          mbe_on_log                         = static_cast<double>(rj.requested_mbe_on);
+          substrate_on_log                   = static_cast<double>(rj.requested_substrate_on);
+          phase_name_log                     = phaseCodeName(rj.requested_phase_code);
+
+          if (rj.actual_phase_start_tick >= 0) {
+            delay_from_requested_start_log =
+                static_cast<double>(rj.actual_phase_start_tick - rj.requested_start_tick);
+          } else if (rj.actual_deposition_start_tick >= 0) {
+            delay_from_requested_start_log =
+                static_cast<double>(rj.actual_deposition_start_tick - rj.requested_start_tick);
+          } else {
+            delay_from_requested_start_log =
+                static_cast<double>(tickIndex - rj.requested_start_tick);
+          }
+
+          queued_active       = (rj.state == JobRunState::Queued) ? 1.0 : 0.0;
+          warmup_active       = (rj.state == JobRunState::Warming) ? 1.0 : 0.0;
+          cooldown_active     = (rj.state == JobRunState::Cooling) ? 1.0 : 0.0;
+          thermal_prep_active = (rj.state == JobRunState::ThermalPrep) ? 1.0 : 0.0;
+          live_active         = (rj.state == JobRunState::LiveDeposition) ? 1.0 : 0.0;
+          done_active         = (rj.state == JobRunState::Done) ? 1.0 : 0.0;
+          aborted_active      = (rj.state == JobRunState::Aborted) ? 1.0 : 0.0;
+
+          if (rj.state == JobRunState::Warming) {
+            prep_mode_code = 1.0;
+          } else if (rj.state == JobRunState::Cooling) {
+            prep_mode_code = 2.0;
+          } else if (rj.state == JobRunState::ThermalPrep &&
+                     phase_ready_for_execution_log_snapshot <= 0.5) {
+            prep_mode_code = 3.0;
+          } else {
+            prep_mode_code = 0.0;
+          }
+        }
+
+        Logger::instance().log_wide(
+          "ScheduleState",
+          tickIndex,
+          t_phys,
+          {
+            "controlling_job_index",
+            "scheduler_state_code",
+            "prep_mode_code",
+
+            "requested_start_tick",
+            "requested_end_tick",
+            "requested_phase_duration_ticks",
+            "requested_live_duration_ticks",
+
+            "actual_queue_enter_tick",
+            "actual_thermal_prep_start_tick",
+            "actual_warmup_start_tick",
+            "actual_cooldown_start_tick",
+            "actual_phase_start_tick",
+            "actual_phase_end_tick",
+            "actual_deposition_start_tick",
+            "actual_deposition_end_tick",
+
+            "phase_ticks_completed",
+            "remaining_phase_ticks",
+            "live_ticks_completed",
+            "remaining_live_ticks",
+            "delay_from_requested_start",
+
+            "phase_code",
+            "mbe_on",
+            "substrate_on",
+            "phase_ready_for_execution",
+
+            "queued_active",
+            "warmup_active",
+            "cooldown_active",
+            "thermal_prep_active",
+            "live_active",
+            "done_active",
+            "aborted_active",
+
+            "deposition_requested",
+            "mbe_flag"
+          },
+          {
+            static_cast<double>(log_job_index),
+            scheduler_state_code_log,
+            prep_mode_code,
+
+            requested_start_tick_log,
+            requested_end_tick_log,
+            requested_phase_duration_ticks_log,
+            requested_live_duration_ticks_log,
+
+            actual_queue_enter_tick_log,
+            actual_thermal_prep_start_log,
+            actual_warmup_start_tick_log,
+            actual_cooldown_start_tick_log,
+            actual_phase_start_tick_log,
+            actual_phase_end_tick_log,
+            actual_deposition_start_tick_log,
+            actual_deposition_end_tick_log,
+
+            phase_ticks_completed_log,
+            remaining_phase_ticks_log,
+            live_ticks_completed_log,
+            remaining_live_ticks_log,
+            delay_from_requested_start_log,
+
+            phase_code_log,
+            mbe_on_log,
+            substrate_on_log,
+            phase_ready_for_execution_log_snapshot,
+
+            queued_active,
+            warmup_active,
+            cooldown_active,
+            thermal_prep_active,
+            live_active,
+            done_active,
+            aborted_active,
+
+            deposition_requested_snapshot ? 1.0 : 0.0,
+            mbe_flag_snapshot
+          }
+        );
+
+        Logger::instance().log_wide(
+          "ScheduleStateText",
+          tickIndex,
+          t_phys,
+          std::vector<std::string>{
+            "scheduler_state_name",
+            "prep_mode_name",
+            "phase_name"
+          },
+          std::vector<std::string>{
+            jobRunStateName(static_cast<JobRunState>(static_cast<int>(scheduler_state_code_log))),
+            prepModeName(prep_mode_code),
+            phase_name_log
+          }
+        );
+
+        Logger::instance().log_wide(
+          "ProcessState",
+          tickIndex,
+          t_phys,
+          {
+            "controlling_job_index",
+            "phase_code",
+            "mbe_on",
+            "substrate_on",
+
+            "raw_job_flux_cm2s",
+            "sparta_flux_cm2s",
+            "deposition_requested",
+            "phase_ready_for_execution",
+
+            "effusionDemand_W",
+            "substrateDemand_W",
+
+            "effusion_temp_K",
+            "effusion_target_K",
+            "substrate_temp_K",
+            "substrate_target_K",
+
+            "effusion_ready",
+            "wafer_ready",
+            "mbe_flag",
+
+            "effusion_delivered_W",
+            "substrate_delivered_W",
+
+            "underflux_streak",
+            "temp_miss_streak"
+          },
+          {
+            static_cast<double>(log_job_index),
+            phase_code_log,
+            mbe_on_log,
+            substrate_on_log,
+
+            raw_job_flux_cm2s_snapshot,
+            sparta_flux_cm2s_snapshot,
+            deposition_requested_snapshot ? 1.0 : 0.0,
+            phase_ready_for_execution_log_snapshot,
+
+            effusionDemand_W_snapshot,
+            substrateDemand_W_snapshot,
+
+            effCell.getTemperatureK(),
+            target_T_K_snapshot,
+            substrateHeater.substrateTempK(),
+            scheduler_substrate_target_K_log_snapshot,
+
+            effusion_ready_snapshot ? 1.0 : 0.0,
+            wafer_ready_snapshot ? 1.0 : 0.0,
+            mbe_flag_snapshot,
+
+            effCell.getLastHeatInputW(),
+            substrateHeater.deliveredPowerW(),
+
+            static_cast<double>(underflux_streak),
+            static_cast<double>(temp_miss_streak)
+          }
+        );
+
+        {
+          std::ostringstream oss;
+          oss << "[sched-state] tick=" << tickIndex
+              << " job=" << log_job_index
+              << " state=" << jobRunStateName(static_cast<JobRunState>(static_cast<int>(scheduler_state_code_log)))
+              << " prep=" << prepModeName(prep_mode_code)
+              << " remaining_live=" << remaining_live_ticks_log
+              << " mbe=" << mbe_flag_snapshot << "\n";
+          log_msg(oss.str());
+        }
+      };
+
       const int NTICKS = args.nticks;
       constexpr double PI_MAIN = 3.141592653589793;
 
@@ -793,6 +1136,7 @@ int main(int argc, char** argv) {
 
         // ---------------- leader: orbit, job schedule, per-tick harness -----
         if (isLeader) {
+          int logJobIndexAfterAccounting = controllingJobIndex;
           // ---- 0) Orbit update + logging ----
           orbit.step();
           const OrbitState &orb = orbit.state();
@@ -819,8 +1163,7 @@ int main(int argc, char** argv) {
           for (std::size_t idx = 0; idx < runtimeJobs.size(); ++idx) {
             RuntimeJobState& rj = runtimeJobs[idx];
 
-            if (rj.state == JobRunState::Pending &&
-                tickIndex >= rj.requested_start_tick) {
+            if (rj.state == JobRunState::Pending && tickIndex >= rj.requested_start_tick) {
               rj.state = JobRunState::Queued;
               rj.released_to_queue = true;
               rj.actual_queue_enter_tick = tickIndex;
@@ -830,7 +1173,8 @@ int main(int argc, char** argv) {
                   << " released job " << idx
                   << " into queue"
                   << " (requested_start=" << rj.requested_start_tick
-                  << ", requested_duration=" << rj.requested_duration_ticks
+                  << ", requested_phase_duration=" << rj.requested_phase_duration_ticks
+                  << ", requested_live_duration=" << rj.requested_live_duration_ticks
                   << ", requested_flux=" << rj.requested_flux_cm2s
                   << ")\n";
               log_msg(oss.str());
@@ -856,7 +1200,8 @@ int main(int argc, char** argv) {
                     << " job " << idx << " took control"
                     << " (requested_start=" << rj.requested_start_tick
                     << ", requested_end=" << rj.requested_end_tick
-                    << ", requested_duration=" << rj.requested_duration_ticks
+                    << ", requested_phase_duration=" << rj.requested_phase_duration_ticks
+                    << ", requested_live_duration=" << rj.requested_live_duration_ticks
                     << ", remaining_live_ticks=" << rj.remaining_live_ticks
                     << ")\n";
                 log_msg(oss.str());
@@ -866,93 +1211,157 @@ int main(int argc, char** argv) {
           }
 
           // ---- 3) Decide scheduler state, heater demand, flux, and mbe flag ----
-          double raw_job_flux_cm2s   = 0.0;
-          double sparta_flux_cm2s    = FWAFFER_FLOOR_CM2S;
+          double target_T_K           = 300.0;
+          double scheduler_substrate_target_K_log = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
+
+          double raw_job_flux_cm2s    = 0.0;
+          double sparta_flux_cm2s     = FWAFFER_FLOOR_CM2S;
           bool   deposition_requested = false;
 
-          double effusionDemand_W    = 0.0;
-          double substrateDemand_W   = 0.0;
+          double effusionDemand_W     = 0.0;
+          double substrateDemand_W    = 0.0;
 
-          double mbe_flag            = 0.0;
-          double target_T_K          = 300.0;
+          double mbe_flag             = 0.0;
 
-          bool   wafer_ready         = true;
-          bool   effusion_ready      = true;
+          bool   wafer_ready          = true;
+          bool   effusion_ready       = true;
 
-          int    jobIndexForGrowth   = -1;
-          double growth_flux_cm2s    = 0.0;
+          int    jobIndexForGrowth    = -1;
+          double growth_flux_cm2s     = 0.0;
 
-          double queued_active       = 0.0;
-          double warmup_active       = 0.0;
-          double cooldown_active     = 0.0;
-          double thermal_prep_active = 0.0;
-          double live_active         = 0.0;
-          double done_active         = 0.0;
-          double aborted_active      = 0.0;
-          double prep_mode_code      = 0.0;
+          double queued_active        = 0.0;
+          double warmup_active        = 0.0;
+          double cooldown_active      = 0.0;
+          double thermal_prep_active  = 0.0;
+          double live_active          = 0.0;
+          double done_active          = 0.0;
+          double aborted_active       = 0.0;
+          double prep_mode_code       = 0.0;
 
-          double requested_start_tick_log         = -1.0;
-          double requested_end_tick_log           = -1.0;
-          double requested_duration_ticks_log     = 0.0;
-          double actual_queue_enter_tick_log      = -1.0;
-          double actual_thermal_prep_start_log    = -1.0;
-          double actual_warmup_start_tick_log     = -1.0;
-          double actual_cooldown_start_tick_log   = -1.0;
-          double actual_deposition_start_tick_log = -1.0;
-          double actual_deposition_end_tick_log   = -1.0;
-          double live_ticks_completed_log         = 0.0;
-          double remaining_live_ticks_log         = 0.0;
-          double delay_from_requested_start_log   = 0.0;
-          double scheduler_state_code_log         = jobRunStateCode(JobRunState::Pending);
+          double requested_start_tick_log            = -1.0;
+          double requested_end_tick_log              = -1.0;
+          double requested_phase_duration_ticks_log  = 0.0;
+          double requested_live_duration_ticks_log   = 0.0;
+
+          double actual_queue_enter_tick_log         = -1.0;
+          double actual_thermal_prep_start_log       = -1.0;
+          double actual_warmup_start_tick_log        = -1.0;
+          double actual_cooldown_start_tick_log      = -1.0;
+          double actual_phase_start_tick_log         = -1.0;
+          double actual_phase_end_tick_log           = -1.0;
+          double actual_deposition_start_tick_log    = -1.0;
+          double actual_deposition_end_tick_log      = -1.0;
+
+          double phase_ticks_completed_log           = 0.0;
+          double remaining_phase_ticks_log           = 0.0;
+          double live_ticks_completed_log            = 0.0;
+          double remaining_live_ticks_log            = 0.0;
+
+          double delay_from_requested_start_log      = 0.0;
+          double scheduler_state_code_log            = jobRunStateCode(JobRunState::Pending);
+
+          double phase_code_log                      = static_cast<double>(static_cast<int>(PhaseCode::IDLE));
+          double mbe_on_log                          = 0.0;
+          double substrate_on_log                    = 0.0;
+          double phase_ready_for_execution_log       = 0.0;
 
           if (controllingJobIndex >= 0) {
             RuntimeJobState& rj = runtimeJobs[controllingJobIndex];
             jobIndexForGrowth = controllingJobIndex;
 
-            requested_start_tick_log         = static_cast<double>(rj.requested_start_tick);
-            requested_end_tick_log           = static_cast<double>(rj.requested_end_tick);
-            requested_duration_ticks_log     = static_cast<double>(rj.requested_duration_ticks);
-            actual_queue_enter_tick_log      = static_cast<double>(rj.actual_queue_enter_tick);
-            actual_thermal_prep_start_log    = static_cast<double>(rj.actual_thermal_prep_start_tick);
-            actual_warmup_start_tick_log     = static_cast<double>(rj.actual_warmup_start_tick);
-            actual_cooldown_start_tick_log   = static_cast<double>(rj.actual_cooldown_start_tick);
-            actual_deposition_start_tick_log = static_cast<double>(rj.actual_deposition_start_tick);
-            actual_deposition_end_tick_log   = static_cast<double>(rj.actual_deposition_end_tick);
-            live_ticks_completed_log         = static_cast<double>(rj.live_ticks_completed);
-            remaining_live_ticks_log         = static_cast<double>(rj.remaining_live_ticks);
+            requested_start_tick_log          = static_cast<double>(rj.requested_start_tick);
+            requested_end_tick_log            = static_cast<double>(rj.requested_end_tick);
+            requested_phase_duration_ticks_log = static_cast<double>(rj.requested_phase_duration_ticks);
+            requested_live_duration_ticks_log  = static_cast<double>(rj.requested_live_duration_ticks);
+
+            actual_queue_enter_tick_log       = static_cast<double>(rj.actual_queue_enter_tick);
+            actual_thermal_prep_start_log     = static_cast<double>(rj.actual_thermal_prep_start_tick);
+            actual_warmup_start_tick_log      = static_cast<double>(rj.actual_warmup_start_tick);
+            actual_cooldown_start_tick_log    = static_cast<double>(rj.actual_cooldown_start_tick);
+            actual_phase_start_tick_log       = static_cast<double>(rj.actual_phase_start_tick);
+            actual_phase_end_tick_log         = static_cast<double>(rj.actual_phase_end_tick);
+            actual_deposition_start_tick_log  = static_cast<double>(rj.actual_deposition_start_tick);
+            actual_deposition_end_tick_log    = static_cast<double>(rj.actual_deposition_end_tick);
+
+            phase_ticks_completed_log         = static_cast<double>(rj.phase_ticks_completed);
+            remaining_phase_ticks_log         = static_cast<double>(rj.remaining_phase_ticks);
+            live_ticks_completed_log          = static_cast<double>(rj.live_ticks_completed);
+            remaining_live_ticks_log          = static_cast<double>(rj.remaining_live_ticks);
+
+            phase_code_log                    = static_cast<double>(static_cast<int>(rj.requested_phase_code));
+            mbe_on_log                        = static_cast<double>(rj.requested_mbe_on);
+            substrate_on_log                  = static_cast<double>(rj.requested_substrate_on);
 
             raw_job_flux_cm2s = rj.requested_flux_cm2s;
             if (!std::isfinite(raw_job_flux_cm2s) || raw_job_flux_cm2s < 0.0) {
-              raw_job_flux_cm2s = 0.0;
+            raw_job_flux_cm2s = 0.0;
             }
 
-            deposition_requested = (raw_job_flux_cm2s > 0.0);
+            // Build explicit scheduler intent from the recipe row.
+            // This is the bridge between the parsed recipe and runtime thermal gating.
+            const PhaseControlIntent phaseIntent = derivePhaseIntent(
+              raw_job_flux_cm2s,
+              rj.requested_mbe_on,
+              rj.requested_substrate_on,
+              rj.requested_phase_code,
+              rj.requested_substrate_target_K
+            );
+            
+            scheduler_substrate_target_K_log = phaseIntent.substrate_target_K;
+
+            deposition_requested =
+              phaseIntent.beam_allowed &&
+              phaseIntent.growth_like_phase &&
+              raw_job_flux_cm2s > 0.0;
+
+            // SPARTA still needs a legal positive mixture value even with beam off.
+            // Physical deposition remains controlled by mbe_flag.
             sparta_flux_cm2s = deposition_requested ? raw_job_flux_cm2s : FWAFFER_FLOOR_CM2S;
 
             // IMPORTANT ORDER FIX:
             // derive target before computing effusion demand
-            if (deposition_requested) {
-              target_T_K = targetTempForFlux(raw_job_flux_cm2s);
-            } else {
-              target_T_K = 300.0;
-            }
-
+            // Apply recipe-driven scheduler intent for this row.
+            // Effusion target remains flux-derived for beam-enabled growth rows.
+            // Substrate target is carried explicitly by the scheduler, although
+            // the current substrate heater interface still uses the legacy
+            // flux-based control path until SubstrateHeater is refactored.
+            target_T_K = phaseIntent.effusion_target_K;
             effCell.setTargetTempK(target_T_K);
-            substrateHeater.setJobState(controllingJobIndex, /*job_active=*/true, raw_job_flux_cm2s);
+            substrateHeater.setJobState(
+                controllingJobIndex,
+                /*job_active=*/true,
+                raw_job_flux_cm2s,
+                phaseIntent.substrate_control_on,
+                phaseIntent.substrate_target_K
+            );
 
-            if (rj.remaining_live_ticks <= 0) {
+            // A row is complete only when its total scheduled phase time is done.
+            // This prevents zero-flux thermal phases from collapsing immediately.
+            if (rj.remaining_phase_ticks <= 0) {
               rj.done = true;
               rj.state = JobRunState::Done;
-              rj.actual_deposition_end_tick = tickIndex;
+              rj.actual_phase_end_tick = tickIndex;
+
+              if (rj.actual_deposition_start_tick >= 0 && rj.actual_deposition_end_tick < 0) {
+                rj.actual_deposition_end_tick = tickIndex;
+              }
 
               std::ostringstream oss;
               oss << "[sched] tick=" << tickIndex
                   << " job " << controllingJobIndex
-                  << " completed immediately because remaining_live_ticks=0\n";
+                  << " completed because remaining_phase_ticks=0\n";
               log_msg(oss.str());
 
+              logJobIndexAfterAccounting = controllingJobIndex;
+              
               controllingJobIndex = -1;
-              substrateHeater.setJobState(-1, /*job_active=*/false, 0.0);
+              substrateHeater.setJobState(
+                  -1,
+                  /*job_active=*/false,
+                  0.0,
+                  false,
+                  DEFAULT_IDLE_SUBSTRATE_TARGET_K
+              );
 
               raw_job_flux_cm2s = 0.0;
               deposition_requested = false;
@@ -1014,15 +1423,21 @@ int main(int argc, char** argv) {
 
               const JobRunState oldState = rj.state;
 
-              if (!deposition_requested) {
-                rj.state = JobRunState::ThermalPrep;
-                thermal_prep_active = 1.0;
-                prep_mode_code = 0.0;
+              // A recipe phase becomes executable only when the relevant
+              // thermal subsystems are in-band for that phase.
+              const bool substrate_ready_for_phase =
+                  phaseIntent.substrate_control_on ? waferWithin : true;
 
-                if (rj.actual_thermal_prep_start_tick < 0) {
-                  rj.actual_thermal_prep_start_tick = tickIndex;
-                }
-              } else if (effBelow || waferBelow) {
+              const bool effusion_ready_for_phase =
+                  deposition_requested ? effWithin : true;
+
+              const bool phase_ready_for_execution =
+                  substrate_ready_for_phase && effusion_ready_for_phase;
+
+              phase_ready_for_execution_log = phase_ready_for_execution ? 1.0 : 0.0;
+
+              if ((phaseIntent.substrate_control_on && waferBelow) ||
+                  (deposition_requested && effBelow)) {
                 rj.state = JobRunState::Warming;
                 warmup_active = 1.0;
                 prep_mode_code = 1.0;
@@ -1033,7 +1448,8 @@ int main(int argc, char** argv) {
                 if (rj.actual_warmup_start_tick < 0) {
                   rj.actual_warmup_start_tick = tickIndex;
                 }
-              } else if (effAbove || waferAbove) {
+              } else if ((phaseIntent.substrate_control_on && waferAbove) ||
+                         (deposition_requested && effAbove)) {
                 rj.state = JobRunState::Cooling;
                 cooldown_active = 1.0;
                 prep_mode_code = 2.0;
@@ -1044,7 +1460,7 @@ int main(int argc, char** argv) {
                 if (rj.actual_cooldown_start_tick < 0) {
                   rj.actual_cooldown_start_tick = tickIndex;
                 }
-              } else if (!(effWithin && waferWithin)) {
+              } else if (!phase_ready_for_execution) {
                 rj.state = JobRunState::ThermalPrep;
                 thermal_prep_active = 1.0;
                 prep_mode_code = 3.0;
@@ -1053,12 +1469,27 @@ int main(int argc, char** argv) {
                   rj.actual_thermal_prep_start_tick = tickIndex;
                 }
               } else {
-                rj.state = JobRunState::LiveDeposition;
-                live_active = 1.0;
-                prep_mode_code = 0.0;
+                // Ready beam-off timed phases execute in ThermalPrep.
+                // Ready growth-like phases execute in LiveDeposition.
+                if (deposition_requested) {
+                  rj.state = JobRunState::LiveDeposition;
+                  live_active = 1.0;
+                  prep_mode_code = 0.0;
 
-                if (rj.actual_deposition_start_tick < 0) {
-                  rj.actual_deposition_start_tick = tickIndex;
+                  if (rj.actual_phase_start_tick < 0) {
+                    rj.actual_phase_start_tick = tickIndex;
+                  }
+                  if (rj.actual_deposition_start_tick < 0) {
+                    rj.actual_deposition_start_tick = tickIndex;
+                  }
+                } else {
+                  rj.state = JobRunState::ThermalPrep;
+                  thermal_prep_active = 1.0;
+                  prep_mode_code = 0.0;
+
+                  if (rj.actual_phase_start_tick < 0) {
+                    rj.actual_phase_start_tick = tickIndex;
+                  }
                 }
               }
 
@@ -1068,7 +1499,8 @@ int main(int argc, char** argv) {
                     << " job " << controllingJobIndex
                     << " state " << jobRunStateName(oldState)
                     << " -> " << jobRunStateName(rj.state)
-                    << " (remaining_live_ticks=" << rj.remaining_live_ticks
+                    << " (remaining_phase_ticks=" << rj.remaining_phase_ticks
+                    << ", remaining_live_ticks=" << rj.remaining_live_ticks
                     << ", eff_T=" << effCell.getTemperatureK()
                     << ", eff_target=" << effCell.getTargetTempK()
                     << ", sub_T=" << substrateHeater.substrateTempK()
@@ -1077,10 +1509,18 @@ int main(int argc, char** argv) {
                 log_msg(oss.str());
               }
 
+              // Beam becomes physically active only during actual live deposition.
+              // This preserves the invariant that deposition occurs only in LiveDeposition.
               mbe_flag = (rj.state == JobRunState::LiveDeposition && deposition_requested) ? 1.0 : 0.0;
               growth_flux_cm2s = (mbe_flag > 0.5) ? raw_job_flux_cm2s : 0.0;
 
-              if (rj.actual_deposition_start_tick >= 0) {
+              // Delay is measured to the realized start of execution for the row.
+              // For growth-like phases this is usually the actual deposition start.
+              // For beam-off timed phases this is the actual phase start.
+              if (rj.actual_phase_start_tick >= 0) {
+                delay_from_requested_start_log =
+                    static_cast<double>(rj.actual_phase_start_tick - rj.requested_start_tick);
+              } else if (rj.actual_deposition_start_tick >= 0) {
                 delay_from_requested_start_log =
                     static_cast<double>(rj.actual_deposition_start_tick - rj.requested_start_tick);
               } else {
@@ -1098,6 +1538,8 @@ int main(int argc, char** argv) {
 
               scheduler_state_code_log = jobRunStateCode(rj.state);
             }
+
+
           } else if (!jobs.empty()) {
             raw_job_flux_cm2s    = 0.0;
             deposition_requested = false;
@@ -1110,10 +1552,21 @@ int main(int argc, char** argv) {
 
             mbe_flag   = 0.0;
             target_T_K = 300.0;
+            scheduler_substrate_target_K_log = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
             effCell.setTargetTempK(target_T_K);
 
             effusionDemand_W = 0.0;
-            substrateHeater.setJobState(-1, /*job_active=*/false, raw_job_flux_cm2s);
+            // No row currently owns thermal control.
+            // Until SubstrateHeater is refactored for explicit recipe targets,
+            // this falls back to the legacy idle behavior.
+            substrateHeater.setJobState(
+                -1,
+                /*job_active=*/false,
+                0.0,
+                false,
+                DEFAULT_IDLE_SUBSTRATE_TARGET_K
+            );
+
             substrateDemand_W = substrateHeater.computePowerRequestW();
             wafer_ready = true;
             effusion_ready = true;
@@ -1131,11 +1584,20 @@ int main(int argc, char** argv) {
 
             mbe_flag   = 0.0;
             target_T_K = 300.0;
+            scheduler_substrate_target_K_log = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
             effCell.setTargetTempK(target_T_K);
 
-            effusionDemand_W = 1500.0;
+            // changed so that 
+            effusionDemand_W = 0.0;
 
-            substrateHeater.setJobState(-1, /*job_active=*/false, raw_job_flux_cm2s);
+            substrateHeater.setJobState(
+                -1,
+                /*job_active=*/false,
+                0.0,
+                false,
+                DEFAULT_IDLE_SUBSTRATE_TARGET_K
+            );
+
             substrateDemand_W = substrateHeater.computePowerRequestW();
             wafer_ready = true;
             effusion_ready = true;
@@ -1147,157 +1609,7 @@ int main(int argc, char** argv) {
                               mbe_flag > 0.5,
                               growth_flux_cm2s);
 
-          // ---------------- ScheduleState.csv (numeric only) ----------------
-          Logger::instance().log_wide(
-            "ScheduleState",
-            tickIndex,
-            t_phys,
-            {
-              "controlling_job_index",
-              "scheduler_state_code",
-              "prep_mode_code",
-
-              "requested_start_tick",
-              "requested_end_tick",
-              "requested_duration_ticks",
-
-              "actual_queue_enter_tick",
-              "actual_thermal_prep_start_tick",
-              "actual_warmup_start_tick",
-              "actual_cooldown_start_tick",
-              "actual_deposition_start_tick",
-              "actual_deposition_end_tick",
-
-              "live_ticks_completed",
-              "remaining_live_ticks",
-              "delay_from_requested_start",
-
-              "queued_active",
-              "warmup_active",
-              "cooldown_active",
-              "thermal_prep_active",
-              "live_active",
-              "done_active",
-              "aborted_active",
-
-              "deposition_requested",
-              "mbe_flag"
-            },
-            {
-              static_cast<double>(jobIndexForGrowth),
-              scheduler_state_code_log,
-              prep_mode_code,
-
-              requested_start_tick_log,
-              requested_end_tick_log,
-              requested_duration_ticks_log,
-
-              actual_queue_enter_tick_log,
-              actual_thermal_prep_start_log,
-              actual_warmup_start_tick_log,
-              actual_cooldown_start_tick_log,
-              actual_deposition_start_tick_log,
-              actual_deposition_end_tick_log,
-
-              live_ticks_completed_log,
-              remaining_live_ticks_log,
-              delay_from_requested_start_log,
-
-              queued_active,
-              warmup_active,
-              cooldown_active,
-              thermal_prep_active,
-              live_active,
-              done_active,
-              aborted_active,
-
-              deposition_requested ? 1.0 : 0.0,
-              mbe_flag
-            }
-          );
-
-          // string logger
-                    // ---------------- ScheduleStateText.csv (readable strings) ----------------
-          Logger::instance().log_wide(
-            "ScheduleStateText",
-            tickIndex,
-            t_phys,
-            std::vector<std::string>{
-              "scheduler_state_name",
-              "prep_mode_name"
-            },
-            std::vector<std::string>{
-              jobRunStateName(static_cast<JobRunState>(static_cast<int>(scheduler_state_code_log))),
-              prepModeName(prep_mode_code)
-            }
-          );
-
-          // Optional readable state messages in debug log
-          {
-            std::ostringstream oss;
-            oss << "[sched-state] tick=" << tickIndex
-                << " job=" << jobIndexForGrowth
-                << " state=" << jobRunStateName(static_cast<JobRunState>(static_cast<int>(scheduler_state_code_log)))
-                << " prep=" << prepModeName(prep_mode_code)
-                << " remaining_live=" << remaining_live_ticks_log
-                << " mbe=" << mbe_flag << "\n";
-            log_msg(oss.str());
-          }
-
-          // ---------------- ProcessState.csv ----------------
-          Logger::instance().log_wide(
-            "ProcessState",
-            tickIndex,
-            t_phys,
-            {
-              "controlling_job_index",
-              "raw_job_flux_cm2s",
-              "sparta_flux_cm2s",
-              "deposition_requested",
-
-              "effusionDemand_W",
-              "substrateDemand_W",
-
-              "effusion_temp_K",
-              "effusion_target_K",
-              "substrate_temp_K",
-              "substrate_target_K",
-
-              "effusion_ready",
-              "wafer_ready",
-              "mbe_flag",
-
-              "effusion_delivered_W",
-              "substrate_delivered_W",
-
-              "underflux_streak",
-              "temp_miss_streak"
-            },
-            {
-              static_cast<double>(jobIndexForGrowth),
-              raw_job_flux_cm2s,
-              sparta_flux_cm2s,
-              deposition_requested ? 1.0 : 0.0,
-
-              effusionDemand_W,
-              substrateDemand_W,
-
-              effCell.getTemperatureK(),
-              effCell.getTargetTempK(),
-              substrateHeater.substrateTempK(),
-              substrateHeater.targetTempK(),
-
-              effusion_ready ? 1.0 : 0.0,
-              wafer_ready ? 1.0 : 0.0,
-              mbe_flag,
-
-              effCell.getLastHeatInputW(),
-              substrateHeater.deliveredPowerW(),
-
-              static_cast<double>(underflux_streak),
-              static_cast<double>(temp_miss_streak)
-            }
-          );
+                              // earlier logging was here, but moved after decision logic for cleaner logs and to capture the effect of decisions on SPARTA state in the same tick
 
           // ---- 3) Push Fwafer + mbe_active into params.inc when needed ----
           if (std::isfinite(sparta_flux_cm2s) && sparta_flux_cm2s > 0.0) {
@@ -1386,20 +1698,26 @@ int main(int argc, char** argv) {
                << " s : AFTER engine.tick() + wake.tick()\n";
           log_msg(oss2.str());
 
-          // ---- 6) After ticking, evaluate job health (under-flux + temp gate)
+          // ---- 6) After ticking, evaluate job health and consume execution time
           if (controllingJobIndex >= 0) {
             RuntimeJobState& rj = runtimeJobs[controllingJobIndex];
 
-            // Only evaluate deposition-health gates during ACTUAL live deposition.
-            if (rj.state == JobRunState::LiveDeposition &&
-                deposition_requested &&
-                mbe_flag > 0.5 &&
-                (effusionDemand_W > 1e-6 || substrateDemand_W > 1e-6)) {
+            const bool live_execution_active =
+                (rj.state == JobRunState::LiveDeposition &&
+                 deposition_requested &&
+                 mbe_flag > 0.5 &&
+                 (effusionDemand_W > 1e-6 || substrateDemand_W > 1e-6));
 
+            const bool nongrowth_execution_active =
+                (rj.state == JobRunState::ThermalPrep &&
+                 !deposition_requested &&
+                 phase_ready_for_execution_log > 0.5);
+
+            if (live_execution_active) {
               bool wafer_gate_fail = substrateHeater.jobFailed();
               double P_actual = effCell.getLastHeatInputW();
 
-              // Update RC temp proxy (same constants as EffusionCell::applyHeat).
+              // Update RC temp proxy for the active live-deposition interval.
               {
                 const double C_J_PER_K = 800.0;
                 const double H_W_PER_K = 0.8;
@@ -1413,7 +1731,7 @@ int main(int argc, char** argv) {
                 if (temp_proxy_K < 0.0)           temp_proxy_K = 0.0;
               }
 
-              // Under-flux gate (power-based) while live
+              // Under-flux gate while live
               double flux_ratio = 1.0;
               if (effusionDemand_W > 0.0) {
                 flux_ratio = P_actual / effusionDemand_W;
@@ -1453,7 +1771,7 @@ int main(int argc, char** argv) {
               g_underflux_streak_for_log = underflux_streak;
               g_temp_miss_streak_for_log = temp_miss_streak;
 
-              // Abort if any live-deposition health gate fails
+              // Abort only during true live deposition
               if (flux_gate_fail || temp_gate_fail || wafer_gate_fail) {
                 rj.aborted = true;
                 rj.state   = JobRunState::Aborted;
@@ -1482,7 +1800,6 @@ int main(int argc, char** argv) {
                 growth.markJobAborted(controllingJobIndex);
                 engine.markJobFailedThisTick();
 
-                // Immediately close the beam in SPARTA
                 double F_for_abort = last_Fwafer_sent;
                 if (!std::isfinite(F_for_abort) || F_for_abort <= 0.0) {
                   F_for_abort = FWAFFER_FLOOR_CM2S;
@@ -1498,8 +1815,8 @@ int main(int argc, char** argv) {
 
                 last_Fwafer_sent = F_for_abort;
                 last_mbe_sent    = 0.0;
+                logJobIndexAfterAccounting = controllingJobIndex;
 
-                // Release ownership for the next queued job on the next tick
                 controllingJobIndex = -1;
                 underflux_streak = 0;
                 temp_miss_streak = 0;
@@ -1510,8 +1827,10 @@ int main(int argc, char** argv) {
                 last_effusion_set = std::numeric_limits<double>::quiet_NaN();
                 last_substrate_set = std::numeric_limits<double>::quiet_NaN();
               } else {
-                // Successful live deposition tick -> consume exactly one owed
-                // beam-on tick.
+                // Growth-like phases consume both phase time and live deposition time.
+                rj.phase_ticks_completed += 1;
+                rj.remaining_phase_ticks -= 1;
+
                 rj.live_ticks_completed += 1;
                 rj.remaining_live_ticks -= 1;
 
@@ -1519,29 +1838,35 @@ int main(int argc, char** argv) {
                 oss << "[sched] tick=" << tickIndex
                     << " job " << controllingJobIndex
                     << " completed one live deposition tick"
-                    << " (completed=" << rj.live_ticks_completed
-                    << ", remaining=" << rj.remaining_live_ticks
+                    << " (phase_completed=" << rj.phase_ticks_completed
+                    << ", phase_remaining=" << rj.remaining_phase_ticks
+                    << ", live_completed=" << rj.live_ticks_completed
+                    << ", live_remaining=" << rj.remaining_live_ticks
                     << ")\n";
                 log_msg(oss.str());
 
-                if (rj.remaining_live_ticks <= 0) {
+                if (rj.remaining_phase_ticks <= 0) {
                   rj.done = true;
                   rj.state = JobRunState::Done;
-                  rj.actual_deposition_end_tick = tickIndex;
+                  rj.actual_phase_end_tick = tickIndex;
+
+                  if (rj.actual_deposition_start_tick >= 0 && rj.actual_deposition_end_tick < 0) {
+                    rj.actual_deposition_end_tick = tickIndex;
+                  }
 
                   std::ostringstream done_oss;
                   done_oss << "[sched] tick=" << tickIndex
                            << " job " << controllingJobIndex
                            << " DONE"
                            << " (requested_start=" << rj.requested_start_tick
-                           << ", actual_deposition_start=" << rj.actual_deposition_start_tick
-                           << ", actual_deposition_end=" << rj.actual_deposition_end_tick
+                           << ", actual_phase_start=" << rj.actual_phase_start_tick
+                           << ", actual_phase_end=" << rj.actual_phase_end_tick
+                           << ", phase_ticks_completed=" << rj.phase_ticks_completed
                            << ", live_ticks_completed=" << rj.live_ticks_completed
                            << ")\n";
                   log_msg(done_oss.str());
+                  logJobIndexAfterAccounting = controllingJobIndex;
 
-                  // Release control. Beam will be closed on the next tick when
-                  // the no-controller path updates params.inc.
                   controllingJobIndex = -1;
                   underflux_streak = 0;
                   temp_miss_streak = 0;
@@ -1553,14 +1878,57 @@ int main(int argc, char** argv) {
                   last_substrate_set = std::numeric_limits<double>::quiet_NaN();
                 }
               }
+            } else if (nongrowth_execution_active) {
+              // Beam-off timed phases consume phase time only.
+              underflux_streak = 0;
+              temp_miss_streak = 0;
+              g_underflux_streak_for_log = 0;
+              g_temp_miss_streak_for_log = 0;
+
+              rj.phase_ticks_completed += 1;
+              rj.remaining_phase_ticks -= 1;
+
+              std::ostringstream oss;
+              oss << "[sched] tick=" << tickIndex
+                  << " job " << controllingJobIndex
+                  << " completed one non-growth phase tick"
+                  << " (phase_completed=" << rj.phase_ticks_completed
+                  << ", phase_remaining=" << rj.remaining_phase_ticks
+                  << ")\n";
+              log_msg(oss.str());
+
+              if (rj.remaining_phase_ticks <= 0) {
+                rj.done = true;
+                rj.state = JobRunState::Done;
+                rj.actual_phase_end_tick = tickIndex;
+
+                std::ostringstream done_oss;
+                done_oss << "[sched] tick=" << tickIndex
+                         << " job " << controllingJobIndex
+                         << " DONE"
+                         << " (requested_start=" << rj.requested_start_tick
+                         << ", actual_phase_start=" << rj.actual_phase_start_tick
+                         << ", actual_phase_end=" << rj.actual_phase_end_tick
+                         << ", phase_ticks_completed=" << rj.phase_ticks_completed
+                         << ", live_ticks_completed=" << rj.live_ticks_completed
+                         << ")\n";
+                log_msg(done_oss.str());
+
+                logJobIndexAfterAccounting = controllingJobIndex;
+                controllingJobIndex = -1;
+                last_heater_set = std::numeric_limits<double>::quiet_NaN();
+                last_effusion_set = std::numeric_limits<double>::quiet_NaN();
+                last_substrate_set = std::numeric_limits<double>::quiet_NaN();
+              }
             } else {
-              // Queue/prep/cooldown ticks do NOT count as deposited time and do
-              // not accumulate the live-deposition failure streaks.
+              // Queue, warmup, cooldown, and not-yet-ready thermal-prep ticks
+              // do not consume execution time and do not accumulate live streaks.
               underflux_streak = 0;
               temp_miss_streak = 0;
               g_underflux_streak_for_log = 0;
               g_temp_miss_streak_for_log = 0;
             }
+
           } else {
             // No controller -> clear streaks in logs.
             underflux_streak = 0;
@@ -1568,6 +1936,23 @@ int main(int argc, char** argv) {
             g_underflux_streak_for_log = 0;
             g_temp_miss_streak_for_log = 0;
           }
+
+          // ---- 7) Emit post-accounting logs for the same tick ----
+          emitPostAccountingLogs(
+              tickIndex,
+              t_phys,
+              logJobIndexAfterAccounting,
+              raw_job_flux_cm2s,
+              sparta_flux_cm2s,
+              deposition_requested,
+              effusionDemand_W,
+              substrateDemand_W,
+              target_T_K,
+              scheduler_substrate_target_K_log,
+              phase_ready_for_execution_log,
+              mbe_flag,
+              effusion_ready,
+              wafer_ready);
 
         } // end if (isLeader)
 
