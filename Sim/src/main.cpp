@@ -63,6 +63,11 @@ using SimHelpers::deriveLiveDepositionTicks;
 using SimHelpers::isGrowthPhase;
 using SimHelpers::isNonGrowthTimedPhase;
 using SimHelpers::DEFAULT_IDLE_SUBSTRATE_TARGET_K;
+using SimHelpers::DEFAULT_IDLE_EFFUSION_TARGET_K;
+using SimHelpers::SourcePhasePolicy;
+using SimHelpers::deriveSourcePhasePolicy;
+using SimHelpers::resolveReferenceFluxForSourcePhase;
+using SimHelpers::targetTempForFlux;
 
 // Globals defined in EffusionCell.cpp so streaks show up in EffusionCell.csv.
 extern int g_underflux_streak_for_log;
@@ -74,81 +79,71 @@ extern int g_temp_miss_streak_for_log;
 double g_orbit_solar_scale = 1.0;
 
 // ---------------------------------------------------------------------------
-// Map wafer flux (cm^-2 s^-1) from jobs.txt to a notional effusion-cell
-// target temperature (K). This does NOT enforce the temperature; it simply provides a "desired" setpoint that we log as target_temp_K in EffusionCell.
-// This is the original 1100–1300 K mapping
-static double targetTempForFlux(double Fwafer_cm2s) {
-  // 1. Idle / no-flux baseline
-  if (!std::isfinite(Fwafer_cm2s) || Fwafer_cm2s <= 1e-15) {
-    return 300.0;
-  }
-
-  // 2. Updated Design Anchors to match jobs file range:
-  // F_low is your minimum growth flux (2.0e12)
-  // F_high is your maximum growth flux (3.3e13)
-  const double F_low  = 2e12;   
-  const double F_high = 9.0e15; 
-  const double T_low  = 1100.0; // minimum temp if flux is < f_low
-  const double T_high = 1500.0; // max temp if flux is > f_high; was originally 1300, but increased to allow higher temps for the same flux given the new heater model and job range. Adjust as needed based on your specific requirements and the expected flux range in your jobs.txt file.
-
-  // 3. Clamp flux so values outside this range don't break the log math
-  double F_clamped = std::clamp(Fwafer_cm2s, F_low, F_high);
-
-  // 4. Logarithmic interpolation
-  double logF     = std::log(F_clamped);
-  double logFlow  = std::log(F_low);
-  double logFhigh = std::log(F_high);
-  double denom    = (logFhigh - logFlow);
-
-  double alpha = 0.0;
-  if (denom > 0.0) {
-    alpha = (logF - logFlow) / denom;
-  }
-  alpha = std::clamp(alpha, 0.0, 1.0);
-
-  // 5. Calculate exact target temp
-  return T_low + alpha * (T_high - T_low);
-}
-
-
-// ---------------------------------------------------------------------------
-// Map an explicit recipe row into scheduler control intent.
+// Scheduler-facing per-row control intent
 //
-// This does not directly drive physical subsystem internals by itself.
-// It tells the scheduler whether the row is beam-enabled, whether substrate
-// control should be considered active, and which targets should be treated
-// as the intended operating point for readiness and logging.
+// This intent layer separates recipe policy from subsystem physics.
+//
+// Important design rule:
+// - EffusionCell owns source thermal state evolution
+// - SubstrateHeater owns substrate thermal state evolution
+// - main.cpp owns which row currently controls the plant
+// - helpers own phase semantics and phase-aware target selection
+//
+// This struct is intentionally richer than the older phase intent because
+// beam-off phases such as SOURCE_DEGAS and SOAK may still require active
+// source heating and source readiness.
 // ---------------------------------------------------------------------------
 struct PhaseControlIntent {
   bool beam_allowed = false;
   bool substrate_control_on = false;
   bool growth_like_phase = false;
 
-  double effusion_target_K = 300.0;
+  bool source_control_on = false;
+  bool source_ready_required = false;
+  bool flux_influences_source_target = false;
+  bool source_may_idle = true;
+
+  double effusion_target_K = DEFAULT_IDLE_EFFUSION_TARGET_K;
   double substrate_target_K = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
 };
 
+
+// ---------------------------------------------------------------------------
+// Build explicit scheduler intent from the recipe row.
+//
+// This bridges row-level recipe semantics into concrete runtime control rules
+// for source heating, substrate heating, readiness gating, and beam permission.
+//
+// Important:
+// - beam permission does not imply source heating permission
+// - source heating may be active during beam-off phases such as SOURCE_DEGAS
+// - source readiness should only gate the phase when that phase actually
+//   depends on source conditioning
+// ---------------------------------------------------------------------------
 static PhaseControlIntent derivePhaseIntent(double raw_job_flux_cm2s,
                                             int mbe_on,
                                             int substrate_on,
                                             PhaseCode phase_code,
-                                            double explicit_substrate_target_K) {
+                                            double explicit_substrate_target_K,
+                                            double next_growth_flux_cm2s) {
   PhaseControlIntent out{};
 
   out.beam_allowed = (mbe_on != 0);
   out.substrate_control_on = (substrate_on != 0);
   out.growth_like_phase = isGrowthPhase(phase_code);
 
-  // Effusion target remains flux-derived for beam-enabled growth-like phases.
-  // Beam-off thermal phases do not request a growth-temperature effusion target.
-  if (out.beam_allowed && out.growth_like_phase &&
-      std::isfinite(raw_job_flux_cm2s) && raw_job_flux_cm2s > 0.0) {
-    out.effusion_target_K = targetTempForFlux(raw_job_flux_cm2s);
-  } else {
-    out.effusion_target_K = 300.0;
-  }
+  const SourcePhasePolicy sourcePolicy =
+      deriveSourcePhasePolicy(phase_code,
+                              raw_job_flux_cm2s,
+                              mbe_on,
+                              next_growth_flux_cm2s);
 
-  // Substrate target becomes explicit for recipe-aware phases.
+  out.source_control_on = sourcePolicy.source_control_on;
+  out.source_ready_required = sourcePolicy.source_ready_required;
+  out.flux_influences_source_target = sourcePolicy.flux_influences_target;
+  out.source_may_idle = sourcePolicy.source_may_idle;
+  out.effusion_target_K = sourcePolicy.effusion_target_K;
+
   if (out.substrate_control_on &&
       std::isfinite(explicit_substrate_target_K) &&
       explicit_substrate_target_K > 0.0) {
@@ -360,6 +355,41 @@ struct RuntimeJobState {
   int live_ticks_completed = 0;
   int remaining_live_ticks = 0;
 };
+
+// ---------------------------------------------------------------------------
+// Find the next positive growth-like flux after the currently controlling row.
+//
+// This gives beam-off pre-growth phases such as SOURCE_DEGAS and SOAK a
+// physically motivated anchor for source thermal conditioning when the current
+// row itself does not carry a meaningful growth flux.
+//
+// If no future growth-like row exists, this returns 0.0 and the helper-side
+// source policy will fall back to its built-in default anchors.
+// ---------------------------------------------------------------------------
+static double findNextGrowthFluxCm2s(const std::vector<RuntimeJobState>& runtimeJobs,
+                                     int currentIndex) {
+  if (currentIndex < 0) {
+    return 0.0;
+  }
+
+  for (std::size_t idx = static_cast<std::size_t>(currentIndex + 1);
+       idx < runtimeJobs.size();
+       ++idx) {
+    const RuntimeJobState& candidate = runtimeJobs[idx];
+
+    const bool growth_like = isGrowthPhase(candidate.requested_phase_code);
+    const bool beam_enabled = (candidate.requested_mbe_on != 0);
+    const bool flux_valid =
+        std::isfinite(candidate.requested_flux_cm2s) &&
+        candidate.requested_flux_cm2s > 0.0;
+
+    if (growth_like && beam_enabled && flux_valid) {
+      return candidate.requested_flux_cm2s;
+    }
+  }
+
+  return 0.0;
+}
 
 // earlier there was a deriveRequestedDurationTicks function but it was deleted because it collapses zero-flux rows to duration 0.
 // --------------------------------------------------------- main loop ---------------------------------------------------------
@@ -1211,7 +1241,7 @@ int main(int argc, char** argv) {
           }
 
           // ---- 3) Decide scheduler state, heater demand, flux, and mbe flag ----
-          double target_T_K           = 300.0;
+          double target_T_K           = DEFAULT_IDLE_EFFUSION_TARGET_K;
           double scheduler_substrate_target_K_log = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
 
           double raw_job_flux_cm2s    = 0.0;
@@ -1294,37 +1324,59 @@ int main(int argc, char** argv) {
 
             raw_job_flux_cm2s = rj.requested_flux_cm2s;
             if (!std::isfinite(raw_job_flux_cm2s) || raw_job_flux_cm2s < 0.0) {
-            raw_job_flux_cm2s = 0.0;
+              raw_job_flux_cm2s = 0.0;
             }
 
-            // Build explicit scheduler intent from the recipe row.
-            // This is the bridge between the parsed recipe and runtime thermal gating.
+            // Determine the next growth-like flux anchor so beam-off source
+            // conditioning phases can still choose a physically motivated source
+            // target even when they are not themselves depositing material.
+            //
+            // Examples:
+            // - SOURCE_DEGAS can heat the source above ambient with mbe_flag = 0
+            // - SOAK can hold near the upcoming growth condition without beam-on
+            const double next_growth_flux_cm2s =
+                findNextGrowthFluxCm2s(runtimeJobs, controllingJobIndex);
+
+            // Build explicit scheduler intent from the active recipe row.
+            //
+            // Important semantic separation:
+            // - beam permission controls whether deposition may occur
+            // - source control controls whether the source should thermally
+            //   condition or hold at an elevated target
+            // - substrate control controls whether the wafer heater should aim
+            //   for the row's substrate target
             const PhaseControlIntent phaseIntent = derivePhaseIntent(
-              raw_job_flux_cm2s,
-              rj.requested_mbe_on,
-              rj.requested_substrate_on,
-              rj.requested_phase_code,
-              rj.requested_substrate_target_K
+                raw_job_flux_cm2s,
+                rj.requested_mbe_on,
+                rj.requested_substrate_on,
+                rj.requested_phase_code,
+                rj.requested_substrate_target_K,
+                next_growth_flux_cm2s
             );
-            
+
             scheduler_substrate_target_K_log = phaseIntent.substrate_target_K;
 
+            // Physical deposition is only requested for beam-enabled growth-like
+            // phases with positive row flux. Beam-off thermal phases may still
+            // actively heat the source, but they must not open the beam.
             deposition_requested =
-              phaseIntent.beam_allowed &&
-              phaseIntent.growth_like_phase &&
-              raw_job_flux_cm2s > 0.0;
+                phaseIntent.beam_allowed &&
+                phaseIntent.growth_like_phase &&
+                raw_job_flux_cm2s > 0.0;
 
-            // SPARTA still needs a legal positive mixture value even with beam off.
-            // Physical deposition remains controlled by mbe_flag.
-            sparta_flux_cm2s = deposition_requested ? raw_job_flux_cm2s : FWAFFER_FLOOR_CM2S;
+            // SPARTA still needs a legal positive mixture value even when the
+            // physical beam is off. The scheduler keeps those semantics intact:
+            // - sparta_flux_cm2s stays legally positive for mixture stability
+            // - actual deposition remains controlled strictly by mbe_flag
+            sparta_flux_cm2s =
+                deposition_requested ? raw_job_flux_cm2s : FWAFFER_FLOOR_CM2S;
 
-            // IMPORTANT ORDER FIX:
-            // derive target before computing effusion demand
-            // Apply recipe-driven scheduler intent for this row.
-            // Effusion target remains flux-derived for beam-enabled growth rows.
-            // Substrate target is carried explicitly by the scheduler, although
-            // the current substrate heater interface still uses the legacy
-            // flux-based control path until SubstrateHeater is refactored.
+            // Apply the phase-aware source target before computing heater demand.
+            //
+            // This is the key fix for SOURCE_DEGAS and other beam-off source
+            // conditioning phases. A phase can now request active source heating
+            // without implying beam-on deposition.
+
             target_T_K = phaseIntent.effusion_target_K;
             effCell.setTargetTempK(target_T_K);
             substrateHeater.setJobState(
@@ -1334,6 +1386,23 @@ int main(int argc, char** argv) {
                 phaseIntent.substrate_control_on,
                 phaseIntent.substrate_target_K
             );
+
+            {
+              std::ostringstream oss;
+              oss << "[phase-intent] tick=" << tickIndex
+                  << " job=" << controllingJobIndex
+                  << " phase=" << phaseCodeName(rj.requested_phase_code)
+                  << " source_control_on=" << (phaseIntent.source_control_on ? 1 : 0)
+                  << " source_ready_required=" << (phaseIntent.source_ready_required ? 1 : 0)
+                  << " beam_allowed=" << (phaseIntent.beam_allowed ? 1 : 0)
+                  << " growth_like_phase=" << (phaseIntent.growth_like_phase ? 1 : 0)
+                  << " raw_flux_cm2s=" << raw_job_flux_cm2s
+                  << " next_growth_flux_cm2s=" << next_growth_flux_cm2s
+                  << " effusion_target_K=" << target_T_K
+                  << " substrate_target_K=" << scheduler_substrate_target_K_log
+                  << "\n";
+              log_msg(oss.str());
+            }
 
             // A row is complete only when its total scheduled phase time is done.
             // This prevents zero-flux thermal phases from collapsing immediately.
@@ -1368,7 +1437,7 @@ int main(int argc, char** argv) {
               sparta_flux_cm2s = (std::isnan(last_Fwafer_sent) || last_Fwafer_sent <= 0.0)
                                    ? FWAFFER_FLOOR_CM2S
                                    : last_Fwafer_sent;
-              target_T_K = 300.0;
+              target_T_K = DEFAULT_IDLE_EFFUSION_TARGET_K;
               effCell.setTargetTempK(target_T_K);
               effusionDemand_W = 0.0;
               substrateDemand_W = substrateHeater.computePowerRequestW();
@@ -1378,31 +1447,51 @@ int main(int argc, char** argv) {
               done_active = 1.0;
               scheduler_state_code_log = jobRunStateCode(JobRunState::Done);
             } else {
-              const double EFF_T_ENV_K       = 300.0;
+                            const double EFF_T_ENV_K       = DEFAULT_IDLE_EFFUSION_TARGET_K;
               const double EFF_H_W_PER_K     = 0.8;
               const double EFF_KP_W_PER_K    = 8.0;
               const double EFF_DEFAULT_MAX_W = 2000.0;
 
-              double eff_temp_K = effCell.getTemperatureK();
-              double eff_temp_error_K = target_T_K - eff_temp_K;
+              const double eff_temp_K = effCell.getTemperatureK();
+              const double eff_temp_error_K = target_T_K - eff_temp_K;
 
               double effusionMaxPower_W = EFF_DEFAULT_MAX_W;
-              if (std::isfinite(rj.requested_heater_cap_W) && rj.requested_heater_cap_W > 0.0) {
+              if (std::isfinite(rj.requested_heater_cap_W) &&
+                  rj.requested_heater_cap_W > 0.0) {
                 effusionMaxPower_W = rj.requested_heater_cap_W;
               }
 
-              if (target_T_K <= 310.0) {
+              // Source demand is phase-aware.
+              //
+              // Old behavior:
+              // - only beam-enabled growth rows got a meaningful source target
+              // - all beam-off phases effectively idled the source
+              //
+              // New behavior:
+              // - any phase with source_control_on may request positive heating
+              // - SOURCE_DEGAS and SOAK can therefore heat and hold the source
+              //   with mbe_flag still forced off
+              // - heater_W remains a cap, not a setpoint
+              if (!phaseIntent.source_control_on ||
+                  target_T_K <= (DEFAULT_IDLE_EFFUSION_TARGET_K + 10.0)) {
                 effusionDemand_W = 0.0;
               } else {
-                double p_ff_W = EFF_H_W_PER_K * std::max(0.0, target_T_K - EFF_T_ENV_K);
-                double p_p_W  = (eff_temp_error_K > 0.0) ? (EFF_KP_W_PER_K * eff_temp_error_K) : 0.0;
-                effusionDemand_W = std::clamp(p_ff_W + p_p_W, 0.0, effusionMaxPower_W);
+                const double p_ff_W =
+                    EFF_H_W_PER_K * std::max(0.0, target_T_K - EFF_T_ENV_K);
+
+                const double p_p_W =
+                    (eff_temp_error_K > 0.0)
+                        ? (EFF_KP_W_PER_K * eff_temp_error_K)
+                        : 0.0;
+
+                effusionDemand_W =
+                    std::clamp(p_ff_W + p_p_W, 0.0, effusionMaxPower_W);
               }
 
               if (!std::isfinite(effusionDemand_W) || effusionDemand_W < 0.0) {
                 effusionDemand_W = 0.0;
               }
-
+              
               substrateDemand_W = substrateHeater.computePowerRequestW();
 
               const auto effBand   = effCell.getThermalBandState(0.90, 1.05);
@@ -1423,21 +1512,29 @@ int main(int argc, char** argv) {
 
               const JobRunState oldState = rj.state;
 
-              // A recipe phase becomes executable only when the relevant
-              // thermal subsystems are in-band for that phase.
+              // A phase becomes executable only when the subsystems that matter
+              // for that phase are in-band.
+              //
+              // Important:
+              // - substrate readiness only matters when substrate control is on
+              // - source readiness matters for phases that actively depend on
+              //   source conditioning, including SOURCE_DEGAS and SOAK
+              // - beam permission is still separate from source readiness
               const bool substrate_ready_for_phase =
                   phaseIntent.substrate_control_on ? waferWithin : true;
 
               const bool effusion_ready_for_phase =
-                  deposition_requested ? effWithin : true;
+                  phaseIntent.source_ready_required ? effWithin : true;
 
               const bool phase_ready_for_execution =
                   substrate_ready_for_phase && effusion_ready_for_phase;
 
-              phase_ready_for_execution_log = phase_ready_for_execution ? 1.0 : 0.0;
+              phase_ready_for_execution_log =
+                  phase_ready_for_execution ? 1.0 : 0.0;
 
               if ((phaseIntent.substrate_control_on && waferBelow) ||
-                  (deposition_requested && effBelow)) {
+                  (phaseIntent.source_ready_required && effBelow)) {
+
                 rj.state = JobRunState::Warming;
                 warmup_active = 1.0;
                 prep_mode_code = 1.0;
@@ -1448,9 +1545,11 @@ int main(int argc, char** argv) {
                 if (rj.actual_warmup_start_tick < 0) {
                   rj.actual_warmup_start_tick = tickIndex;
                 }
+
               } else if ((phaseIntent.substrate_control_on && waferAbove) ||
-                         (deposition_requested && effAbove)) {
+                         (phaseIntent.source_ready_required && effAbove)) {
                 rj.state = JobRunState::Cooling;
+
                 cooldown_active = 1.0;
                 prep_mode_code = 2.0;
 
@@ -1509,8 +1608,13 @@ int main(int argc, char** argv) {
                 log_msg(oss.str());
               }
 
-              // Beam becomes physically active only during actual live deposition.
-              // This preserves the invariant that deposition occurs only in LiveDeposition.
+              // The physical beam is only active during true live deposition.
+              //
+              // This preserves the key scheduler invariant:
+              // - source heating may be active in beam-off phases
+              // - substrate heating may be active in beam-off phases
+              // - actual deposition still occurs only in LiveDeposition
+              // - SPARTA still sees a legal floor flux when the beam is off
               mbe_flag = (rj.state == JobRunState::LiveDeposition && deposition_requested) ? 1.0 : 0.0;
               growth_flux_cm2s = (mbe_flag > 0.5) ? raw_job_flux_cm2s : 0.0;
 
@@ -1551,7 +1655,8 @@ int main(int argc, char** argv) {
             }
 
             mbe_flag   = 0.0;
-            target_T_K = 300.0;
+            target_T_K = DEFAULT_IDLE_EFFUSION_TARGET_K;
+
             scheduler_substrate_target_K_log = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
             effCell.setTargetTempK(target_T_K);
 
@@ -1583,7 +1688,7 @@ int main(int argc, char** argv) {
             }
 
             mbe_flag   = 0.0;
-            target_T_K = 300.0;
+            target_T_K = DEFAULT_IDLE_EFFUSION_TARGET_K;
             scheduler_substrate_target_K_log = DEFAULT_IDLE_SUBSTRATE_TARGET_K;
             effCell.setTargetTempK(target_T_K);
 

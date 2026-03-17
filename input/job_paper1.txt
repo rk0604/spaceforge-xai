@@ -1,7 +1,25 @@
-# start_tick  end_tick  wafer_flux_cm2s   heater_W   # Notes
-0             180       0.0e0             1450       # Source/shutter degas + chamber/source stabilization; shutters closed, no wafer deposition
-180           205       0.0e0             1750       # Oxide desorb at ~620C under excess As flux; deposition shutters closed
-205           214       1.22e15           1650       # 300 nm GaAs buffer at 580C (~33 nm/min => ~9 min)
-214           275       1.22e15           1700       # Main undoped GaAs layer, ~2.0 um at ~33 nm/min => ~61 min
-275           281       1.22e15           1725       # Thin highly Si-doped GaAs cap, ~200 nm => ~6 min
-281           300       0.0e0             1300       # Controlled initial cooldown under overpressure / shutters closed
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+# Units:
+# - ticks are MINUTES
+# - substrate_target_K is Kelvin
+# - heater_W is effusion heater cap in watts
+# - wafer_flux_cm2s is requested growth flux when mbe_on=1
+
+# Recipe A: Wake-Shield-like GaAs sequence
+0    180   0.0e0     1800   0   0   SOURCE_DEGAS   300.0
+180  210   0.0e0     0      0   1   OXIDE_DESORB   893.0
+210  225   0.0e0     0      0   1   SOAK           873.0
+225  240   8.0e12    1700   1   1   NUCLEATE       803.0
+240  330   2.4e13    2200   1   1   GROWTH         873.0
+330  340   0.0e0     0      0   1   ANNEAL         873.0
+340  370   0.0e0     0      0   1   COOLDOWN       673.0
+370  390   0.0e0     0      0   0   IDLE           300.0
+
+# Recipe B: Lower-temperature GaAs run to test queueing / cooling interaction
+360  380   0.0e0     0      0   1   OXIDE_DESORB   853.0
+380  395   0.0e0     0      0   1   SOAK           823.0
+395  405   6.0e12    1500   1   1   NUCLEATE       773.0
+405  480   1.6e13    1900   1   1   GROWTH         823.0
+480  490   0.0e0     0      0   1   ANNEAL         803.0
+490  520   0.0e0     0      0   1   COOLDOWN       573.0
+520  540   0.0e0     0      0   0   IDLE           300.0
