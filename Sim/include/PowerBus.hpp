@@ -37,6 +37,9 @@ private:
     double added_this_tick_{0.0};
     double requested_this_tick_{0.0};
     double granted_this_tick_{0.0};
+    
+    // NEW: Track battery strain to prevent exceeding the max hardware discharge rate
+    double battery_discharged_this_tick_{0.0};
 
     Battery* battery_ = nullptr;
 };

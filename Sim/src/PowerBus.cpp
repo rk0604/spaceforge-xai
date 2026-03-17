@@ -10,10 +10,11 @@ void PowerBus::setBattery(Battery* batt) {
 }
 
 void PowerBus::initialize() {
-    available_power_      = 0.0;
-    added_this_tick_      = 0.0;
-    requested_this_tick_  = 0.0;
-    granted_this_tick_    = 0.0;
+    available_power_              = 0.0;
+    added_this_tick_              = 0.0;
+    requested_this_tick_          = 0.0;
+    granted_this_tick_            = 0.0;
+    battery_discharged_this_tick_ = 0.0; // Initialize our new tracker
 
     // Header/first row (kept consistent with your existing CSV schema)
     Logger::instance().log_wide(
@@ -38,16 +39,31 @@ double PowerBus::drawPower(double requested, const TickContext& ctx) {
     // Bookkeep what was asked for this tick
     requested_this_tick_ += requested;
 
-    // Serve from bus first
+    // 1. Serve from bus first (e.g., direct solar generation)
     const double granted_from_bus = std::min(requested, available_power_);
     available_power_ -= granted_from_bus;
 
     const double remaining_need = requested - granted_from_bus;
 
-    // Then pull remainder from battery if present
+    // 2. Pull remainder from battery, strictly clamped to physical limits
     double from_batt = 0.0;
     if (battery_ && remaining_need > 0.0) {
-        from_batt = battery_->discharge(remaining_need, ctx.dt);
+        
+        // Query the battery's physical hardware limit
+        // (Note: Adjust getMaxDischargeW() if your Battery.hpp uses a different getter name)
+        const double max_batt_rate_W = battery_->getMaxDischargeW(); 
+        
+        // Calculate how much more power we are ALLOWED to pull from the battery this tick
+        const double allowed_from_batt_W = std::max(0.0, max_batt_rate_W - battery_discharged_this_tick_);
+
+        // Clamp the request so we don't blow past the 4000 W limit
+        const double clamped_batt_request = std::min(remaining_need, allowed_from_batt_W);
+
+        // Only attempt to discharge if we still have allowable rate limits
+        if (clamped_batt_request > 0.0) {
+            from_batt = battery_->discharge(clamped_batt_request, ctx.dt);
+            battery_discharged_this_tick_ += from_batt;
+        }
     }
 
     const double total_granted = granted_from_bus + from_batt;
@@ -63,19 +79,20 @@ void PowerBus::tick(const TickContext& ctx) {
     }
 
     // Log this tick
-    Logger::instance().log_wide(
+Logger::instance().log_wide(
         "PowerBus",
         ctx.tick_index,
         ctx.time,
-        {"status","available_added","requested","granted","remaining"},
-        {1.0, added_this_tick_, requested_this_tick_, granted_this_tick_, available_power_}
+        {"status","solar_added","requested","granted","batt_drawn"},
+        {1.0, added_this_tick_, requested_this_tick_, granted_this_tick_, battery_discharged_this_tick_}
     );
 
     // Reset per-tick counters — bus does NOT store power across ticks
-    available_power_      = 0.0;
-    added_this_tick_      = 0.0;
-    requested_this_tick_  = 0.0;
-    granted_this_tick_    = 0.0;
+    available_power_              = 0.0;
+    added_this_tick_              = 0.0;
+    requested_this_tick_          = 0.0;
+    granted_this_tick_            = 0.0;
+    battery_discharged_this_tick_ = 0.0; // Reset our tracker for the next tick
 }
 
 void PowerBus::shutdown() {}
