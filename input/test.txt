@@ -1,0 +1,8 @@
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0    20   0.0e0     1800   0   0   SOURCE_DEGAS   300.0
+20   35   0.0e0     0      0   1   OXIDE_DESORB   893.0
+35   45   0.0e0     0      0   1   SOAK           873.0
+45   60   8.0e12    1700   1   1   NUCLEATE       803.0
+60   95   9.0e12    1800   1   1   GROWTH         823.0
+95   110  0.0e0     0      0   1   ANNEAL         823.0
+110  125  0.0e0     0      0   1   COOLDOWN       350.0

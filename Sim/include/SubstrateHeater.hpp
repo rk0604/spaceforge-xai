@@ -35,7 +35,7 @@ public:
     AboveTargetBand
   };
 
-  explicit SubstrateHeater(double maxPower_W = 2200.0, double wafer_radius_m = 0.15);
+  explicit SubstrateHeater(double maxPower_W = 3000.0, double wafer_radius_m = 0.15);
 
   // Only the leader should emit CSV rows to avoid duplicate logs.
   void setIsLeader(bool isLeader) { is_leader_ = isLeader; }

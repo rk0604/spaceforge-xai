@@ -333,6 +333,12 @@ struct RuntimeJobState {
   bool done = false;
   bool aborted = false;
 
+  // Latched execution semantics for growth-like phases.
+  bool has_started_live_execution = false;
+
+  // Latched when a growth job loses required hold after live execution started.
+  bool live_execution_hold_faulted = false;
+
   // Realized timeline
   int actual_queue_enter_tick = -1;
   int actual_thermal_prep_start_tick = -1;
@@ -537,7 +543,7 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/job_paper1.txt";
+        const std::string jobsPath = args.inputDir + "/test.txt";
         std::ifstream jf(jobsPath);
         if (!jf) { 
           std::ostringstream oss;
@@ -1225,6 +1231,10 @@ int main(int argc, char** argv) {
                 g_temp_miss_streak_for_log = 0;
                 temp_proxy_K = 300.0;
 
+                // Reset latched execution fault semantics for the new controller.
+                rj.has_started_live_execution = false;
+                rj.live_execution_hold_faulted = false;
+
                 std::ostringstream oss;
                 oss << "[sched] tick=" << tickIndex
                     << " job " << idx << " took control"
@@ -1532,8 +1542,32 @@ int main(int argc, char** argv) {
               phase_ready_for_execution_log =
                   phase_ready_for_execution ? 1.0 : 0.0;
 
-              if ((phaseIntent.substrate_control_on && waferBelow) ||
-                  (phaseIntent.source_ready_required && effBelow)) {
+              const bool growth_execution_row =
+                  deposition_requested && phaseIntent.growth_like_phase;
+
+              const bool execution_hold_lost_after_live_start =
+                  growth_execution_row &&
+                  rj.has_started_live_execution &&
+                  !phase_ready_for_execution;
+
+              if (execution_hold_lost_after_live_start) {
+                const bool first_hold_fault = !rj.live_execution_hold_faulted;
+                // Important semantic rule:
+                // once live growth execution has begun, loss of required thermal hold
+                // is no longer treated as harmless prep. Stay in live-execution semantics
+                // so failure accounting can continue toward abort.
+                rj.state = JobRunState::LiveDeposition;
+                rj.live_execution_hold_faulted = true;
+
+                  if (first_hold_fault) {
+                    log_msg("[sched] first hold fault detected...\n");
+                  }
+
+                live_active = 1.0;
+                prep_mode_code = 0.0;
+
+              } else if ((phaseIntent.substrate_control_on && waferBelow) ||
+                        (phaseIntent.source_ready_required && effBelow)) {
 
                 rj.state = JobRunState::Warming;
                 warmup_active = 1.0;
@@ -1547,9 +1581,9 @@ int main(int argc, char** argv) {
                 }
 
               } else if ((phaseIntent.substrate_control_on && waferAbove) ||
-                         (phaseIntent.source_ready_required && effAbove)) {
-                rj.state = JobRunState::Cooling;
+                        (phaseIntent.source_ready_required && effAbove)) {
 
+                rj.state = JobRunState::Cooling;
                 cooldown_active = 1.0;
                 prep_mode_code = 2.0;
 
@@ -1559,6 +1593,7 @@ int main(int argc, char** argv) {
                 if (rj.actual_cooldown_start_tick < 0) {
                   rj.actual_cooldown_start_tick = tickIndex;
                 }
+
               } else if (!phase_ready_for_execution) {
                 rj.state = JobRunState::ThermalPrep;
                 thermal_prep_active = 1.0;
@@ -1567,6 +1602,7 @@ int main(int argc, char** argv) {
                 if (rj.actual_thermal_prep_start_tick < 0) {
                   rj.actual_thermal_prep_start_tick = tickIndex;
                 }
+
               } else {
                 // Ready beam-off timed phases execute in ThermalPrep.
                 // Ready growth-like phases execute in LiveDeposition.
@@ -1581,6 +1617,10 @@ int main(int argc, char** argv) {
                   if (rj.actual_deposition_start_tick < 0) {
                     rj.actual_deposition_start_tick = tickIndex;
                   }
+
+                  rj.has_started_live_execution = true;
+                  rj.live_execution_hold_faulted = false;
+
                 } else {
                   rj.state = JobRunState::ThermalPrep;
                   thermal_prep_active = 1.0;
@@ -1622,8 +1662,14 @@ int main(int argc, char** argv) {
               // - substrate heating may be active in beam-off phases
               // - actual deposition still occurs only in LiveDeposition
               // - SPARTA still sees a legal floor flux when the beam is off
-              mbe_flag = (rj.state == JobRunState::LiveDeposition && deposition_requested) ? 1.0 : 0.0;
-              growth_flux_cm2s = (mbe_flag > 0.5) ? raw_job_flux_cm2s : 0.0;
+                const bool beam_may_fire_now =
+                    (rj.state == JobRunState::LiveDeposition) &&
+                    deposition_requested &&
+                    !rj.live_execution_hold_faulted &&
+                    phase_ready_for_execution;
+
+                mbe_flag = beam_may_fire_now ? 1.0 : 0.0;
+                growth_flux_cm2s = (mbe_flag > 0.5) ? raw_job_flux_cm2s : 0.0;
 
               // Delay is measured to the realized start of execution for the row.
               // For growth-like phases this is usually the actual deposition start.
@@ -1815,10 +1861,9 @@ int main(int argc, char** argv) {
             RuntimeJobState& rj = runtimeJobs[controllingJobIndex];
 
             const bool live_execution_active =
-                (rj.state == JobRunState::LiveDeposition &&
-                 deposition_requested &&
-                 mbe_flag > 0.5 &&
-                 (effusionDemand_W > 1e-6 || substrateDemand_W > 1e-6));
+              (rj.state == JobRunState::LiveDeposition &&
+              deposition_requested &&
+              rj.has_started_live_execution);
 
             const bool nongrowth_execution_active =
                 (rj.state == JobRunState::ThermalPrep &&
@@ -1829,6 +1874,18 @@ int main(int argc, char** argv) {
 
 
             if (live_execution_active) {
+              const bool execution_hold_fault_active = rj.live_execution_hold_faulted;
+              if (execution_hold_fault_active) {
+                std::ostringstream oss;
+                oss << "[sched] tick=" << tickIndex
+                    << " job " << controllingJobIndex
+                    << " execution-time thermal hold lost"
+                    << " (eff_ready=" << (effusion_ready ? 1 : 0)
+                    << ", wafer_ready=" << (wafer_ready ? 1 : 0)
+                    << ", mbe_flag=" << mbe_flag
+                    << ")\n";
+                log_msg(oss.str());
+              }
               double P_actual = effCell.getLastHeatInputW();
 
               // Update RC temp proxy for the active live-deposition interval.
@@ -1930,13 +1987,18 @@ int main(int argc, char** argv) {
                 last_Fwafer_sent = F_for_abort;
                 last_mbe_sent    = 0.0;
                 logJobIndexAfterAccounting = controllingJobIndex;
+                rj.has_started_live_execution = false;
+                rj.live_execution_hold_faulted = false;
 
                 controllingJobIndex = -1;
+
                 underflux_streak = 0;
                 temp_miss_streak = 0;
                 g_underflux_streak_for_log = 0;
                 g_temp_miss_streak_for_log = 0;
                 temp_proxy_K = 300.0;
+
+
                 last_heater_set = std::numeric_limits<double>::quiet_NaN();
                 last_effusion_set = std::numeric_limits<double>::quiet_NaN();
                 last_substrate_set = std::numeric_limits<double>::quiet_NaN();
@@ -1980,6 +2042,9 @@ int main(int argc, char** argv) {
                            << ")\n";
                   log_msg(done_oss.str());
                   logJobIndexAfterAccounting = controllingJobIndex;
+
+                  rj.has_started_live_execution = false;
+                  rj.live_execution_hold_faulted = false;
 
                   controllingJobIndex = -1;
                   underflux_streak = 0;
@@ -2026,6 +2091,9 @@ int main(int argc, char** argv) {
                 last_Fwafer_sent = F_for_abort;
                 last_mbe_sent    = 0.0;
                 logJobIndexAfterAccounting = controllingJobIndex;
+
+                rj.has_started_live_execution = false;
+                rj.live_execution_hold_faulted = false;
 
                 controllingJobIndex = -1;
                 underflux_streak = 0;

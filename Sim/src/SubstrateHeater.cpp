@@ -112,11 +112,27 @@ double SubstrateHeater::lossPowerW(double T_K) const {
 
 double SubstrateHeater::computePowerRequestW() {
   // If there is no meaningful substrate target for this phase, request no heat.
+  // This safely handles IDLE, SOURCE_DEGAS, and any substrate_on = 0 phases.
   if (!job_active_ || !substrate_control_on_ ||
       T_target_K_ <= (kIdleTempK + kMeaningfulTargetMarginK)) {
     P_requested_W_ = 0.0;
     return 0.0;
   }
+
+  const double err_K = (T_target_K_ - T_sub_K_);
+
+  // Feed-forward calculates the power needed to maintain the TARGET temperature.
+  // This is the critical fix: if the target drops, the requested baseline power 
+  // drops immediately, allowing the physical wafer to shed excess heat to space.
+  const double P_ff = lossPowerW(T_target_K_);
+
+  // Proportional heating provides a temporary boost only when below target.
+  // There is no active cooling path; cooldown relies on P_ff being lower than current loss.
+  const double P_p = (err_K > 0.0) ? (Kp_W_per_K_ * err_K) : 0.0;
+
+  P_requested_W_ = std::clamp(P_ff + P_p, 0.0, maxPower_W_);
+  return P_requested_W_;
+}
 
   const double err_K = (T_target_K_ - T_sub_K_);
 
