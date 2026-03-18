@@ -1,0 +1,9 @@
+# job14.txt
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 20 0.0 1700 0 0 SOURCE_DEGAS 300.0
+20 28 0.0 0 0 1 OXIDE_DESORB 893.0
+28 33 0.0 0 0 1 SOAK 853.0
+33 41 5.0e12 1550 1 1 NUCLEATE 793.0
+41 58 1.8e13 1650 1 1 GROWTH 853.0
+58 64 0.0 0 0 1 COOLDOWN 643.0
+64 70 0.0 0 0 0 IDLE 300.0

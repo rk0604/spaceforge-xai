@@ -537,15 +537,25 @@ int main(int argc, char** argv) {
       log_msg(oss.str());
     }
 
-    // --------------------------------------------------------------------
+// --------------------------------------------------------------------
     // Load jobs.txt (only rank 0 actually uses it; others just follow MPI)
     // --------------------------------------------------------------------
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        const std::string jobsPath = args.inputDir + "/V4_job1.txt";
+        // 1. Look for the --job-file argument passed from the bash script
+        std::string jobFileName = "V4_job1.txt"; // Fallback default
+        for (int i = 1; i < argc; ++i) {
+            if (std::string(argv[i]) == "--job-file" && i + 1 < argc) {
+                jobFileName = argv[i + 1];
+                break;
+            }
+        }
+
+        // 2. Combine the input directory and the target filename
+        const std::string jobsPath = args.inputDir + "/" + jobFileName;
         std::ifstream jf(jobsPath);
-        if (!jf) { 
+        if (!jf) {
           std::ostringstream oss;
           oss << "[info] No jobs.txt found at " << jobsPath
               << " — running with default heater/flux.\n";
