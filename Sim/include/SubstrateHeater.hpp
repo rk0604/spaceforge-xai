@@ -43,6 +43,20 @@
 
     where solar_scale is expected to lie in the range [0, 1].
 
+    Thermal exchange semantics
+
+    Thermal exchange with the environment is modeled as a signed quantity.
+
+        P_env_exchange(T) =
+            emissivity * sigma * area * (T^4 - T_env_eff^4)
+          + h_cond * (T - T_env_eff)
+
+    Interpretation
+
+    - Positive P_env_exchange means net heat leaves the substrate.
+    - Negative P_env_exchange means the effective environment is passively
+      warming the substrate.
+
     Scheduler contract
 
     The scheduler tells this class whether a meaningful substrate target is
@@ -190,8 +204,9 @@ public:
       This uses a lightweight control law with two pieces:
 
       1. Feed-forward hold power
-         Estimates the power needed to hold the target temperature against
-         current losses, minus any absorbed solar heating already available.
+         Estimates the heater power needed to hold the target against the
+         current signed environment-exchange term, minus any absorbed solar
+         heating already available.
 
       2. Proportional heating term
          Adds extra demand when the substrate is still below target.
@@ -212,9 +227,14 @@ public:
 
       Net thermal power is modeled as
 
-          P_net = P_delivered + P_solar_abs - P_loss
+          P_net = P_delivered + P_solar_abs - P_env_exchange
 
-      and the substrate temperature is advanced using the lumped thermal
+      where P_env_exchange is signed:
+
+      - positive when heat leaves the substrate
+      - negative when the environment is passively warming the substrate
+
+      The substrate temperature is advanced using the lumped thermal
       capacitance C_J_per_K_.
   */
   void applyHeat(double watts, double dt_s);
@@ -328,11 +348,11 @@ private:
           Current absorbed solar heating power applied directly to the
           substrate thermal node.
   */
-  double T_sub_K_      = 300.0;
-  double T_target_K_   = 300.0;
-  double T_env_K_      = 300.0;
-  double T_env_eff_K_  = 300.0;
-  double solar_scale_  = 1.0;
+  double T_sub_K_       = 300.0;
+  double T_target_K_    = 300.0;
+  double T_env_K_       = 300.0;
+  double T_env_eff_K_   = 300.0;
+  double solar_scale_   = 1.0;
   double P_solar_abs_W_ = 0.0;
 
   /*
@@ -345,7 +365,14 @@ private:
           Power actually delivered by the power system.
 
       last_P_loss_W_
-          Thermal loss evaluated during the latest state update.
+          Latest signed environment-exchange term evaluated during the state
+          update.
+
+          Interpretation:
+          - positive means net heat left the substrate
+          - negative means the environment passively warmed the substrate
+
+          The member name and CSV field name are retained for compatibility.
   */
   double P_requested_W_ = 0.0;
   double P_delivered_W_ = 0.0;
@@ -366,13 +393,13 @@ private:
       Physical constants for the lightweight substrate model.
 
       sigma_
-          Stefan-Boltzmann constant for radiative loss.
+          Stefan-Boltzmann constant for radiative exchange.
 
       emissivity_
           Effective wafer-side emissivity.
 
       h_cond_WK_
-          Lumped linear conductive or parasitic loss term.
+          Lumped linear conductive or parasitic exchange term.
 
       C_J_per_K_
           Lumped thermal capacitance of the substrate node.
@@ -404,11 +431,11 @@ private:
       G_solar_W_m2_
           Solar constant used by the lightweight model.
   */
-  double T_env_night_K_  = 250.0;
-  double T_env_day_K_    = 320.0;
-  double alpha_abs_      = 0.30;
-  double A_proj_m2_      = 0.0;
-  double G_solar_W_m2_   = 1361.0;
+  double T_env_night_K_ = 250.0;
+  double T_env_day_K_   = 320.0;
+  double alpha_abs_     = 0.30;
+  double A_proj_m2_     = 0.0;
+  double G_solar_W_m2_  = 1361.0;
 
   /*
       Gate and failure thresholds.
@@ -432,13 +459,18 @@ private:
   double fluxToTargetTemp(double raw_job_flux_cm2s) const;
 
   /*
-      Estimate the total thermal loss at a given substrate temperature under
-      the current effective environment.
+      Estimate the signed net thermal exchange at a given substrate
+      temperature under the current effective environment.
 
-      Loss model
+      Exchange model
 
       1. Radiative exchange against T_env_eff_K_
-      2. Linear conductive or parasitic loss against T_env_eff_K_
+      2. Linear conductive or parasitic exchange against T_env_eff_K_
+
+      Sign convention
+
+      - Positive return value means heat leaves the substrate.
+      - Negative return value means the environment is warming the substrate.
   */
   double lossPowerW(double T_K) const;
 

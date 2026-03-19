@@ -39,9 +39,9 @@ void SubstrateHeater::initialize() {
   /*
       Reset thermal state to a clean idle baseline.
 
-      The orbit-aware environment is also reset here so that standalone runs
-      or early initialization steps begin from a stable state even before the
-      first orbit update is pushed in.
+      The orbit-aware environment fields are also reset so that standalone
+      runs or early initialization steps begin from a stable baseline before
+      the first orbit update is pushed in.
   */
   T_sub_K_       = kIdleTempK;
   T_target_K_    = kIdleTempK;
@@ -92,7 +92,7 @@ void SubstrateHeater::setOrbitThermalEnvironment(double solar_scale) {
       Update the orbit-aware effective environment used by both the control
       law and the thermal state update.
   */
-  T_env_eff_K_ = computeEffectiveEnvTempK();
+  T_env_eff_K_   = computeEffectiveEnvTempK();
   P_solar_abs_W_ = computeSolarAbsorbedPowerW();
 
   /*
@@ -216,19 +216,22 @@ double SubstrateHeater::fluxToTargetTemp(double raw_job_flux_cm2s) const {
 
 double SubstrateHeater::lossPowerW(double T_K) const {
   /*
-      Compute total loss against the current orbit-aware effective
-      environment.
+      Compute the signed net thermal exchange against the current orbit-aware
+      effective environment.
 
-      The loss model contains two terms:
+      Exchange model
 
       1. Radiative exchange
-      2. Linear conductive or parasitic loss
+      2. Linear conductive or parasitic exchange
 
-      The max-with-zero structure keeps the model simple and prevents the loss
-      term from acting like an active heater when the substrate is colder than
-      the environment. External warming from the environment is instead
-      represented through the environment temperature itself and the explicit
-      absorbed solar term.
+      Sign convention
+
+      - Positive result means net heat leaves the substrate.
+      - Negative result means the environment is passively warming the
+        substrate.
+
+      This makes the substrate thermal node symmetric with respect to the
+      environment, matching the intended orbit-aware behavior.
   */
   const double T_env = T_env_eff_K_;
 
@@ -238,7 +241,7 @@ double SubstrateHeater::lossPowerW(double T_K) const {
 
   const double P_cond = h_cond_WK_ * (T_K - T_env);
 
-  return std::max(0.0, P_rad) + std::max(0.0, P_cond);
+  return P_rad + P_cond;
 }
 
 double SubstrateHeater::computePowerRequestW() {
@@ -260,11 +263,16 @@ double SubstrateHeater::computePowerRequestW() {
       Feed-forward term
 
       Estimate how much heater power would be needed to hold the target
-      against current thermal losses under the current orbit-aware ambient
-      conditions, then subtract absorbed solar heat that is already available.
+      against the current signed environment-exchange term, then subtract
+      absorbed solar heat that is already available.
 
-      This prevents the controller from over-requesting heater power during
-      sunlit portions of the orbit.
+      Consequences
+
+      - A hotter ambient reduces heater demand.
+      - Direct absorbed sunlight reduces heater demand.
+      - If the environment would already warm the target temperature node,
+        the feed-forward term bottoms out at zero rather than requesting
+        negative heater power.
   */
   const double P_ff =
       std::max(0.0, lossPowerW(T_target_K_) - P_solar_abs_W_);
@@ -290,8 +298,8 @@ void SubstrateHeater::applyHeat(double watts, double dt_s) {
   P_delivered_W_ = std::max(0.0, watts);
 
   /*
-      Evaluate losses at the current substrate temperature against the current
-      orbit-aware effective environment.
+      Evaluate the current signed environment-exchange term at the live
+      substrate temperature.
   */
   last_P_loss_W_ = lossPowerW(T_sub_K_);
 
@@ -302,8 +310,9 @@ void SubstrateHeater::applyHeat(double watts, double dt_s) {
       - delivered heater power
       - absorbed direct solar power
 
-      Negative contribution
-      - total thermal loss
+      Signed environment exchange
+      - subtracting a positive value removes heat
+      - subtracting a negative value adds passive environmental warming
   */
   const double net_W = P_delivered_W_ + P_solar_abs_W_ - last_P_loss_W_;
 
@@ -434,11 +443,16 @@ void SubstrateHeater::tick(const TickContext& ctx) {
   /*
       Only the leader writes CSV rows.
 
-      Important logging note
+      Important logging notes
 
-      T_env_eff_K is the effective ambient or environment temperature the
-      wafer is experiencing during this tick under the orbit-aware solar-scale
-      thermal model.
+      1. T_env_eff_K is the effective ambient or environment temperature the
+         wafer is experiencing during this tick under the orbit-aware
+         solar-scale thermal model.
+
+      2. P_loss_W retains its existing field name for compatibility, but it
+         now stores the signed environment-exchange term:
+         positive means net heat left the substrate
+         negative means passive warming from the environment
   */
   if (is_leader_) {
     Logger::instance().log_wide(
