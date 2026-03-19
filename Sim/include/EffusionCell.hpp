@@ -5,25 +5,48 @@
 #include "Subsystem.hpp"
 #include "TickContext.hpp"
 
-class WakeChamber; // forward declaration
+class WakeChamber;
 
+// -----------------------------------------------------------------------------
+// EffusionCell
+//
+// Lightweight orbit-aware source thermal model used by the scheduler and heater
+// control logic.
+//
+// Design goals:
+// 1. Preserve the current scheduler semantics and readiness logic.
+// 2. Keep the source model simple and publication-defensible.
+// 3. Add orbit-aware environmental forcing without introducing a large
+//    spacecraft thermal model.
+// 4. Expose effective ambient temperature, solar scale, and absorbed solar
+//    heating so main.cpp can log the source thermal environment explicitly.
+//
+// Thermal model summary:
+//
+//   T_env_eff = T_night + (T_day - T_night) * solar_scale
+//   P_solar_abs = alpha_abs * A_proj * G_solar * solar_scale
+//
+//   P_loss = h * (T_cell - T_env_eff)
+//   P_net  = P_heater + P_solar_abs - P_loss
+//
+//   dT/dt = P_net / C
+//
+// Notes:
+// - The loss model remains first-order linear RC style.
+// - Negative P_loss is allowed when T_cell < T_env_eff so the environment can
+//   passively warm the source.
+// - The scheduler-facing thermal band interface is unchanged.
+// -----------------------------------------------------------------------------
 class EffusionCell : public Subsystem {
 public:
     /*
-        Thermal-band classification for scheduler/control logic.
+        Thermal-band classification for scheduler and control logic.
 
-        Why this exists:
-        The old interface only exposed a one-sided readiness check
-        ("hot enough"), which was sufficient for warmup gating but not for the
-        new scheduler semantics. The scheduler now needs to distinguish:
-
-        - BelowTargetBand  -> warmup still needed
-        - WithinTargetBand -> thermally ready for live deposition
-        - AboveTargetBand  -> cooldown still needed
-        - Idle             -> no meaningful deposition/heating target exists
-
-        main.cpp should use this to decide whether the controlling job is in
-        warmup, cooldown, generic thermal prep, or live deposition.
+        State meanings:
+        - Idle: no meaningful source target exists
+        - BelowTargetBand: warmup still needed
+        - WithinTargetBand: thermally ready for execution
+        - AboveTargetBand: cooldown still needed
     */
     enum class ThermalBandState {
         Idle = 0,
@@ -38,46 +61,66 @@ public:
     void tick(const TickContext& ctx) override;
     void shutdown() override;
 
-    // Called by HeaterBank to apply heater power in watts for dt seconds.
+    // Called by HeaterBank to apply source heater power in watts for dt seconds.
     void applyHeat(double watts, double dt);
 
     // Optional hookup to push parameters into the wake SPARTA instance.
     void setSpartaCtrl(WakeChamber* wc) { sparta_ctrl_ = wc; }
 
-    // Set the desired effusion-cell target temperature in kelvin.
-    // main.cpp uses this to express the process target for the current tick.
+    // Set the desired source target temperature in kelvin.
     void setTargetTempK(double T_K);
+
+    /*
+        Update the orbit-aware thermal environment seen by the source.
+
+        solar_scale is expected to be in the range [0, 1] where:
+        - 0 means eclipse / night-side environment
+        - 1 means fully sunlit environment
+
+        This updates:
+        - ambient_temp_K_
+        - solar_scale_
+        - solar_absorbed_power_W_
+    */
+    void setOrbitThermalEnvironment(double solar_scale);
 
     // Read-only accessors used by main.cpp and diagnostics.
     double getTemperatureK() const { return temperature_; }
     double getTargetTempK() const { return target_temp_K_; }
 
-    // Backward-compatible accessor in case existing code still uses this name.
+    // Backward-compatible accessor.
     double getTemperature() const { return getTemperatureK(); }
 
     // Actual heater power applied during the most recent applyHeat() call.
     double getLastHeatInputW() const { return last_heat_W_; }
 
     /*
-        Returns true when the current target is a real heating target rather
-        than the idle baseline.
+        Effective ambient or environment temperature currently affecting the
+        source due to the orbit-aware solar-scale model.
 
-        This prevents 300 K idle states from being treated as
-        deposition-readiness targets.
+        In logging, this is the source-side effective ambient temperature seen
+        by the source at the current tick.
+    */
+    double getAmbientTempK() const { return ambient_temp_K_; }
+
+    // Current orbit-driven solar scale used by the source thermal model.
+    double getSolarScale() const { return solar_scale_; }
+
+    // Current absorbed solar heating power used by the source thermal model.
+    double getSolarAbsorbedPowerW() const { return solar_absorbed_power_W_; }
+
+    /*
+        Returns true when the current target is a real process target rather
+        than the idle baseline.
     */
     bool hasMeaningfulTarget() const;
 
     /*
         Backward-compatible one-sided readiness check.
 
-        Existing behavior is preserved:
+        Behavior:
         - If the target is idle or not meaningful, returns true.
         - Otherwise requires temperature >= readiness_fraction * target.
-
-        Important:
-        This function does NOT distinguish "too hot" from "ready".
-        Scheduler code that needs warmup vs cooldown semantics should use
-        getThermalBandState() instead.
     */
     bool isAtTarget(double readiness_fraction = 0.90) const;
 
@@ -85,23 +128,18 @@ public:
         Scheduler-grade thermal-band query.
 
         lower_readiness_fraction:
-          Minimum acceptable fraction of target temperature to be considered in-band.
+          Minimum acceptable fraction of target temperature to be considered
+          in-band.
 
         upper_readiness_fraction:
-          Maximum acceptable fraction of target temperature to be considered in-band.
-          Values above this are treated as overheated for the current target and
-          therefore imply cooldown rather than readiness.
+          Maximum acceptable fraction of target temperature to be considered
+          in-band.
 
-        Default semantics:
-        - Idle target       -> Idle
-        - T < lower*target  -> BelowTargetBand
-        - lower*target <= T <= upper*target -> WithinTargetBand
-        - T > upper*target  -> AboveTargetBand
-
-        Notes:
-        - Fractions are clamped to sensible ranges internally.
-        - If upper_readiness_fraction < lower_readiness_fraction, it will be
-          promoted to the lower value to avoid invalid bands.
+        Semantics:
+        - Idle target -> Idle
+        - T < lower * target -> BelowTargetBand
+        - lower * target <= T <= upper * target -> WithinTargetBand
+        - T > upper * target -> AboveTargetBand
     */
     ThermalBandState getThermalBandState(double lower_readiness_fraction = 0.90,
                                          double upper_readiness_fraction = 1.05) const;
@@ -113,11 +151,10 @@ public:
     bool isAboveTargetBand(double upper_readiness_fraction = 1.05) const;
 
 private:
-    // Actual effusion-cell temperature in kelvin.
+    // Actual source temperature in kelvin.
     double temperature_{300.0};
 
-    // Desired target temperature in kelvin.
-    // This is provided by main.cpp from process control logic.
+    // Desired process target temperature in kelvin.
     double target_temp_K_{300.0};
 
     // Last-applied heater power in watts from HeaterBank.
@@ -130,9 +167,38 @@ private:
     double last_p_loss_W_{0.0};
     double last_net_W_{0.0};
 
-    // Thermal model constants.
+    /*
+        Orbit-aware environmental state.
+
+        ambient_temp_K_:
+          Effective environment temperature currently affecting the source.
+
+        solar_scale_:
+          Orbit-driven illumination factor used this tick.
+
+        solar_absorbed_power_W_:
+          Absorbed solar heating power currently acting on the source.
+    */
+    double ambient_temp_K_{300.0};
+    double solar_scale_{0.0};
+    double solar_absorbed_power_W_{0.0};
+
+    // Core first-order source thermal model constants.
     double c_j_per_k_{800.0};
     double h_w_per_k_{0.8};
+
+    /*
+        Simple orbit-aware environmental model constants.
+
+        These are intentionally lightweight and tunable. They represent an
+        effective thermal environment seen by the source rather than a full
+        spacecraft thermal model.
+    */
+    double night_ambient_temp_K_{285.0};
+    double day_ambient_temp_K_{325.0};
+    double solar_absorptivity_{0.35};
+    double projected_area_m2_{0.010};
+    double solar_constant_W_m2_{1361.0};
 
     // Push-to-SPARTA cadence controls.
     int    push_every_ticks_{10};
@@ -141,7 +207,7 @@ private:
 
     WakeChamber* sparta_ctrl_{nullptr};
 
-    // Optional diagnostic path retained for compatibility with the existing class.
+    // Optional diagnostic path retained for compatibility.
     std::filesystem::path diag_path_ =
         std::filesystem::path("data") / "tmp" / "effusion_diag.csv";
 };

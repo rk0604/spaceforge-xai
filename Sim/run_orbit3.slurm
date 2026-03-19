@@ -2,13 +2,13 @@
 #SBATCH --job-name=SF_Auto_Queue
 #SBATCH --output=logs/sf_queue_%j.out
 #SBATCH --error=logs/sf_queue_%j.err
-#SBATCH --time=05:00:00  
+#SBATCH --time=10:00:00  
 #SBATCH --mem=32g
 #SBATCH --ntasks=8
 #SBATCH --cpus-per-task=1
 
 # Go to the root directory
-cd /common/home/rvk22/spaceforge-xai-run3
+cd /common/home/rvk22/spaceforge-xai-run5
 
 for FILE_PATH in active_jobs/*.txt; do
     
@@ -32,7 +32,7 @@ for FILE_PATH in active_jobs/*.txt; do
     GPU=OFF \
     WAKE_DECK=in.wake_harness \
     NP=8 \
-    ./run.sh --nticks 150 --couple-every 1 --sparta-block 2500 --job-file "../active_jobs/$JOB_FILE"
+    ./run.sh --nticks 1350 --couple-every 1 --sparta-block 2500 --job-file "../active_jobs/$JOB_FILE"
 
     # Go back to root for the next loop iteration
     cd ..

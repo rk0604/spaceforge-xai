@@ -1116,8 +1116,15 @@ int main(int argc, char** argv) {
 
             "effusion_temp_K",
             "effusion_target_K",
+            "effusion_T_env_eff_K",
+            "effusion_solar_scale",
+            "effusion_P_solar_abs_W",
+
             "substrate_temp_K",
             "substrate_target_K",
+            "substrate_T_env_eff_K",
+            "substrate_solar_scale",
+            "substrate_P_solar_abs_W",
 
             "effusion_ready",
             "wafer_ready",
@@ -1145,8 +1152,15 @@ int main(int argc, char** argv) {
 
             effCell.getTemperatureK(),
             target_T_K_snapshot,
+            effCell.getAmbientTempK(),
+            effCell.getSolarScale(),
+            effCell.getSolarAbsorbedPowerW(),
+
             substrateHeater.substrateTempK(),
             scheduler_substrate_target_K_log_snapshot,
+            substrateHeater.ambientTempK(),
+            substrateHeater.solarScale(),
+            substrateHeater.solarAbsorbedPowerW(),
 
             effusion_ready_snapshot ? 1.0 : 0.0,
             wafer_ready_snapshot ? 1.0 : 0.0,
@@ -1172,40 +1186,57 @@ int main(int argc, char** argv) {
         }
       };
 
+      int fullyIdleStreak = 0;
+      const int graceTicks = 10;
+      bool dynamicStopTriggered = false;
+      int dynamicStopTick = -1;
       const int NTICKS = args.nticks;
       constexpr double PI_MAIN = 3.141592653589793;
 
       for (int i = 0; i < NTICKS; ++i) {
         const int tickIndex = i + 1;
         const double t_phys = tickIndex * dt;
+
         log_rank_progress(tickIndex, "loop-top");
 
-        // ---------------- leader: orbit, job schedule, per-tick harness -----
+        double thermalSolarScale = 1.0;
+
+        // ---------------- leader: orbit update ----------------
         if (isLeader) {
-          int logJobIndexAfterAccounting = controllingJobIndex;
-          // ---- 0) Orbit update + logging ----
           orbit.step();
           const OrbitState &orb = orbit.state();
 
           double t_min     = orb.t_orbit_s / 60.0;
           double theta_deg = orb.theta_rad * (180.0 / PI_MAIN);
 
-          // Update global sunlight scale for SolarArray.
+          // Update global sunlight scale for SolarArray and thermal models.
           g_orbit_solar_scale = orb.solar_scale;
+          thermalSolarScale   = g_orbit_solar_scale;
 
-          // Log via the same Logger as other subsystems: creates Orbit.csv
           Logger::instance().log_wide(
               "Orbit",
               tickIndex,
               t_phys,
               {"t_orbit_s","t_orbit_min","theta_rad","theta_deg","in_sun","solar_scale"},
               {orb.t_orbit_s, t_min, orb.theta_rad, theta_deg,
-               orb.in_sun ? 1.0 : 0.0, orb.solar_scale}
+              orb.in_sun ? 1.0 : 0.0, orb.solar_scale}
           );
+        }
 
-// deleted stuff here!!!
+          // Broadcast the current orbit-aware solar scale so every rank uses the
+          // same thermal environment this tick.
+          MPI_Bcast(&thermalSolarScale, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+          g_orbit_solar_scale = thermalSolarScale;
 
-                    // ---- 1) Release newly eligible jobs into the queue ----
+          // Push the orbit-aware thermal environment into the thermal subsystems
+          // before scheduler demand is computed.
+          substrateHeater.setOrbitThermalEnvironment(thermalSolarScale);
+          effCell.setOrbitThermalEnvironment(thermalSolarScale);
+
+        // ---------------- leader: orbit, job schedule, per-tick harness -----
+        if (isLeader) {
+          int logJobIndexAfterAccounting = controllingJobIndex;
+          // ---- 1) Release newly eligible jobs into the queue ----
           for (std::size_t idx = 0; idx < runtimeJobs.size(); ++idx) {
             RuntimeJobState& rj = runtimeJobs[idx];
 
@@ -1467,7 +1498,10 @@ int main(int argc, char** argv) {
               done_active = 1.0;
               scheduler_state_code_log = jobRunStateCode(JobRunState::Done);
             } else {
-                            const double EFF_T_ENV_K       = DEFAULT_IDLE_EFFUSION_TARGET_K;
+              // const double EFF_T_ENV_K       = DEFAULT_IDLE_EFFUSION_TARGET_K;
+              // const double EFF_H_W_PER_K     = 0.8;
+              // const double EFF_KP_W_PER_K    = 8.0;
+              // const double EFF_DEFAULT_MAX_W = 2000.0;
               const double EFF_H_W_PER_K     = 0.8;
               const double EFF_KP_W_PER_K    = 8.0;
               const double EFF_DEFAULT_MAX_W = 2000.0;
@@ -1496,8 +1530,13 @@ int main(int argc, char** argv) {
                   target_T_K <= (DEFAULT_IDLE_EFFUSION_TARGET_K + 10.0)) {
                 effusionDemand_W = 0.0;
               } else {
+                const double eff_env_K = effCell.getAmbientTempK();
+                const double eff_solar_abs_W = effCell.getSolarAbsorbedPowerW();
+
                 const double p_ff_W =
-                    EFF_H_W_PER_K * std::max(0.0, target_T_K - EFF_T_ENV_K);
+                    std::max(0.0,
+                             EFF_H_W_PER_K * std::max(0.0, target_T_K - eff_env_K)
+                             - eff_solar_abs_W);
 
                 const double p_p_W =
                     (eff_temp_error_K > 0.0)
@@ -1902,10 +1941,14 @@ int main(int argc, char** argv) {
               {
                 const double C_J_PER_K = 800.0;
                 const double H_W_PER_K = 0.8;
-                const double T_ENV_K   = 300.0;
+                const double T_ENV_K   = effCell.getAmbientTempK();
+                const double P_SOLAR_W = effCell.getSolarAbsorbedPowerW();
 
-                double net_W = P_actual - H_W_PER_K * (temp_proxy_K - T_ENV_K);
-                double dT    = (net_W / C_J_PER_K) * dt;
+                double net_W =
+                    P_actual + P_SOLAR_W
+                    - H_W_PER_K * std::max(0.0, temp_proxy_K - T_ENV_K);
+
+                double dT = (net_W / C_J_PER_K) * dt;
                 temp_proxy_K += dT;
 
                 if (!std::isfinite(temp_proxy_K)) temp_proxy_K = T_ENV_K;
@@ -2192,8 +2235,64 @@ int main(int argc, char** argv) {
               mbe_flag,
               effusion_ready,
               wafer_ready);
+          
+          // ---- 8) Dynamic stop detection: require true full-idle for 10 consecutive ticks
+          bool anyUnfinishedJobsRemain = false;
+          for (const auto& rj : runtimeJobs) {
+            if (!rj.done && !rj.aborted) {
+              anyUnfinishedJobsRemain = true;
+              break;
+            }
+          }
+
+          const bool noController        = (controllingJobIndex == -1);
+          const bool noEffusionDemand    = (effusionDemand_W <= 1e-9);
+          const bool noSubstrateDemand   = (substrateDemand_W <= 1e-9);
+          const bool beamOff             = (mbe_flag <= 0.5);
+          const bool workloadFullyIdle   =
+              noController &&
+              !anyUnfinishedJobsRemain &&
+              noEffusionDemand &&
+              noSubstrateDemand &&
+              beamOff;
+
+          if (workloadFullyIdle) {
+            fullyIdleStreak += 1;
+          } else {
+            fullyIdleStreak = 0;
+          }
+
+          if (!dynamicStopTriggered && fullyIdleStreak >= graceTicks) {
+            dynamicStopTriggered = true;
+            dynamicStopTick = tickIndex;
+
+            std::ostringstream oss;
+            oss << "[sched] dynamic stop triggered at tick=" << tickIndex
+                << " after " << graceTicks
+                << " consecutive fully-idle ticks.\n";
+            log_msg(oss.str());
+          }
 
         } // end if (isLeader)
+
+        // rank 0 needs all other ranks to catch up in case of dynamic end
+        // makes sure all recieve the stop condition
+        int stopNow = 0;
+        if (isLeader && dynamicStopTriggered) {
+          stopNow = 1;
+        }
+
+        MPI_Bcast(&stopNow, 1, MPI_INT, 0, MPI_COMM_WORLD);
+
+        if (stopNow) {
+          if (isLeader) {
+            std::ostringstream oss;
+            oss << "[info] Breaking main wake loop at tick=" << dynamicStopTick
+                << " due to dynamic stop.\n";
+            log_msg(oss.str());
+          }
+          break;
+        }
 
         // ---------------- SPARTA coupling block ----------------
         if (i % args.coupleEvery == 0) {
