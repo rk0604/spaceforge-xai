@@ -1,0 +1,10 @@
+# Hotter orbital-leaning higher-rate variant, still within defensible GaAs practice
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 180 0.0e0 1900 0 0 SOURCE_DEGAS 300.0
+180 205 0.0e0 0 0 1 OXIDE_DESORB 893.0
+205 220 0.0e0 0 0 1 SOAK 873.0
+220 235 8.0e12 1680 1 1 NUCLEATE 813.0
+235 325 1.60e13 1800 1 1 GROWTH 873.0
+325 350 0.0e0 0 0 1 ANNEAL 853.0
+350 415 0.0e0 0 0 1 COOLDOWN 653.0
+415 455 0.0e0 0 0 0 IDLE 300.0

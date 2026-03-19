@@ -1,0 +1,14 @@
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+# ticks are MINUTES
+# substrate_target_K is Kelvin
+# heater_W is effusion heater cap in watts
+# wafer_flux_cm2s is requested growth flux when mbe_on=1
+
+0 180 0.0e0 1900 0 0 SOURCE_DEGAS 300.0
+180 205 0.0e0 0 0 1 OXIDE_DESORB 893.0
+205 220 0.0e0 0 0 1 SOAK 873.0
+220 235 9.0e12 1750 1 1 NUCLEATE 813.0
+235 365 2.8e13 2300 1 1 GROWTH 873.0
+365 377 0.0e0 0 0 1 ANNEAL 873.0
+377 415 0.0e0 0 0 1 COOLDOWN 693.0
+415 435 0.0e0 0 0 0 IDLE 300.0

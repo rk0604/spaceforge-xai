@@ -1,0 +1,11 @@
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+# Short normal completion test for auto-switch behavior
+
+0    18    0.0e0     1600   0   0   SOURCE_DEGAS   300.0
+18   30    0.0e0     0      0   1   OXIDE_DESORB   850.0
+30   38    0.0e0     0      0   1   SOAK           830.0
+38   46    5.5e12    1400   1   1   NUCLEATE       780.0
+46   78    1.2e13    1700   1   1   GROWTH         825.0
+78   86    0.0e0     0      0   1   ANNEAL         815.0
+86   102   0.0e0     0      0   1   COOLDOWN       620.0
+102  112   0.0e0     0      0   0   IDLE           300.0

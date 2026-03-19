@@ -1,0 +1,12 @@
+# Queueing and cooldown stress variant with explicit front-end idle and staged cooldown
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 20 0.0e0 0 0 0 IDLE 300.0
+20 200 0.0e0 1825 0 0 SOURCE_DEGAS 300.0
+200 225 0.0e0 0 0 1 OXIDE_DESORB 893.0
+225 240 0.0e0 0 0 1 SOAK 863.0
+240 255 6.0e12 1550 1 1 NUCLEATE 803.0
+255 375 1.15e13 1680 1 1 GROWTH 853.0
+375 395 0.0e0 0 0 1 ANNEAL 843.0
+395 445 0.0e0 0 0 1 COOLDOWN 673.0
+445 495 0.0e0 0 0 1 COOLDOWN 573.0
+495 545 0.0e0 0 0 0 IDLE 300.0

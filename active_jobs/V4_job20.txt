@@ -1,0 +1,11 @@
+# Conservative mixed-reference variant with longer soak and gentle ramp-down
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 180 0.0e0 1800 0 0 SOURCE_DEGAS 300.0
+180 205 0.0e0 0 0 1 OXIDE_DESORB 893.0
+205 225 0.0e0 0 0 1 SOAK 863.0
+225 245 5.8e12 1525 1 1 NUCLEATE 793.0
+245 395 1.10e13 1660 1 1 GROWTH 853.0
+395 410 0.0e0 0 0 1 ANNEAL 833.0
+410 455 0.0e0 0 0 1 COOLDOWN 653.0
+455 510 0.0e0 0 0 1 COOLDOWN 573.0
+510 555 0.0e0 0 0 0 IDLE 300.0

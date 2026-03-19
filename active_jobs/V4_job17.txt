@@ -1,0 +1,11 @@
+# Two-step live deposition variant with cooler initial growth then hotter finish
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 180 0.0e0 1850 0 0 SOURCE_DEGAS 300.0
+180 205 0.0e0 0 0 1 OXIDE_DESORB 893.0
+205 220 0.0e0 0 0 1 SOAK 853.0
+220 235 6.5e12 1580 1 1 NUCLEATE 793.0
+235 305 1.00e13 1650 1 1 GROWTH 823.0
+305 405 1.25e13 1725 1 1 GROWTH 863.0
+405 425 0.0e0 0 0 1 ANNEAL 843.0
+425 485 0.0e0 0 0 1 COOLDOWN 623.0
+485 530 0.0e0 0 0 0 IDLE 300.0

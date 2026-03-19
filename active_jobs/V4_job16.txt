@@ -1,0 +1,10 @@
+# Lower-temperature GaAs growth variant within literature-supported window
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 180 0.0e0 1800 0 0 SOURCE_DEGAS 300.0
+180 205 0.0e0 0 0 1 OXIDE_DESORB 893.0
+205 220 0.0e0 0 0 1 SOAK 833.0
+220 240 5.5e12 1500 1 1 NUCLEATE 773.0
+240 420 9.0e12 1600 1 1 GROWTH 823.0
+420 440 0.0e0 0 0 1 ANNEAL 803.0
+440 505 0.0e0 0 0 1 COOLDOWN 573.0
+505 545 0.0e0 0 0 0 IDLE 300.0

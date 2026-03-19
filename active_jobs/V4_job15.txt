@@ -1,0 +1,10 @@
+# Terrestrial-reference homoepitaxy variant with 580 C main growth
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0 180 0.0e0 1800 0 0 SOURCE_DEGAS 300.0
+180 200 0.0e0 0 0 1 OXIDE_DESORB 893.0
+200 210 0.0e0 0 0 1 SOAK 873.0
+210 225 6.0e12 1550 1 1 NUCLEATE 803.0
+225 375 1.00e13 1650 1 1 GROWTH 853.0
+375 390 0.0e0 0 0 1 ANNEAL 843.0
+390 450 0.0e0 0 0 1 COOLDOWN 603.0
+450 495 0.0e0 0 0 0 IDLE 300.0
