@@ -14,7 +14,8 @@ using LogFn = std::function<void(const std::string&)>;
 // CLI arguments / configuration
 // -----------------------------------------------------------------------------
 // These values control simulator startup and top-level execution behavior.
-// They are intentionally lightweight so parsing can stay dependency-free.
+// The runtime configuration defaults are the Config 1 values from row 10 of the
+// analytics CSV. Slurm can override every experiment parameter through CLI args.
 struct Args {
   std::string mode     = "dual";
   std::string wakeDeck = "in.wake_harness";
@@ -28,6 +29,37 @@ struct Args {
 
   int    nticks = 500;
   double dt     = 60.0;
+
+  // Runtime dataset configuration.
+  // These are intentionally initialized to Config 1 row 10 so a missing CLI
+  // value falls back to the same baseline used in the tracker.
+  std::string configName = "Config 1";
+
+  double batteryCapacityWh     = 6000.0;
+  double batteryStartChargeWh  = 3000.0;
+  double batteryMaxDischargeW  = 4000.0;
+  double batteryMaxChargeW     = 3500.0;
+
+  double effusionHWK           = 0.8;
+  double effusionCJ            = 800.0;
+  double effusionNightAmbientK = 250.0;
+  double effusionDayAmbientK   = 325.0;
+
+  double solarBaseInputW       = 30000.0;
+  double solarEfficiency       = 0.25;
+
+  double substrateCJ           = 1500.0;
+  double substrateEps          = 0.8;
+  int    substrateFailLimitTicks = 20;
+  double substrateReadyBandK   = 5.0;
+  double substrateMaxPowerDrawW = 3000.0;
+
+  int    effusionUnderfluxLimitTicks  = 20;
+  int    effusionUndertempLimitTicks  = 20;
+  double effusionMinFluxFraction      = 0.9;
+  double effusionTempToleranceFraction = 0.85;
+
+  double heaterBankMaxDrawW    = 5000.0;
 };
 
 // -----------------------------------------------------------------------------

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+#include <cmath>
 #include <filesystem>
 
 #include "Subsystem.hpp"
@@ -7,46 +9,61 @@
 
 class WakeChamber;
 
-// -----------------------------------------------------------------------------
-// EffusionCell
-//
-// Lightweight orbit-aware source thermal model used by the scheduler and heater
-// control logic.
-//
-// Design goals:
-// 1. Preserve the current scheduler semantics and readiness logic.
-// 2. Keep the source model simple and publication-defensible.
-// 3. Add orbit-aware environmental forcing without introducing a large
-//    spacecraft thermal model.
-// 4. Expose effective ambient temperature, solar scale, and absorbed solar
-//    heating so main.cpp can log the source thermal environment explicitly.
-//
-// Thermal model summary:
-//
-//   T_env_eff = T_night + (T_day - T_night) * solar_scale
-//   P_solar_abs = alpha_abs * A_proj * G_solar * solar_scale
-//
-//   P_loss = h * (T_cell - T_env_eff)
-//   P_net  = P_heater + P_solar_abs - P_loss
-//
-//   dT/dt = P_net / C
-//
-// Notes:
-// - The loss model remains first-order linear RC style.
-// - Negative P_loss is allowed when T_cell < T_env_eff so the environment can
-//   passively warm the source.
-// - The scheduler-facing thermal band interface is unchanged.
-// -----------------------------------------------------------------------------
+/*
+    EffusionCell
+
+    Lightweight orbit-aware source thermal model used by the scheduler and
+    heater control logic.
+
+    Design goals
+
+    1. Preserve scheduler semantics and readiness logic.
+    2. Keep the source model simple and publication defensible.
+    3. Support runtime configuration from the analytics tracker.
+    4. Expose effective ambient temperature, solar scale, and absorbed solar
+       heating so main.cpp can log the source thermal environment explicitly.
+
+    Thermal model summary
+
+        T_env_eff = T_night + (T_day - T_night) * solar_scale
+
+        P_solar_abs = alpha_abs * A_proj * G_solar * solar_scale
+
+        P_loss = h * (T_cell - T_env_eff)
+
+        P_net = P_heater + P_solar_abs - P_loss
+
+        dT / dt = P_net / C
+
+    Notes
+
+    The loss model remains first order and linear.
+
+    Negative P_loss is allowed when T_cell is below T_env_eff, which means the
+    environment can passively warm the source.
+
+    Runtime constants such as C_J, h_WK, and day or night ambient temperature
+    should be passed through command line arguments rather than edited inside
+    this header for each config.
+*/
 class EffusionCell : public Subsystem {
 public:
     /*
         Thermal-band classification for scheduler and control logic.
 
-        State meanings:
-        - Idle: no meaningful source target exists
-        - BelowTargetBand: warmup still needed
-        - WithinTargetBand: thermally ready for execution
-        - AboveTargetBand: cooldown still needed
+        State meanings
+
+        Idle
+            No meaningful source target exists.
+
+        BelowTargetBand
+            Warmup is still needed.
+
+        WithinTargetBand
+            Source is thermally ready for execution.
+
+        AboveTargetBand
+            Cooldown is still needed.
     */
     enum class ThermalBandState {
         Idle = 0,
@@ -71,16 +88,72 @@ public:
     void setTargetTempK(double T_K);
 
     /*
+        Configure the core source thermal constants.
+
+        c_j_per_k
+            Lumped thermal capacitance in joules per kelvin.
+
+        h_w_per_k
+            Lumped linear heat loss coefficient in watts per kelvin.
+
+        This method is intentionally lightweight. Invalid values are ignored so
+        a malformed command line argument cannot silently destroy the thermal
+        model state.
+    */
+    void setThermalConstants(double c_j_per_k, double h_w_per_k) {
+        if (std::isfinite(c_j_per_k) && c_j_per_k > 0.0) {
+            c_j_per_k_ = c_j_per_k;
+        }
+
+        if (std::isfinite(h_w_per_k) && h_w_per_k > 0.0) {
+            h_w_per_k_ = h_w_per_k;
+        }
+    }
+
+    /*
+        Configure the orbit-aware effective ambient temperature limits.
+
+        night_ambient_temp_K
+            Effective source environment during eclipse.
+
+        day_ambient_temp_K
+            Effective source environment during full sunlight.
+
+        After updating the constants, the current orbit thermal environment is
+        recomputed using the already stored solar scale.
+    */
+    void setEnvironmentConstants(double night_ambient_temp_K,
+                                 double day_ambient_temp_K) {
+        if (std::isfinite(night_ambient_temp_K) && night_ambient_temp_K > 0.0) {
+            night_ambient_temp_K_ = night_ambient_temp_K;
+        }
+
+        if (std::isfinite(day_ambient_temp_K) && day_ambient_temp_K > 0.0) {
+            day_ambient_temp_K_ = day_ambient_temp_K;
+        }
+
+        setOrbitThermalEnvironment(solar_scale_);
+    }
+
+    /*
         Update the orbit-aware thermal environment seen by the source.
 
-        solar_scale is expected to be in the range [0, 1] where:
-        - 0 means eclipse / night-side environment
-        - 1 means fully sunlit environment
+        solar_scale is expected to be in the range from 0 to 1.
 
-        This updates:
-        - ambient_temp_K_
-        - solar_scale_
-        - solar_absorbed_power_W_
+        0 means eclipse or night-side environment.
+
+        1 means fully sunlit environment.
+
+        This updates three values:
+
+        ambient_temp_K_
+            Effective ambient temperature currently seen by the source.
+
+        solar_scale_
+            Clamped orbit illumination factor.
+
+        solar_absorbed_power_W_
+            Absorbed solar heating power currently added to the source node.
     */
     void setOrbitThermalEnvironment(double solar_scale);
 
@@ -91,15 +164,12 @@ public:
     // Backward-compatible accessor.
     double getTemperature() const { return getTemperatureK(); }
 
-    // Actual heater power applied during the most recent applyHeat() call.
+    // Actual heater power applied during the most recent applyHeat call.
     double getLastHeatInputW() const { return last_heat_W_; }
 
     /*
         Effective ambient or environment temperature currently affecting the
         source due to the orbit-aware solar-scale model.
-
-        In logging, this is the source-side effective ambient temperature seen
-        by the source at the current tick.
     */
     double getAmbientTempK() const { return ambient_temp_K_; }
 
@@ -108,6 +178,18 @@ public:
 
     // Current absorbed solar heating power used by the source thermal model.
     double getSolarAbsorbedPowerW() const { return solar_absorbed_power_W_; }
+
+    // Runtime-configured source thermal capacitance.
+    double getThermalCapacitanceJPerK() const { return c_j_per_k_; }
+
+    // Runtime-configured linear heat loss coefficient.
+    double getHeatLossWPerK() const { return h_w_per_k_; }
+
+    // Runtime-configured eclipse effective ambient temperature.
+    double getNightAmbientTempK() const { return night_ambient_temp_K_; }
+
+    // Runtime-configured sunlit effective ambient temperature.
+    double getDayAmbientTempK() const { return day_ambient_temp_K_; }
 
     /*
         Returns true when the current target is a real process target rather
@@ -118,36 +200,49 @@ public:
     /*
         Backward-compatible one-sided readiness check.
 
-        Behavior:
-        - If the target is idle or not meaningful, returns true.
-        - Otherwise requires temperature >= readiness_fraction * target.
+        Behavior
+
+        If the target is idle or not meaningful, this returns true.
+
+        Otherwise the source must reach at least readiness_fraction times the
+        target temperature.
     */
     bool isAtTarget(double readiness_fraction = 0.90) const;
 
     /*
         Scheduler-grade thermal-band query.
 
-        lower_readiness_fraction:
-          Minimum acceptable fraction of target temperature to be considered
-          in-band.
+        lower_readiness_fraction
+            Minimum acceptable fraction of target temperature needed to be
+            considered in-band.
 
-        upper_readiness_fraction:
-          Maximum acceptable fraction of target temperature to be considered
-          in-band.
+        upper_readiness_fraction
+            Maximum acceptable fraction of target temperature allowed before
+            the source is considered too hot.
 
-        Semantics:
-        - Idle target -> Idle
-        - T < lower * target -> BelowTargetBand
-        - lower * target <= T <= upper * target -> WithinTargetBand
-        - T > upper * target -> AboveTargetBand
+        Semantics
+
+        Idle target
+            Idle
+
+        T < lower * target
+            BelowTargetBand
+
+        lower * target <= T <= upper * target
+            WithinTargetBand
+
+        T > upper * target
+            AboveTargetBand
     */
     ThermalBandState getThermalBandState(double lower_readiness_fraction = 0.90,
                                          double upper_readiness_fraction = 1.05) const;
 
     // Convenience helpers for clearer scheduler code in main.cpp.
     bool isBelowTargetBand(double lower_readiness_fraction = 0.90) const;
+
     bool isWithinTargetBand(double lower_readiness_fraction = 0.90,
                             double upper_readiness_fraction = 1.05) const;
+
     bool isAboveTargetBand(double upper_readiness_fraction = 1.05) const;
 
 private:
@@ -170,32 +265,49 @@ private:
     /*
         Orbit-aware environmental state.
 
-        ambient_temp_K_:
-          Effective environment temperature currently affecting the source.
+        ambient_temp_K_
+            Effective environment temperature currently affecting the source.
 
-        solar_scale_:
-          Orbit-driven illumination factor used this tick.
+        solar_scale_
+            Orbit-driven illumination factor used this tick.
 
-        solar_absorbed_power_W_:
-          Absorbed solar heating power currently acting on the source.
+        solar_absorbed_power_W_
+            Absorbed solar heating power currently acting on the source.
     */
     double ambient_temp_K_{300.0};
     double solar_scale_{0.0};
     double solar_absorbed_power_W_{0.0};
 
-    // Core first-order source thermal model constants.
+    /*
+        Core first-order source thermal model constants.
+
+        Config 1 fallback values:
+            C_J = 800 J per K
+            h_WK = 0.8 W per K
+    */
     double c_j_per_k_{800.0};
     double h_w_per_k_{0.8};
 
     /*
         Simple orbit-aware environmental model constants.
 
-        These are intentionally lightweight and tunable. They represent an
-        effective thermal environment seen by the source rather than a full
-        spacecraft thermal model.
+        These represent an effective thermal environment seen by the source
+        rather than a full spacecraft thermal model.
+
+        Corrected fallback values:
+            eclipse ambient = 250 K
+            sunlit ambient = 325 K
     */
-    double night_ambient_temp_K_{285.0};
+    double night_ambient_temp_K_{250.0};
     double day_ambient_temp_K_{325.0};
+
+    /*
+        Solar absorption model constants.
+
+        These are not currently part of the analytics tracker. They remain as
+        stable simulator constants unless a later experiment requires them to be
+        promoted to runtime parameters.
+    */
     double solar_absorptivity_{0.35};
     double projected_area_m2_{0.010};
     double solar_constant_W_m2_{1361.0};

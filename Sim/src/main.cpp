@@ -175,10 +175,15 @@ static PhaseControlIntent derivePhaseIntent(double raw_job_flux_cm2s,
 // not for scheduling or deposition-duration accounting.
 // ---------------------------------------------------------------------------
 
-static int estimateWarmupTicksForFlux(double Fwafer_cm2s, double dt_s) {
-  // Same RC constants as in the temp_proxy_K update below.
-  const double C_J_PER_K = 800.0; // Was 1000.0
-  const double H_W_PER_K = 0.8;  // Was 1.5
+static int estimateWarmupTicksForFlux(
+    double Fwafer_cm2s,
+    double dt_s,
+    double effusion_c_j,
+    double effusion_h_wk
+) {
+  // Same RC constants as the runtime effusion config.
+  const double C_J_PER_K = effusion_c_j;
+  const double H_W_PER_K = effusion_h_wk;
   const double T_ENV_K   = 300.0;
 
   if (!std::isfinite(dt_s) || dt_s <= 0.0) {
@@ -240,6 +245,149 @@ static int estimateWarmupTicksForFlux(double Fwafer_cm2s, double dt_s) {
   }
 
   return ticks;
+}
+
+/*
+    Escape one value for CSV output.
+
+    This protects config names, paths, and mode strings from breaking the CSV
+    format if they contain commas, quotes, or line breaks.
+*/
+static std::string csvEscapeValue(const std::string& raw) {
+  bool needs_quotes = false;
+
+  for (char c : raw) {
+    if (c == ',' || c == '"' || c == '\n' || c == '\r') {
+      needs_quotes = true;
+      break;
+    }
+  }
+
+  if (!needs_quotes) {
+    return raw;
+  }
+
+  std::string escaped;
+  escaped.reserve(raw.size() + 2);
+
+  escaped.push_back('"');
+
+  for (char c : raw) {
+    if (c == '"') {
+      escaped.push_back('"');
+      escaped.push_back('"');
+    } else {
+      escaped.push_back(c);
+    }
+  }
+
+  escaped.push_back('"');
+
+  return escaped;
+}
+
+/*
+    Write the runtime experiment parameters used for this job.
+
+    The file is intentionally written as one wide row because it is easy to
+    merge into downstream pandas feature engineering by job folder.
+
+    The output path is relative to the current working directory.
+
+    Slurm should therefore enter the job output folder before launching the
+    simulator so each job receives its own params.csv file.
+*/
+static void writeRuntimeParamsCsv(const Args& args,
+                                  const std::string& output_path) {
+  std::ofstream out(output_path, std::ios::out | std::ios::trunc);
+
+  if (!out) {
+    std::ostringstream oss;
+    oss << "failed to open " << output_path << " for writing";
+    throw std::runtime_error(oss.str());
+  }
+
+  out.precision(17);
+
+  out
+      << "config_name,"
+      << "mode,"
+      << "nticks,"
+      << "dt_s,"
+      << "wake_deck,"
+      << "eff_deck,"
+      << "input_dir,"
+
+      << "battery_capacity_wh,"
+      << "battery_start_charge_wh,"
+      << "battery_max_discharge_w,"
+      << "battery_max_charge_w,"
+
+      << "effusion_h_wk,"
+      << "effusion_c_j,"
+      << "effusion_night_ambient_k,"
+      << "effusion_day_ambient_k,"
+
+      << "solar_base_input_w,"
+      << "solar_efficiency,"
+
+      << "substrate_c_j,"
+      << "substrate_eps,"
+      << "substrate_fail_limit_ticks,"
+      << "substrate_ready_band_k,"
+      << "substrate_max_power_draw_w,"
+
+      << "effusion_underflux_streak_cap,"
+      << "effusion_undertemp_streak_cap,"
+      << "effusion_min_flux_fraction,"
+      << "effusion_temp_tolerance_fraction,"
+
+      << "heater_bank_max_draw_w"
+      << "\n";
+
+  out
+      << csvEscapeValue(args.configName) << ","
+      << csvEscapeValue(args.mode) << ","
+      << args.nticks << ","
+      << args.dt << ","
+      << csvEscapeValue(args.wakeDeck) << ","
+      << csvEscapeValue(args.effDeck) << ","
+      << csvEscapeValue(args.inputDir) << ","
+
+      << args.batteryCapacityWh << ","
+      << args.batteryStartChargeWh << ","
+      << args.batteryMaxDischargeW << ","
+      << args.batteryMaxChargeW << ","
+
+      << args.effusionHWK << ","
+      << args.effusionCJ << ","
+      << args.effusionNightAmbientK << ","
+      << args.effusionDayAmbientK << ","
+
+      << args.solarBaseInputW << ","
+      << args.solarEfficiency << ","
+
+      << args.substrateCJ << ","
+      << args.substrateEps << ","
+      << args.substrateFailLimitTicks << ","
+      << args.substrateReadyBandK << ","
+      << args.substrateMaxPowerDrawW << ","
+
+      << args.effusionUnderfluxLimitTicks << ","
+      << args.effusionUndertempLimitTicks << ","
+      << args.effusionMinFluxFraction << ","
+      << args.effusionTempToleranceFraction << ","
+
+      << args.heaterBankMaxDrawW
+      << "\n";
+
+  out.flush();
+
+  if (!out) {
+    std::ostringstream oss;
+    oss << "failed while writing " << output_path;
+    throw std::runtime_error(oss.str());
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -524,6 +672,28 @@ int main(int argc, char** argv) {
           << " coupleEvery=" << args.coupleEvery
           << " spartaBlock=" << args.spartaBlock << "\n";
 
+      oss << "[info] Runtime config: configName=" << args.configName << "\n"
+          << "  batteryCapacityWh=" << args.batteryCapacityWh << "\n"
+          << "  batteryStartChargeWh=" << args.batteryStartChargeWh << "\n"
+          << "  batteryMaxDischargeW=" << args.batteryMaxDischargeW << "\n"
+          << "  batteryMaxChargeW=" << args.batteryMaxChargeW << "\n"
+          << "  effusionHWK=" << args.effusionHWK << "\n"
+          << "  effusionCJ=" << args.effusionCJ << "\n"
+          << "  effusionNightAmbientK=" << args.effusionNightAmbientK << "\n"
+          << "  effusionDayAmbientK=" << args.effusionDayAmbientK << "\n"
+          << "  solarBaseInputW=" << args.solarBaseInputW << "\n"
+          << "  solarEfficiency=" << args.solarEfficiency << "\n"
+          << "  substrateCJ=" << args.substrateCJ << "\n"
+          << "  substrateEps=" << args.substrateEps << "\n"
+          << "  substrateFailLimitTicks=" << args.substrateFailLimitTicks << "\n"
+          << "  substrateReadyBandK=" << args.substrateReadyBandK << "\n"
+          << "  substrateMaxPowerDrawW=" << args.substrateMaxPowerDrawW << "\n"
+          << "  effusionUnderfluxLimitTicks=" << args.effusionUnderfluxLimitTicks << "\n"
+          << "  effusionUndertempLimitTicks=" << args.effusionUndertempLimitTicks << "\n"
+          << "  effusionMinFluxFraction=" << args.effusionMinFluxFraction << "\n"
+          << "  effusionTempToleranceFraction=" << args.effusionTempToleranceFraction << "\n"
+          << "  heaterBankMaxDrawW=" << args.heaterBankMaxDrawW << "\n";
+
       const char* env_run_id        = std::getenv("RUN_ID");
       const char* env_enable_sparta = std::getenv("ENABLE_SPARTA");
       const char* env_mode          = std::getenv("MODE");
@@ -535,7 +705,12 @@ int main(int argc, char** argv) {
       oss << "[info] Env: INPUT_SUBDIR="  << (env_input_subdir  ? env_input_subdir  : "<unset>") << "\n";
 
       log_msg(oss.str());
+
+      writeRuntimeParamsCsv(args, "params.csv");
+      log_msg("[info] Wrote runtime parameter snapshot to params.csv\n");
     }
+
+
 
 // --------------------------------------------------------------------
     // Load jobs.txt (only rank 0 actually uses it; others just follow MPI)
@@ -543,26 +718,38 @@ int main(int argc, char** argv) {
     std::vector<Job> jobs;
     if (args.mode == "wake" || args.mode == "dual" || args.mode == "legacy") {
       if (rank == 0) {
-        // 1. Look for the --job-file argument passed from the bash script
-        std::string jobFileName = "V4_job1.txt"; // Fallback default
+        // 1. Look for the --job-file argument passed from the bash script.
+        std::string jobFileName = "V4_job1.txt";
+
         for (int i = 1; i < argc; ++i) {
-            if (std::string(argv[i]) == "--job-file" && i + 1 < argc) {
-                jobFileName = argv[i + 1];
-                break;
-            }
+          if (std::string(argv[i]) == "--job-file" && i + 1 < argc) {
+            jobFileName = argv[i + 1];
+            break;
+          }
         }
 
-        // 2. Combine the input directory and the target filename
-        const std::string jobsPath = args.inputDir + "/" + jobFileName;
+        // 2. Resolve the job file path.
+        //
+        // If --job-file is absolute, use it exactly.
+        // If --job-file is relative, resolve it under args.inputDir.
+        std::string jobsPath;
+
+        if (!jobFileName.empty() && jobFileName.front() == '/') {
+          jobsPath = jobFileName;
+        } else {
+          jobsPath = args.inputDir + "/" + jobFileName;
+        }
+
         std::ifstream jf(jobsPath);
         if (!jf) {
           std::ostringstream oss;
-          oss << "[info] No jobs.txt found at " << jobsPath
-              << " — running with default heater/flux.\n";
+          oss << "[fatal] Could not open job file at " << jobsPath << "\n";
           log_msg(oss.str());
+          throw std::runtime_error("failed to open job file: " + jobsPath);
         } else {
           std::string line;
           int lineno = 0;
+
           while (std::getline(jf, line)) {
             ++lineno;
             if (line.empty()) continue;
@@ -570,6 +757,7 @@ int main(int argc, char** argv) {
 
             Job j{};
             std::string parseErr;
+
             if (!parseJobLine(line, j, parseErr)) {
               std::ostringstream oss;
               oss << "[warn] jobs.txt line " << lineno
@@ -578,12 +766,14 @@ int main(int argc, char** argv) {
               log_msg(oss.str());
               continue;
             }
+
             jobs.push_back(j);
           }
 
           std::ostringstream oss;
           oss << "[info] Loaded " << jobs.size() << " job(s) from " << jobsPath << "\n";
           log_msg(oss.str());
+
           for (std::size_t i = 0; i < jobs.size(); ++i) {
             const Job& j = jobs[i];
             std::ostringstream joss;
@@ -597,6 +787,7 @@ int main(int argc, char** argv) {
                 << ", phase=" << phaseCodeName(j.phase_code)
                 << ", substrate_target_K=" << j.substrate_target_K
                 << "\n";
+
             log_msg(joss.str());
           }
         }
@@ -615,7 +806,14 @@ int main(int argc, char** argv) {
       jobWarmupTicks.resize(jobs.size(), 0);
       for (std::size_t i = 0; i < jobs.size(); ++i) {
         const Job& j = jobs[i];
-        int W = estimateWarmupTicksForFlux(j.Fwafer_cm2s, args.dt);
+
+        int W = estimateWarmupTicksForFlux(
+                    j.Fwafer_cm2s,
+                    args.dt,
+                    args.effusionCJ,
+                    args.effusionHWK
+                );
+
         jobWarmupTicks[i] = W;
 
         std::ostringstream oss;
@@ -628,19 +826,53 @@ int main(int argc, char** argv) {
     }
 
     // Electrical/power subsystems (independent of SPARTA)
+    // Electrical/power subsystems configured from runtime CLI args.
     PowerBus bus;
-    const double SOLAR_EFFICIENCY   = 0.25;
-    const double SOLAR_BASE_INPUT_W = 30000.0; // example boost
 
-    SolarArray solar(SOLAR_EFFICIENCY, SOLAR_BASE_INPUT_W);
+    SolarArray solar(args.solarEfficiency, args.solarBaseInputW);
+
     Battery battery;
+    battery.configure(
+        args.batteryCapacityWh,
+        args.batteryStartChargeWh,
+        args.batteryMaxDischargeW,
+        args.batteryMaxChargeW
+    );
 
     bus.setBattery(&battery);
-    // Bigger heater: can draw up to 2 kW from the bus.
-    HeaterBank    heater(/*maxDraw=*/5000.0);
-    EffusionCell  effCell;
+
+    HeaterBank heater(args.heaterBankMaxDrawW);
+
+    EffusionCell effCell;
+    effCell.setThermalConstants(
+        args.effusionCJ,
+        args.effusionHWK
+    );
+
+    effCell.setEnvironmentConstants(
+        args.effusionNightAmbientK,
+        args.effusionDayAmbientK
+    );
+
     GrowthMonitor growth(/*gridN=*/32);
-    SubstrateHeater substrateHeater(/*maxPowerW=*/3000.0, /*wafer_radius_m=*/0.15);
+
+    SubstrateHeater substrateHeater(
+        args.substrateMaxPowerDrawW,
+        /*wafer_radius_m=*/0.15
+    );
+
+    substrateHeater.configureThermalModel(
+        args.substrateCJ,
+        args.substrateEps,
+        args.substrateFailLimitTicks,
+        args.substrateReadyBandK
+    );
+
+    // Initialize both thermal models with the current orbit sunlight scale.
+    // In wake mode this gets updated every tick after OrbitModel steps.
+    // In power mode this stays at 1.0 unless changed later.
+    substrateHeater.setOrbitThermalEnvironment(g_orbit_solar_scale);
+    effCell.setOrbitThermalEnvironment(g_orbit_solar_scale);
 
   
     solar.setPowerBus(&bus);
@@ -716,6 +948,8 @@ int main(int argc, char** argv) {
 
       // Always treat as sunlit in power-only tests.
       g_orbit_solar_scale = 1.0;
+      substrateHeater.setOrbitThermalEnvironment(g_orbit_solar_scale);
+      effCell.setOrbitThermalEnvironment(g_orbit_solar_scale);
 
       const int NTICKS = args.nticks;
       for (int i = 0; i < NTICKS; ++i) {
@@ -804,7 +1038,7 @@ int main(int argc, char** argv) {
 
       // ---------------- Orbit model (leader drives logging + SolarArray) ---
       // Simple circular LEO at 300 km altitude, time step = dt (engine tick).
-      OrbitModel orbit(/*altitude_m=*/300e3,
+      OrbitModel orbit(/*altitude_m=*/400e3,
                        /*dt_s=*/dt,
                        /*inclination_rad=*/0.0,
                        /*sun_theta_rad=*/0.0);
@@ -865,12 +1099,13 @@ int main(int argc, char** argv) {
       double last_substrate_set = std::numeric_limits<double>::quiet_NaN();
 
       // Health tracking for the CURRENT controlling deposition job only.
-      int   underflux_streak           = 0;
-      int   temp_miss_streak           = 0;
-      const int    UNDERFLUX_LIMIT_TICKS   = 20;
-      const double MIN_FLUX_FRACTION       = 0.90;
-      const int    TEMP_FAIL_LIMIT_TICKS   = 20;
-      const double TEMP_TOLERANCE_FRACTION = 0.85;
+      int   underflux_streak = 0;
+      int   temp_miss_streak = 0;
+
+      const int    UNDERFLUX_LIMIT_TICKS   = args.effusionUnderfluxLimitTicks;
+      const double MIN_FLUX_FRACTION       = args.effusionMinFluxFraction;
+      const int    TEMP_FAIL_LIMIT_TICKS   = args.effusionUndertempLimitTicks;
+      const double TEMP_TOLERANCE_FRACTION = args.effusionTempToleranceFraction;
 
       // RC temp proxy (mirrors EffusionCell RC constants) used for a
       // conservative temperature-health gate.
@@ -1498,11 +1733,8 @@ int main(int argc, char** argv) {
               done_active = 1.0;
               scheduler_state_code_log = jobRunStateCode(JobRunState::Done);
             } else {
-              // const double EFF_T_ENV_K       = DEFAULT_IDLE_EFFUSION_TARGET_K;
-              // const double EFF_H_W_PER_K     = 0.8;
-              // const double EFF_KP_W_PER_K    = 8.0;
-              // const double EFF_DEFAULT_MAX_W = 2000.0;
-              const double EFF_H_W_PER_K     = 0.8;
+
+              const double EFF_H_W_PER_K     = args.effusionHWK;
               const double EFF_KP_W_PER_K    = 8.0;
               const double EFF_DEFAULT_MAX_W = 2000.0;
 
@@ -1938,9 +2170,10 @@ int main(int argc, char** argv) {
               double P_actual = effCell.getLastHeatInputW();
 
               // Update RC temp proxy for the active live-deposition interval.
+              // Update RC temp proxy for the active live-deposition interval.
               {
-                const double C_J_PER_K = 800.0;
-                const double H_W_PER_K = 0.8;
+                const double C_J_PER_K = args.effusionCJ;
+                const double H_W_PER_K = args.effusionHWK;
                 const double T_ENV_K   = effCell.getAmbientTempK();
                 const double P_SOLAR_W = effCell.getSolarAbsorbedPowerW();
 

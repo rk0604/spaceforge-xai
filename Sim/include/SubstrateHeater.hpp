@@ -41,7 +41,7 @@
 
         P_solar_abs = alpha_abs * A_proj * G_solar * solar_scale
 
-    where solar_scale is expected to lie in the range [0, 1].
+    where solar_scale is expected to lie in the range from 0 to 1.
 
     Thermal exchange semantics
 
@@ -53,9 +53,10 @@
 
     Interpretation
 
-    - Positive P_env_exchange means net heat leaves the substrate.
-    - Negative P_env_exchange means the effective environment is passively
-      warming the substrate.
+    Positive P_env_exchange means net heat leaves the substrate.
+
+    Negative P_env_exchange means the effective environment is passively
+    warming the substrate.
 
     Scheduler contract
 
@@ -74,10 +75,6 @@ class SubstrateHeater : public Subsystem {
 public:
   /*
       Scheduler-facing thermal-band state.
-
-      Why this exists
-
-      The scheduler should be able to distinguish four thermal situations:
 
       Idle
           No meaningful substrate target is active, so the substrate should
@@ -111,9 +108,53 @@ public:
       wafer_radius_m
           Radius of the wafer in meters. This is used to estimate wafer area
           for radiative loss and a simple projected solar-loading area.
+
+      The default maxPower_W is the Config 1 fallback value from the analytics
+      tracker.
   */
   explicit SubstrateHeater(double maxPower_W = 3000.0,
                            double wafer_radius_m = 0.15);
+
+  /*
+      Configure runtime substrate thermal parameters.
+
+      c_j_per_k
+          Lumped thermal capacitance in joules per kelvin.
+
+      emissivity
+          Effective wafer-side emissivity used by radiative exchange.
+
+      fail_limit_ticks
+          Consecutive below-band execution ticks required to latch substrate
+          failure.
+
+      ready_band_K
+          Absolute readiness band around the substrate target.
+
+      This method is called from main.cpp after construction and before engine
+      initialization. Invalid values are ignored so a malformed config value
+      does not corrupt the model.
+  */
+  void configureThermalModel(double c_j_per_k,
+                             double emissivity,
+                             int fail_limit_ticks,
+                             double ready_band_K) {
+    if (std::isfinite(c_j_per_k) && c_j_per_k > 0.0) {
+      C_J_per_K_ = c_j_per_k;
+    }
+
+    if (std::isfinite(emissivity) && emissivity >= 0.0 && emissivity <= 1.0) {
+      emissivity_ = emissivity;
+    }
+
+    if (fail_limit_ticks > 0) {
+      FAIL_LIMIT_TICKS_ = fail_limit_ticks;
+    }
+
+    if (std::isfinite(ready_band_K) && ready_band_K > 0.0) {
+      READY_BAND_K_ = ready_band_K;
+    }
+  }
 
   /*
       Only the leader rank should emit CSV rows.
@@ -139,8 +180,8 @@ public:
          The solar power absorbed directly by the wafer-side thermal node.
 
       This method does not itself advance temperature. It only updates the
-      environment against which the next power request and thermal update
-      will be computed.
+      environment against which the next power request and thermal update will
+      be computed.
   */
   void setOrbitThermalEnvironment(double solar_scale);
 
@@ -155,31 +196,34 @@ public:
           this tick.
 
       raw_job_flux_cm2s
-          Physical deposition flux request from the current schedule row.
-          This is used as a fallback way to infer a substrate target when
-          no explicit target is supplied.
+          Physical deposition flux request from the current schedule row. This
+          is used as a fallback way to infer a substrate target when no explicit
+          target is supplied.
 
       substrate_control_on
-          Explicit scheduler permission for substrate temperature control.
-          If false, the heater returns to idle-target behavior.
+          Explicit scheduler permission for substrate temperature control. If
+          false, the heater returns to idle-target behavior.
 
       explicit_target_K
-          Explicit substrate target requested by the recipe phase.
-          This allows non-growth timed phases to hold a real elevated wafer
-          temperature even when deposition flux is zero.
+          Explicit substrate target requested by the recipe phase. This allows
+          non-growth timed phases to hold a real elevated wafer temperature even
+          when deposition flux is zero.
 
       Control policy
 
-      - If no job is active, target returns to idle baseline.
-      - If substrate control is disabled, target returns to idle baseline.
-      - If a meaningful explicit target is supplied, that target is used.
-      - Otherwise the target falls back to the legacy flux-derived target.
+      If no job is active, target returns to idle baseline.
+
+      If substrate control is disabled, target returns to idle baseline.
+
+      If a meaningful explicit target is supplied, that target is used.
+
+      Otherwise the target falls back to the legacy flux-derived target.
 
       Fault-reset policy
 
-      Miss-streak state is reset only when the controlling job identity
-      changes or the active-state flag changes. Scheduler transitions inside
-      the same controlling job should not wipe fault history.
+      Miss-streak state is reset only when the controlling job identity changes
+      or the active-state flag changes. Scheduler transitions inside the same
+      controlling job should not wipe fault history.
   */
   void setJobState(int job_index,
                    bool job_active,
@@ -190,8 +234,8 @@ public:
   /*
       Arm or disarm substrate failure monitoring.
 
-      When armed, the subsystem counts consecutive ticks where the substrate
-      is below the lower readiness band. When the streak reaches the configured
+      When armed, the subsystem counts consecutive ticks where the substrate is
+      below the lower readiness band. When the streak reaches the configured
       failure limit, job_failed_ is latched true.
 
       When disarmed, the miss streak is reset immediately.
@@ -231,8 +275,9 @@ public:
 
       where P_env_exchange is signed:
 
-      - positive when heat leaves the substrate
-      - negative when the environment is passively warming the substrate
+      Positive means heat leaves the substrate.
+
+      Negative means the environment is passively warming the substrate.
 
       The substrate temperature is advanced using the lumped thermal
       capacitance C_J_per_K_.
@@ -244,13 +289,13 @@ public:
 
       Existing one-sided semantics are intentionally preserved:
 
-      - If no meaningful target exists, returns true.
-      - Otherwise returns true once the substrate reaches the lower
-        readiness threshold.
+      If no meaningful target exists, this returns true.
 
-      This function does not distinguish between "ready" and "too hot".
-      Scheduler logic that needs full state should prefer
-      getThermalBandState().
+      Otherwise it returns true once the substrate reaches the lower readiness
+      threshold.
+
+      This function does not distinguish between ready and too hot. Scheduler
+      logic that needs full state should prefer getThermalBandState.
   */
   bool isAtTarget() const;
 
@@ -275,10 +320,17 @@ public:
 
       Semantics
 
-      - No meaningful target                       -> Idle
-      - T_sub < target - lower_band_K              -> BelowTargetBand
-      - target-lower <= T_sub <= target+upper      -> WithinTargetBand
-      - T_sub > target + upper_band_K              -> AboveTargetBand
+      No meaningful target
+          Idle
+
+      T_sub < target - lower_band_K
+          BelowTargetBand
+
+      target - lower_band_K <= T_sub <= target + upper_band_K
+          WithinTargetBand
+
+      T_sub > target + upper_band_K
+          AboveTargetBand
   */
   ThermalBandState getThermalBandState(double lower_band_K = READY_BAND_K_,
                                        double upper_band_K = READY_BAND_K_) const;
@@ -287,8 +339,10 @@ public:
       Convenience helpers that make scheduler code easier to read.
   */
   bool isBelowTargetBand(double lower_band_K = READY_BAND_K_) const;
+
   bool isWithinTargetBand(double lower_band_K = READY_BAND_K_,
                           double upper_band_K = READY_BAND_K_) const;
+
   bool isAboveTargetBand(double upper_band_K = READY_BAND_K_) const;
 
   /*
@@ -312,6 +366,17 @@ public:
   int tempMissStreak() const { return temp_miss_streak_; }
   bool jobActive() const { return job_active_; }
   bool substrateControlOn() const { return substrate_control_on_; }
+
+  /*
+      Runtime configuration accessors.
+
+      These are useful for logs, smoke tests, and sanity checks after command
+      line values are loaded.
+  */
+  double configuredThermalCapacitanceJPerK() const { return C_J_per_K_; }
+  double configuredEmissivity() const { return emissivity_; }
+  int configuredFailLimitTicks() const { return FAIL_LIMIT_TICKS_; }
+  double configuredReadyBandK() const { return READY_BAND_K_; }
 
   void initialize() override;
   void tick(const TickContext& ctx) override;
@@ -368,9 +433,9 @@ private:
           Latest signed environment-exchange term evaluated during the state
           update.
 
-          Interpretation:
-          - positive means net heat left the substrate
-          - negative means the environment passively warmed the substrate
+          Positive means net heat left the substrate.
+
+          Negative means the environment passively warmed the substrate.
 
           The member name and CSV field name are retained for compatibility.
   */
@@ -392,26 +457,24 @@ private:
   /*
       Physical constants for the lightweight substrate model.
 
-      sigma_
-          Stefan-Boltzmann constant for radiative exchange.
+      These are inline static rather than constexpr so the existing .cpp logic
+      can continue referencing the same names while runtime config values can
+      override them before the simulation loop starts.
 
-      emissivity_
-          Effective wafer-side emissivity.
-
-      h_cond_WK_
-          Lumped linear conductive or parasitic exchange term.
-
-      C_J_per_K_
-          Lumped thermal capacitance of the substrate node.
-
-      Kp_W_per_K_
-          Proportional controller gain.
+      Config 1 fallback values:
+          emissivity = 0.8
+          C_J = 1500 J per K
+          ready band = 5 K
+          fail limit = 20 ticks
   */
-  static constexpr double sigma_      = 5.670374419e-8;
-  static constexpr double emissivity_ = 0.80;
-  static constexpr double h_cond_WK_  = 0.50;
-  static constexpr double C_J_per_K_  = 1500.0;
-  static constexpr double Kp_W_per_K_ = 25.0;
+  inline static constexpr double sigma_ = 5.670374419e-8;
+
+  inline static double emissivity_       = 0.80;
+  inline static double h_cond_WK_        = 0.10;
+  inline static double C_J_per_K_        = 1500.0;
+  inline static double Kp_W_per_K_       = 25.0;
+  inline static double READY_BAND_K_     = 5.0;
+  inline static int    FAIL_LIMIT_TICKS_ = 20;
 
   /*
       Orbit-aware thermal environment constants.
@@ -432,23 +495,10 @@ private:
           Solar constant used by the lightweight model.
   */
   double T_env_night_K_ = 250.0;
-  double T_env_day_K_   = 320.0;
+  double T_env_day_K_   = 325.0;
   double alpha_abs_     = 0.30;
   double A_proj_m2_     = 0.0;
   double G_solar_W_m2_  = 1361.0;
-
-  /*
-      Gate and failure thresholds.
-
-      READY_BAND_K_
-          Default absolute readiness band around target.
-
-      FAIL_LIMIT_TICKS_
-          Number of consecutive below-band ticks required to latch a failure
-          once monitoring is armed.
-  */
-  static constexpr double READY_BAND_K_     = 5.0;
-  static constexpr int    FAIL_LIMIT_TICKS_ = 20;
 
   /*
       Map physical deposition flux to a fallback substrate target temperature.
@@ -459,8 +509,8 @@ private:
   double fluxToTargetTemp(double raw_job_flux_cm2s) const;
 
   /*
-      Estimate the signed net thermal exchange at a given substrate
-      temperature under the current effective environment.
+      Estimate the signed net thermal exchange at a given substrate temperature
+      under the current effective environment.
 
       Exchange model
 
@@ -469,8 +519,9 @@ private:
 
       Sign convention
 
-      - Positive return value means heat leaves the substrate.
-      - Negative return value means the environment is warming the substrate.
+      Positive return value means heat leaves the substrate.
+
+      Negative return value means the environment is warming the substrate.
   */
   double lossPowerW(double T_K) const;
 

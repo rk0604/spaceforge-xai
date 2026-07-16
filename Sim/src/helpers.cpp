@@ -40,16 +40,75 @@ static double clampFiniteOrDefault(double value, double lo, double hi, double fa
 Args parse_args(int argc, char** argv) {
   Args a;
   for (int i = 1; i < argc; ++i) {
-    if (arg_eq(argv[i], "--mode") && i + 1 < argc)              a.mode = argv[++i];
-    else if (arg_eq(argv[i], "--wake-deck") && i + 1 < argc)    a.wakeDeck = argv[++i];
-    else if (arg_eq(argv[i], "--eff-deck") && i + 1 < argc)     a.effDeck  = argv[++i];
-    else if (arg_eq(argv[i], "--input-subdir") && i + 1 < argc) a.inputDir = argv[++i];
-    else if (arg_eq(argv[i], "--split") && i + 1 < argc)        a.nWake = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--couple-every") && i + 1 < argc) a.coupleEvery = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--sparta-block") && i + 1 < argc) a.spartaBlock = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--nticks") && i + 1 < argc)       a.nticks = std::atoi(argv[++i]);
-    else if (arg_eq(argv[i], "--dt") && i + 1 < argc)           a.dt = std::atof(argv[++i]);
-    else if (arg_eq(argv[i], "--help"))                         a.showHelp = true;
+    if (arg_eq(argv[i], "--mode") && i + 1 < argc) {
+      a.mode = argv[++i];
+    } else if (arg_eq(argv[i], "--wake-deck") && i + 1 < argc) {
+      a.wakeDeck = argv[++i];
+    } else if (arg_eq(argv[i], "--eff-deck") && i + 1 < argc) {
+      a.effDeck = argv[++i];
+    } else if ((arg_eq(argv[i], "--input-subdir") || arg_eq(argv[i], "--input-dir")) && i + 1 < argc) {
+      a.inputDir = argv[++i];
+    } else if (arg_eq(argv[i], "--split") && i + 1 < argc) {
+      a.nWake = std::atoi(argv[++i]);
+    } else if (arg_eq(argv[i], "--couple-every") && i + 1 < argc) {
+      a.coupleEvery = std::atoi(argv[++i]);
+    } else if (arg_eq(argv[i], "--sparta-block") && i + 1 < argc) {
+      a.spartaBlock = std::atoi(argv[++i]);
+    } else if (arg_eq(argv[i], "--nticks") && i + 1 < argc) {
+      a.nticks = std::atoi(argv[++i]);
+    } else if (arg_eq(argv[i], "--dt") && i + 1 < argc) {
+      a.dt = std::atof(argv[++i]);
+    } else if ((arg_eq(argv[i], "--config-name") || arg_eq(argv[i], "--config")) && i + 1 < argc) {
+      a.configName = argv[++i];
+
+    } else if (arg_eq(argv[i], "--battery-capacity-wh") && i + 1 < argc) {
+      a.batteryCapacityWh = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--battery-start-charge-wh") && i + 1 < argc) {
+      a.batteryStartChargeWh = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--battery-max-discharge-w") && i + 1 < argc) {
+      a.batteryMaxDischargeW = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--battery-max-charge-w") && i + 1 < argc) {
+      a.batteryMaxChargeW = std::atof(argv[++i]);
+
+    } else if (arg_eq(argv[i], "--effusion-h-wk") && i + 1 < argc) {
+      a.effusionHWK = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--effusion-c-j") && i + 1 < argc) {
+      a.effusionCJ = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--effusion-night-ambient-k") && i + 1 < argc) {
+      a.effusionNightAmbientK = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--effusion-day-ambient-k") && i + 1 < argc) {
+      a.effusionDayAmbientK = std::atof(argv[++i]);
+
+    } else if (arg_eq(argv[i], "--solar-base-input-w") && i + 1 < argc) {
+      a.solarBaseInputW = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--solar-efficiency") && i + 1 < argc) {
+      a.solarEfficiency = std::atof(argv[++i]);
+
+    } else if (arg_eq(argv[i], "--substrate-c-j") && i + 1 < argc) {
+      a.substrateCJ = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--substrate-eps") && i + 1 < argc) {
+      a.substrateEps = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--substrate-fail-limit-ticks") && i + 1 < argc) {
+      a.substrateFailLimitTicks = std::atoi(argv[++i]);
+    } else if (arg_eq(argv[i], "--substrate-ready-band-k") && i + 1 < argc) {
+      a.substrateReadyBandK = std::atof(argv[++i]);
+    } else if ((arg_eq(argv[i], "--substrate-max-power-w") || arg_eq(argv[i], "--substrate-max-power-draw-w")) && i + 1 < argc) {
+      a.substrateMaxPowerDrawW = std::atof(argv[++i]);
+
+    } else if ((arg_eq(argv[i], "--effusion-underflux-limit-ticks") || arg_eq(argv[i], "--effusion-underflux-streak-cap")) && i + 1 < argc) {
+      a.effusionUnderfluxLimitTicks = std::atoi(argv[++i]);
+    } else if ((arg_eq(argv[i], "--effusion-undertemp-limit-ticks") || arg_eq(argv[i], "--effusion-undertemp-streak-cap")) && i + 1 < argc) {
+      a.effusionUndertempLimitTicks = std::atoi(argv[++i]);
+    } else if (arg_eq(argv[i], "--effusion-min-flux-fraction") && i + 1 < argc) {
+      a.effusionMinFluxFraction = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--effusion-temp-tolerance-fraction") && i + 1 < argc) {
+      a.effusionTempToleranceFraction = std::atof(argv[++i]);
+
+    } else if ((arg_eq(argv[i], "--heater-bank-max-draw-w") || arg_eq(argv[i], "--heater-max-draw-w")) && i + 1 < argc) {
+      a.heaterBankMaxDrawW = std::atof(argv[++i]);
+    } else if (arg_eq(argv[i], "--help")) {
+      a.showHelp = true;
+    }
   }
   return a;
 }
@@ -61,6 +120,27 @@ void print_usage() {
     << "           [--input-subdir input]\n"
     << "           [--couple-every T] [--sparta-block N]\n"
     << "           [--nticks N] [--dt seconds]\n"
+    << "           [--config-name NAME]\n"
+    << "           [--battery-capacity-wh WH]\n"
+    << "           [--battery-start-charge-wh WH]\n"
+    << "           [--battery-max-discharge-w W]\n"
+    << "           [--battery-max-charge-w W]\n"
+    << "           [--effusion-h-wk W_PER_K]\n"
+    << "           [--effusion-c-j J_PER_K]\n"
+    << "           [--effusion-night-ambient-k K]\n"
+    << "           [--effusion-day-ambient-k K]\n"
+    << "           [--solar-base-input-w W]\n"
+    << "           [--solar-efficiency FRACTION]\n"
+    << "           [--substrate-c-j J_PER_K]\n"
+    << "           [--substrate-eps EPSILON]\n"
+    << "           [--substrate-fail-limit-ticks N]\n"
+    << "           [--substrate-ready-band-k K]\n"
+    << "           [--substrate-max-power-w W]\n"
+    << "           [--effusion-underflux-limit-ticks N]\n"
+    << "           [--effusion-undertemp-limit-ticks N]\n"
+    << "           [--effusion-min-flux-fraction FRACTION]\n"
+    << "           [--effusion-temp-tolerance-fraction FRACTION]\n"
+    << "           [--heater-bank-max-draw-w W]\n"
     << "\n"
     << "Modes:\n"
     << "  legacy  - single SPARTA instance on MPI_COMM_WORLD\n"
@@ -68,6 +148,8 @@ void print_usage() {
     << "  dual    - currently an alias of wake\n"
     << "  power   - C++ power and thermal harness only\n"
     << "\n"
+    << "Runtime experiment defaults are Config 1 row 10 from the analytics CSV.\n"
+    << "The effusion ambient defaults are the corrected values: night=250 K and day=325 K.\n"
     << "Coupling advances SPARTA by N steps every T engine ticks.\n";
 }
 

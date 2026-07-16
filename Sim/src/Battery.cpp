@@ -1,75 +1,199 @@
 #include "Battery.hpp"
 #include "Logger.hpp"
+
 #include <algorithm>
+#include <cmath>
+
+/*
+    Battery
+
+    This subsystem stores and releases electrical energy for the power bus.
+
+    Runtime configuration
+
+    The constructor provides safe Config 1 fallback behavior.
+
+    The configure method lives inline in Battery.hpp because main.cpp only
+    needs a lightweight setter before engine initialization.
+
+    Energy convention
+
+    charge_ is stored in watt hours.
+
+    Power requests are in watts.
+
+    Time step values are in seconds.
+
+    Conversion
+
+    Wh = W * seconds / 3600
+*/
 
 Battery::Battery(double capacity)
     : Subsystem("Battery"),
       bus_(nullptr),
-      capacity_(capacity),
-      charge_(capacity / 2.0) {}   // Start 50% full
+      capacity_((std::isfinite(capacity) && capacity > 0.0) ? capacity : 6000.0),
+      charge_(capacity_ / 2.0) {
+    /*
+        Start at half charge by default.
+
+        For dataset generation, main.cpp should immediately override this
+        through battery.configure using values loaded from the tracker.
+    */
+}
 
 void Battery::initialize() {
+    /*
+        Emit the initial battery state.
+
+        This row is useful for confirming that runtime command line values were
+        applied before the simulation engine started ticking.
+    */
     Logger::instance().log_wide(
         "Battery",
         0,
         0.0,
-        {"status","charge_Wh","capacity_Wh","max_charge_W","max_discharge_W"},
-        {1.0, charge_, capacity_, max_charge_rate_W_, max_discharge_rate_W_}
+        {
+            "status",
+            "charge_Wh",
+            "capacity_Wh",
+            "max_charge_W",
+            "max_discharge_W"
+        },
+        {
+            1.0,
+            charge_,
+            capacity_,
+            max_charge_rate_W_,
+            max_discharge_rate_W_
+        }
     );
 }
 
-void Battery::setPowerBus(PowerBus* bus) { bus_ = bus; }
+void Battery::setPowerBus(PowerBus* bus) {
+    /*
+        Store the bus pointer so the battery can participate in the power
+        system without owning the bus.
+    */
+    bus_ = bus;
+}
 
-double Battery::getCharge() const { return charge_; }
+double Battery::getCharge() const {
+    /*
+        Return current stored battery energy in watt hours.
+    */
+    return charge_;
+}
 
-//
-// Convert W → Wh over dt, respecting capacity
-//
 void Battery::chargeFromSurplus(double surplus_W, double dt) {
-    if (surplus_W <= 0.0) return;
-    if (dt <= 0.0) return;
+    /*
+        Store surplus power from the power bus.
 
-    // Apply charge rate limit
-    double actual_W = std::min(surplus_W, max_charge_rate_W_);
+        Invalid or nonpositive inputs are ignored so transient bad values do
+        not corrupt the battery state.
+    */
+    if (!std::isfinite(surplus_W) || surplus_W <= 0.0) {
+        return;
+    }
 
-    // Convert W to Wh
-    double added_Wh = actual_W * (dt / 3600.0);
+    if (!std::isfinite(dt) || dt <= 0.0) {
+        return;
+    }
 
+    /*
+        Apply the configured charge rate limit first.
+
+        The power bus may have more surplus than the battery can safely accept.
+    */
+    const double actual_W = std::min(surplus_W, max_charge_rate_W_);
+
+    /*
+        Convert delivered charging power into stored energy.
+    */
+    const double added_Wh = actual_W * (dt / 3600.0);
+
+    /*
+        Clamp to the configured physical capacity.
+    */
     charge_ = std::clamp(charge_ + added_Wh, 0.0, capacity_);
 }
 
-//
-// Pull power from battery to support a load
-// Returns W actually delivered
-//
 double Battery::discharge(double needed_W, double dt) {
-    if (needed_W <= 0.0) return 0.0;
-    if (dt <= 0.0) return 0.0;
+    /*
+        Provide battery power when the bus cannot satisfy a load.
 
-    // Cannot draw more than our discharge limit
-    double deliverable_W = std::min(needed_W, max_discharge_rate_W_);
+        Return value is the actual output power in watts.
+    */
+    if (!std::isfinite(needed_W) || needed_W <= 0.0) {
+        return 0.0;
+    }
 
-    // Convert battery Wh to max available power at this dt
-    double max_possible_W = (charge_ * 3600.0) / dt;  // Wh → W
+    if (!std::isfinite(dt) || dt <= 0.0) {
+        return 0.0;
+    }
 
-    double W_out = std::min(deliverable_W, max_possible_W);
+    /*
+        The battery cannot exceed the configured discharge power limit.
+    */
+    const double rate_limited_W = std::min(needed_W, max_discharge_rate_W_);
 
-    // Convert W back to Wh and subtract
-    double used_Wh = W_out * (dt / 3600.0);
+    /*
+        The battery also cannot deliver more energy than it currently stores.
+
+        charge_ is watt hours.
+
+        Multiplying by 3600 and dividing by dt gives the maximum possible
+        average power over this tick.
+    */
+    const double energy_limited_W = (charge_ * 3600.0) / dt;
+
+    /*
+        Actual output power is limited by both power electronics and stored
+        energy.
+    */
+    const double output_W = std::min(rate_limited_W, energy_limited_W);
+
+    /*
+        Convert delivered power back into watt hours and remove it from the
+        stored charge.
+    */
+    const double used_Wh = output_W * (dt / 3600.0);
+
     charge_ = std::clamp(charge_ - used_Wh, 0.0, capacity_);
 
-    return W_out;
+    return output_W;
 }
 
 void Battery::tick(const TickContext& ctx) {
-    // Only logs status — bus controls all charging/discharging
+    /*
+        The power bus controls charge and discharge.
+
+        The battery tick only logs the state after bus accounting has updated
+        the stored charge for this tick.
+    */
     Logger::instance().log_wide(
         "Battery",
         ctx.tick_index,
         ctx.time,
-        {"status","charge_Wh","capacity_Wh","max_charge_W","max_discharge_W"},
-        {1.0, charge_, capacity_, max_charge_rate_W_, max_discharge_rate_W_}
+        {
+            "status",
+            "charge_Wh",
+            "capacity_Wh",
+            "max_charge_W",
+            "max_discharge_W"
+        },
+        {
+            1.0,
+            charge_,
+            capacity_,
+            max_charge_rate_W_,
+            max_discharge_rate_W_
+        }
     );
 }
 
-void Battery::shutdown() {}
+void Battery::shutdown() {
+    /*
+        No owned external resources require shutdown.
+    */
+}

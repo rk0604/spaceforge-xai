@@ -10,54 +10,48 @@
 #include <string>
 #include <vector>
 #include <stdexcept>
-#include <sstream>
 
 namespace {
 namespace fs = std::filesystem;
 
-// Resolve the base directory for logs.
-//
-// Priority:
-//   1) env SF_LOG_DIR
-//   2) <PROJECT_SOURCE_DIR>/data/raw
-//   3) ./data/raw
-//
-// If env RUN_ID is set, we append it as a subdirectory so each run gets its
-// own folder, e.g. data/raw/test_low_alt3/Battery.csv
+/*
+    Resolve the exact directory where subsystem CSV files must be written.
+
+    The Slurm script passes OUTPUT_ROOT for every config and job.
+
+    Example:
+    OUTPUT_ROOT=/common/home/rvk22/spaceforge-xai-run2/data/raw/Config27/V4_job1
+
+    The logger must use that exact folder.
+    It must not append RUN_ID.
+    It must not create data/raw/Config27_V4_job1.
+    It must not create its own dataset folder.
+*/
 fs::path resolve_base_dir() {
-    // 1) explicit override
-    if (const char* env = std::getenv("SF_LOG_DIR")) {
-        if (*env) {
-            fs::path p(env);
-            if (const char* run = std::getenv("RUN_ID")) {
-                if (*run) p /= run;
-            }
-            return p;
+    if (const char* output_root = std::getenv("OUTPUT_ROOT")) {
+        if (*output_root) {
+            return fs::path(output_root);
         }
     }
 
-    // 2) project source dir if available
-#ifdef PROJECT_SOURCE_DIR
-    fs::path base = fs::path(PROJECT_SOURCE_DIR) / "data" / "raw";
-#else
-    // 3) fallback to current working directory
-    fs::path base = fs::current_path() / "data" / "raw";
-#endif
-
-    if (const char* run = std::getenv("RUN_ID")) {
-        if (*run) base /= run;
+    if (const char* sf_log_dir = std::getenv("SF_LOG_DIR")) {
+        if (*sf_log_dir) {
+            return fs::path(sf_log_dir);
+        }
     }
-    return base;
+
+    return fs::current_path();
 }
 
-// Escape a CSV field if needed.
-//
-// Rules:
-// - If the field contains comma, quote, newline, or carriage return,
-//   wrap it in double quotes.
-// - Any embedded double quote becomes two double quotes.
+/*
+    Escape one CSV field.
+
+    Fields only get quotes when needed.
+    Embedded quotes are doubled according to CSV rules.
+*/
 std::string escape_csv_field(const std::string& s) {
     bool needs_quotes = false;
+
     for (char ch : s) {
         if (ch == ',' || ch == '"' || ch == '\n' || ch == '\r') {
             needs_quotes = true;
@@ -71,7 +65,9 @@ std::string escape_csv_field(const std::string& s) {
 
     std::string out;
     out.reserve(s.size() + 8);
+
     out.push_back('"');
+
     for (char ch : s) {
         if (ch == '"') {
             out.push_back('"');
@@ -80,15 +76,27 @@ std::string escape_csv_field(const std::string& s) {
             out.push_back(ch);
         }
     }
+
     out.push_back('"');
+
     return out;
 }
 
-// Get or open the per-subsystem CSV file.
-// If this is the first time we open it, we also write the header.
-//
-// For "tall" logs (log()), the header is: tick,time_s,key,value
-// For "wide" logs (log_wide()), the header is: tick,time_s,<columns...>
+/*
+    Open the CSV stream for one subsystem.
+
+    Each subsystem gets one file:
+    Battery.csv
+    EffusionCell.csv
+    HeaterBank.csv
+    Orbit.csv
+    PowerBus.csv
+    ProcessState.csv
+    ScheduleState.csv
+    SimulationEngine.csv
+    SolarArray.csv
+    substrate.csv
+*/
 std::ofstream& get_stream_for_subsystem(
     const std::string& subsystem,
     std::map<std::string, std::ofstream>& per_node,
@@ -96,49 +104,58 @@ std::ofstream& get_stream_for_subsystem(
     bool is_wide
 ) {
     auto it = per_node.find(subsystem);
+
     if (it != per_node.end()) {
         return it->second;
     }
 
     fs::path base_dir = resolve_base_dir();
+
     std::error_code ec;
     fs::create_directories(base_dir, ec);
+
     if (ec) {
         throw std::runtime_error(
-            "Logger: failed to create log directory " + base_dir.string() +
-            " : " + ec.message()
+            "Logger failed to create output directory "
+            + base_dir.string()
+            + " : "
+            + ec.message()
         );
     }
 
     fs::path csv_path = base_dir / (subsystem + ".csv");
+
     std::ofstream out(csv_path, std::ios::out | std::ios::trunc);
+
     if (!out) {
         throw std::runtime_error(
-            "Logger: failed to open log file " + csv_path.string()
+            "Logger failed to open output file "
+            + csv_path.string()
         );
     }
 
-    // Write header
     if (is_wide) {
         out << "tick,time_s";
+
         if (wide_cols) {
             for (const auto& c : *wide_cols) {
                 out << ',' << escape_csv_field(c);
             }
         }
+
         out << '\n';
     } else {
         out << "tick,time_s,key,value\n";
     }
+
     out.flush();
 
-    auto [new_it, _] = per_node.emplace(subsystem, std::move(out));
-    return new_it->second;
+    auto inserted = per_node.emplace(subsystem, std::move(out));
+
+    return inserted.first->second;
 }
 
 } // anonymous namespace
-
-// ---------------- Logger public API ----------------
 
 Logger& Logger::instance() {
     static Logger inst;
@@ -147,38 +164,44 @@ Logger& Logger::instance() {
 
 Logger::~Logger() {
     std::lock_guard<std::mutex> lock(mtx_);
-    if (central_.is_open()) central_.close();
+
+    if (central_.is_open()) {
+        central_.close();
+    }
+
     for (auto& kv : per_node_) {
-        if (kv.second.is_open()) kv.second.close();
+        if (kv.second.is_open()) {
+            kv.second.close();
+        }
     }
 }
 
-// Tall/long format: one row per (tick, key, value)
 void Logger::log(const std::string& subsystem,
-                 int tick, double time,
+                 int tick,
+                 double time,
                  const std::map<std::string, double>& values) {
     std::lock_guard<std::mutex> lock(mtx_);
 
     std::ofstream& out = get_stream_for_subsystem(
         subsystem,
         per_node_,
-        /*wide_cols=*/nullptr,
-        /*is_wide=*/false
+        nullptr,
+        false
     );
 
     for (const auto& kv : values) {
-        out << tick << ',' << time << ','
-            << escape_csv_field(kv.first) << ',' << kv.second << '\n';
+        out << tick << ','
+            << time << ','
+            << escape_csv_field(kv.first) << ','
+            << kv.second << '\n';
     }
+
     out.flush();
 }
 
-// Wide format: one row per tick with multiple named NUMERIC columns
-//
-// This is the original API. It is intentionally preserved so existing code
-// continues to compile and behave exactly as before.
 void Logger::log_wide(const std::string& subsystem,
-                      int tick, double time,
+                      int tick,
+                      double time,
                       const std::vector<std::string>& cols,
                       const std::vector<double>& vals) {
     std::lock_guard<std::mutex> lock(mtx_);
@@ -187,24 +210,28 @@ void Logger::log_wide(const std::string& subsystem,
         subsystem,
         per_node_,
         &cols,
-        /*is_wide=*/true
+        true
     );
 
     out << tick << ',' << time;
+
     for (std::size_t i = 0; i < cols.size(); ++i) {
-        double v = (i < vals.size() ? vals[i] : 0.0);
+        double v = 0.0;
+
+        if (i < vals.size()) {
+            v = vals[i];
+        }
+
         out << ',' << v;
     }
+
     out << '\n';
     out.flush();
 }
 
-// Wide format overload: one row per tick with multiple named STRING columns
-//
-// This is additive and does not affect the numeric overload above.
-// Values are CSV-escaped so commas/quotes/newlines are safe.
 void Logger::log_wide(const std::string& subsystem,
-                      int tick, double time,
+                      int tick,
+                      double time,
                       const std::vector<std::string>& cols,
                       const std::vector<std::string>& vals) {
     std::lock_guard<std::mutex> lock(mtx_);
@@ -213,14 +240,21 @@ void Logger::log_wide(const std::string& subsystem,
         subsystem,
         per_node_,
         &cols,
-        /*is_wide=*/true
+        true
     );
 
     out << tick << ',' << time;
+
     for (std::size_t i = 0; i < cols.size(); ++i) {
-        const std::string v = (i < vals.size() ? vals[i] : std::string{});
+        std::string v;
+
+        if (i < vals.size()) {
+            v = vals[i];
+        }
+
         out << ',' << escape_csv_field(v);
     }
+
     out << '\n';
     out.flush();
 }
