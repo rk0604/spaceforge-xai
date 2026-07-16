@@ -1,8 +1,8 @@
 #!/bin/bash -l
-#SBATCH --job-name=SF_Auto_Queue
+#SBATCH --job-name=C16_SF5_Auto_Queue
 #SBATCH --output=logs/sf_queue_%j.out
 #SBATCH --error=logs/sf_queue_%j.err
-#SBATCH --time=10:00:00  
+#SBATCH --time=100:00:00  
 #SBATCH --mem=32g
 #SBATCH --ntasks=8
 #SBATCH --cpus-per-task=1

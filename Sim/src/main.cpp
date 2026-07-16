@@ -637,7 +637,7 @@ int main(int argc, char** argv) {
 
     bus.setBattery(&battery);
     // Bigger heater: can draw up to 2 kW from the bus.
-    HeaterBank    heater(/*maxDraw=*/5000.0);
+    HeaterBank    heater(/*maxDraw=*/7000.0);
     EffusionCell  effCell;
     GrowthMonitor growth(/*gridN=*/32);
     SubstrateHeater substrateHeater(/*maxPowerW=*/3000.0, /*wafer_radius_m=*/0.15);
@@ -867,10 +867,10 @@ int main(int argc, char** argv) {
       // Health tracking for the CURRENT controlling deposition job only.
       int   underflux_streak           = 0;
       int   temp_miss_streak           = 0;
-      const int    UNDERFLUX_LIMIT_TICKS   = 20;
-      const double MIN_FLUX_FRACTION       = 0.90;
-      const int    TEMP_FAIL_LIMIT_TICKS   = 20;
-      const double TEMP_TOLERANCE_FRACTION = 0.85;
+      const int    UNDERFLUX_LIMIT_TICKS   = 5;
+      const double MIN_FLUX_FRACTION       = 0.98;
+      const int    TEMP_FAIL_LIMIT_TICKS   = 5;
+      const double TEMP_TOLERANCE_FRACTION = 0.98;
 
       // RC temp proxy (mirrors EffusionCell RC constants) used for a
       // conservative temperature-health gate.

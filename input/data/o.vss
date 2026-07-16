@@ -1,9 +1,10 @@
 # SPARTA VSS parameters: species  diameter(m)   omega   Tref(K)  alpha
-# Notes:
-# - diameter: reference hard-sphere diameter at Tref (SI units)
-# - omega: viscosity-temperature exponent
-# - alpha: VSS scattering parameter (1.0 VHS-like isotropic; larger → more forward scatter)
-O   3.00e-10   0.77   273.0   1.40
-He  2.10e-10   0.66   273.0   1.00
-N2  4.07e-10   0.74   273.0   1.00
-H2O 2.60e-10   0.75   273.0   1.20
+# Practical placeholders. Refine later if collision fidelity becomes central.
+O    3.00e-10   0.77   273.0   1.40
+N    3.00e-10   0.77   273.0   1.40
+H    2.75e-10   0.67   273.0   1.00
+He   2.10e-10   0.66   273.0   1.00
+N2   4.07e-10   0.74   273.0   1.00
+O2   3.96e-10   0.77   273.0   1.00
+Ar   4.17e-10   0.81   273.0   1.00
+H2O  2.60e-10   0.75   273.0   1.20

@@ -447,8 +447,8 @@ private:
           Number of consecutive below-band ticks required to latch a failure
           once monitoring is armed.
   */
-  static constexpr double READY_BAND_K_     = 5.0;
-  static constexpr int    FAIL_LIMIT_TICKS_ = 20;
+  static constexpr double READY_BAND_K_     = 2.0;
+  static constexpr int    FAIL_LIMIT_TICKS_ = 1;
 
   /*
       Map physical deposition flux to a fallback substrate target temperature.
