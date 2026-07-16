@@ -1,275 +1,347 @@
-# SpaceForge-XAI — Dual SPARTA + Power Subsystems (MPI)
+# SpaceForge-XAI - Coupled SPARTA + C++ Harness (main branch)
 
-This repo is a small but realistic scaffold for coupling **SPARTA** DSMC gas simulations to a toy **electrical/power model** (solar array, battery, heater bank) under **MPI**. It demonstrates:
-- Running **two persistent SPARTA instances at once** (Wake + Effusion) by splitting `MPI_COMM_WORLD`.
-- Periodically **advancing SPARTA** while the power subsystems tick on their own cadence.
-- Clean separation: a thin `SpartaBridge` C-API wrapper and a higher‑level `WakeChamber` façade that keeps a SPARTA instance alive between advances.
-
-> Works headless—no graphics or X11 required. Tested with OpenMPI 3.x/4.x, GCC 13, and SPARTA 2025-01-20.
-
----
-
-## TL;DR Quickstart
-
-```bash
-# 1) Configure & build (from repo root)
-cd ~/spaceforge-xai
-rm -rf build && mkdir build && cd build
-cmake -DSPARTA_DIR="$HOME/opt/sparta/src" -DCMAKE_BUILD_TYPE=Release ..
-cmake --build . -j
-
-# 2) Run (dual, 2×2 ranks). Default cadence will print SPARTA stats frequently.
-cd ~/spaceforge-xai/build
-env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
-  --mode dual \
-  --split 2 \
-  --wake-deck in.wake \
-  --eff-deck  in.effusion \
-  --input-subdir input \
-  --couple-every 10 \
-  --sparta-block 200
-```
-
-### Faster smoke tests (no rebuild needed)
-The app reads **all knobs at runtime**. Reduce work with either of these:
-
-```bash
-# ~500 SPARTA steps per instance total
-env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
-  --mode dual --split 2 \
-  --wake-deck in.wake --eff-deck in.effusion --input-subdir input \
-  --couple-every 50 --sparta-block 50
-
-# Super quick (~100 steps per instance)
-env -u DISPLAY mpirun -np 4 ./Sim/sim_app \
-  --mode dual --split 2 \
-  --wake-deck in.wake --eff-deck in.effusion --input-subdir input \
-  --couple-every 100 --sparta-block 10
-```
-
-> **Tip:** Your decks (`input/in.wake`, `input/in.effusion`) currently end with `run 1000`. Comment those out (or set `run 0`) to avoid a long startup burst and let the app fully drive the stepping.
+> **Branch-specific README.** This document describes the **main** branch, where the C++
+> simulator and SPARTA DSMC run **coupled in-process** (the simulator links libsparta and
+> advances SPARTA every tick). For the fast, decoupled dataset-generation pipeline
+> (SPARTA replaced by an external binary or a no-op), see the **decoupled-sparta** branch
+> and its README.
 
 ---
 
-## What the program does
+## 1. What this is
 
-- Initializes MPI and builds a small **power model**: `SolarArray → PowerBus → Battery`, plus a `HeaterBank` load.
-- In **dual mode**, splits world ranks into two sub-communicators:
-  - **Wake** (first `--split` ranks): reads **`in.wake`** and runs a persistent SPARTA instance.
-  - **Effusion** (remaining ranks): reads **`in.effusion`** and runs another persistent SPARTA instance.
-- Every **`--couple-every`** engine ticks, each SPARTA instance is advanced by **`--sparta-block`** steps **without re-reading** the input deck. This is logged by SPARTA as lines like “`Loop time ... for 50 steps`”.
-- After the fixed engine loop completes, both SPARTA instances are shut down cleanly and MPI finalizes.
+SpaceForge-XAI simulates a **space-based MBE (molecular-beam epitaxy) wafer-growth
+platform** in low Earth orbit. A C++/MPI harness ticks the spacecraft subsystems - solar
+array, battery, power bus, effusion-cell heater, substrate heater, orbit model - once per
+**simulated minute**, while executing **LLM-generated MBE scheduling recipes** (degas,
+oxide desorb, soak, nucleate, growth, anneal, cooldown, idle).
 
-Default engine loop length is **500 ticks** at **dt = 0.1 s**, compiled into `main.cpp`. (You can change these defaults in code, see _Optional: add a `--ticks` flag_.)
+On this branch every run is **physics-coupled**:
+
+- The build uses `ENABLE_SPARTA=ON`, so [Sim/src/SpartaBridge.cpp](Sim/src/SpartaBridge.cpp)
+  links directly against **libsparta** (SPARTA's C library API) and keeps one persistent
+  SPARTA instance alive for the whole run.
+- The wake deck [input/in.wake_harness](input/in.wake_harness) models the **LEO wake +
+  wake-shield facility (WSF) + 300 mm wafer + MBE orifice** geometry with an
+  O/N/N2/O2 freestream at 7500 m/s plus H2O outgassing from the shield.
+- Every engine tick, the harness hands the current wafer flux and beam state to SPARTA
+  through `input/params.inc`, then advances SPARTA by a block of DSMC steps. SPARTA in
+  turn appends pressure-probe and residual-gas CSV rows for that tick.
+
+The cost of full coupling is runtime: a 1350-tick job advances SPARTA by
+1350 x 2500 = 3.375 million DSMC steps, so runs take hours (this is exactly what the
+decoupled-sparta branch exists to avoid when only the C++-side dataset is needed).
 
 ---
 
-## Directory layout
+## 2. Repository layout
 
 ```
 spaceforge-xai/
-├─ CMakeLists.txt               # top-level build (sets Sim/sim_app)
-├─ input/                       # SPARTA input area (cwd for decks)
-│  ├─ in.wake                   # Wake simulation deck (Argon, inflow @ xlo)
-│  ├─ in.effusion               # Effusion/MBE-cell deck (Argon emitter)
-│  ├─ data/                     # species/models (e.g., ar.species, ar.vss)
-│  └─ params.inc                # (optional) runtime parameters written by app
-├─ Sim/
-│  └─ CMakeLists.txt            # library + executable targets
-├─ include/                     # public headers
-│  ├─ Battery.hpp
-│  ├─ EffusionCell.hpp          # (legacy/alt wrapper; new code uses WakeChamber)
-│  ├─ HeaterBank.hpp
-│  ├─ Logger.hpp
-│  ├─ PowerBus.hpp
-│  ├─ SimulationEngine.hpp
-│  ├─ SolarArray.hpp
-│  ├─ SpartaBridge.hpp
-│  ├─ Subsystem.hpp
-│  ├─ TickContext.hpp
-│  ├─ TickPhaseEngine.hpp
-│  └─ WakeChamber.hpp
-└─ src/                         # implementations
-   ├─ Battery.cpp
-   ├─ EffusionCell.cpp          # (legacy/alt; safe to ignore in dual mode)
-   ├─ HeaterBank.cpp
-   ├─ Logger.cpp
-   ├─ PowerBus.cpp
-   ├─ SimulationEngine.cpp
-   ├─ SolarArray.cpp
-   ├─ SpartaBridge.cpp
-   ├─ TickPhaseEngine.cpp
-   ├─ WakeChamber.cpp
-   └─ main.cpp
+|- CMakeLists.txt                # top-level build; ENABLE_SPARTA option, libsparta import
+|- Sim/
+|  |- CMakeLists.txt             # simcore static lib + sim executable
+|  |- run.sh                     # build-and-run wrapper (see section 5)
+|  |- run_orbit3.slurm           # MAIN Slurm queue script (see section 4)
+|  |- run_orbit.slurm, run_orbit2.slurm   # older variants
+|  |- readmeSim.md               # how to build SPARTA itself (CPU and GPU/Kokkos)
+|  |- include/                   # subsystem headers
+|  |- src/
+|     |- main.cpp                # entry point: modes, job loading, tick loop, coupling
+|     |- helpers.cpp             # CLI parsing, phase policies, recipe validation
+|     |- SpartaBridge.cpp        # in-process libsparta wrapper (this branch's default)
+|     |- SpartaBridgeShim.cpp    # external-binary fallback (used if ENABLE_SPARTA=OFF)
+|     |- WakeChamber.cpp         # persistent SPARTA facade: init once, advance in blocks
+|     |- Logger.cpp              # per-subsystem CSV logging to data/raw/<RUN_ID>/
+|     |- SubstrateHeater.cpp, EffusionCell.cpp, HeaterBank.cpp,
+|     |  SolarArray.cpp, Battery.cpp, PowerBus.cpp, orbit.cpp,
+|     |  GrowthMonitor.cpp, DepositionMap.cpp, ...
+|- active_jobs/                  # the 20 LLM-generated MBE recipes (V4_job1..20.txt)
+|- active_jobs_testing/          # small recipes for smoke tests
+|- input/
+|  |- in.wake_harness            # MAIN wake deck: WSF shield + wafer + MBE orifice
+|  |- in.wake_harness_cupola     # variant: cupola pencil-beam orifice geometry
+|  |- params.inc                 # handshake file written by the harness every tick
+|  |- data/                      # o.species / o.vss (O,N,N2,O2,H2O), ar.species / ar.vss
+|  |- surf/                      # wsf.surf, wafer_300mm.surf, mbe_orifice_10mm.surf,
+|                                #  cupola geometry + Python viz/repair scripts
+|- tests/                        # minimal test target
 ```
 
 ---
 
-## Components (what each file does)
+## 3. How the coupling works
 
-### `src/main.cpp`
-- Command-line parser (no external deps).
-- Sets up the power subsystems and the `SimulationEngine` (dt, initialize, tick, shutdown).
-- **Dual mode:** splits ranks into **Wake** and **Effusion** subcommunicators and launches one `WakeChamber` per group (both are the same class; the name is historical).
-- **Legacy mode:** single SPARTA instance on `MPI_COMM_WORLD`.
-- Drives **periodic coupling** via `runIfDirtyOrAdvance(spartaBlock)` every `coupleEvery` ticks.
-- Default engine ticks: **500** (`dt=0.1 s`).
+1. **Startup (wake mode).** Rank 0 loads the recipe given by `--job-file`, then all ranks
+   construct a `WakeChamber` on `MPI_COMM_WORLD`. `WakeChamber::init` opens libsparta,
+   changes into `input/`, and reads `in.wake_harness` once. The deck stays resident for
+   the whole run.
+2. **The handshake file.** The deck begins with `include params.inc`. The harness writes
+   `input/params.inc` (rank 0 only) with two variables - `Fwafer_cm2s` (requested wafer
+   flux) and `mbe_active` (beam on/off) - at startup, whenever the scheduler changes
+   phase, and on abort paths. When values change, the chamber is marked dirty so the deck
+   is cleared and re-read with the new values.
+3. **Advancing SPARTA.** Every `--couple-every` engine ticks, all ranks call
+   `wake.runIfDirtyOrAdvanceCollective(--sparta-block)`, which either re-reads the deck
+   (if dirty) or issues `run N` without re-reading. The Slurm script uses
+   `--couple-every 1 --sparta-block 2500`, and the deck defines `variable block equal 2500`
+   with `tick = floor(step/block)` - so **one engine tick (1 simulated minute) equals one
+   deck tick equals 2500 DSMC steps**. If you change `--sparta-block`, change the deck's
+   `block` variable to match, or the SPARTA-side tick counter will drift.
+4. **SPARTA-side output.** Each deck tick, SPARTA appends one row to
+   `data/raw/<runID>/wake_4probes.csv` (front/wake/freestream/gap pressures in Torr,
+   cupola outgassing scale and emission rate, logged wafer flux, beam state) and one row
+   to `data/raw/<runID>/residualGasAnalyzer.csv` (per-species wake partial pressures:
+   O, N, H, He, N2, O2, Ar, H2O, plus the RGA sum). The `runID` deck variable is injected
+   by run.sh as `-var runID <RUN_ID>`, so SPARTA CSVs land in the same folder as the
+   C++ CSVs.
+5. **Orbit knobs.** run.sh also injects `-var pTorrTarget` (freestream ambient pressure),
+   `-var Pcup_Torr` (target wake-side outgassing addition), and sinusoidal outgassing
+   scale parameters (`cup_base_scale`, `cup_amp_scale`, `phase0`) so the wake environment
+   varies over the orbit.
 
-### `include/SimulationEngine.hpp` + `src/SimulationEngine.cpp`
-- Minimal engine to **tick multiple subsystems** at a uniform time step.
-- API: `addSubsystem()`, `setTickStep()`, `initialize()`, `tick()`, `shutdown()`.
-
-### `include/Subsystem.hpp`
-- Interface for subsystems the engine can tick. Typically defines `initialize()`, `step(dt)`, `shutdown()`.
-
-### `Power model` (toy example to have useful CPU-side work)
-- **`PowerBus`**: tracks net generation/loads and voltage, provides attach points for sources/sinks.
-- **`SolarArray`**: simple sunlight-to-power function, publishes power to `PowerBus`.
-- **`Battery`**: integrates state-of-charge, supplies/absorbs power via `PowerBus`.
-- **`HeaterBank`**: configurable load; in `main.cpp` we call `heater.setDemand(150.0)` as an example.
-
-_All four derive from `Subsystem` and are added to the `SimulationEngine`._
-
-### `include/SpartaBridge.hpp` + `src/SpartaBridge.cpp`
-- Thin C++ wrapper over the **SPARTA C library interface**:
-  - Opens the library with `sparta_open(argc, argv, comm, &spa_)`. We pass `-log log.capi` by default.
-  - `runDeck(deck, subdir)`: `chdir` to `${PROJECT_SOURCE_DIR}/${subdir}` so **relative paths in decks** (e.g., `data/...`) resolve, then `sparta_file(deck)`.
-  - `command("...")`: pass-through to `sparta_command` (used for `"clear"`, `"run N"`, etc.).
-  - `runSteps(N)`, `clear()` helpers.
-  - RAII close in destructor.
-
-> `PROJECT_SOURCE_DIR` is provided via CMake (see below).
-
-### `include/WakeChamber.hpp` + `src/WakeChamber.cpp`
-- Higher-level façade that manages **one persistent SPARTA instance** on a specific `MPI_Comm`.
-- `init(deck, inputDir)`: read once and keep alive.
-- `runSteps(N)`: issue `"run N"` without re-reading.
-- `markDirtyReload()` + `runIfDirtyOrAdvance(N)`: on next call it will `"clear"` and re-read the original deck, then optionally run.
-- `setParameter(name, value)`: writes `input/params.inc` (rank 0 only); your decks can `include params.inc` to pick up runtime values.
-
-### (Legacy / optional) `EffusionCell.hpp/cpp`
-- Earlier single-instance helper; **not required** when using `WakeChamber` for both flows.
-
-### Tick utilities
-- `TickContext.hpp`, `TickPhaseEngine.hpp`: small helpers for staged per-tick execution (not heavily used in this scaffold).
-- `Logger.hpp/cpp`: lightweight logging convenience.
+Modes other than `wake`: `power` runs the C++ power/thermal harness with no SPARTA at
+all; `dual` is currently an alias of wake; `legacy` is the old single-instance path.
 
 ---
 
-## CMake notes
+## 4. Sim/run_orbit3.slurm - the batch queue script
 
-Minimum that matters here:
-- Expose the SPARTA headers and library path: `-DSPARTA_DIR="$HOME/opt/sparta/src"`.
-- Define `PROJECT_SOURCE_DIR` for `SpartaBridge::runDeck()` to resolve deck paths:
+### Usage
 
-```cmake
-# In Sim/CMakeLists.txt or the target where WakeChamber/SpartaBridge compile
-target_compile_definitions(Simcore PRIVATE PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
-```
-
-If SPARTA shared objects aren’t on your default path at runtime, add:
 ```bash
-export LD_LIBRARY_PATH="$HOME/opt/sparta/src:$LD_LIBRARY_PATH"
+# from the run-tree root on the cluster
+sbatch Sim/run_orbit3.slurm
 ```
+
+No arguments. Slurm resources: 8 tasks x 1 CPU, 32 GB, 100 h wall time; stdout/stderr in
+`logs/sf_queue_<jobid>.{out,err}`.
+
+### What it does
+
+The main-branch script is a simple sequential queue (much simpler than the
+decoupled-sparta version - no config CSV, no output verification):
+
+1. `cd /common/home/rvk22/spaceforge-xai-run5` (**hardcoded** - edit for your account).
+2. Loops over **every** `active_jobs/*.txt` recipe file, in shell glob order.
+3. For each recipe, runs from `Sim/`:
+
+   ```bash
+   RUN_ID="<recipe name>" \
+   MODE=wake \
+   ENABLE_SPARTA=ON \
+   GPU=OFF \
+   WAKE_DECK=in.wake_harness \
+   NP=8 \
+   ./run.sh --nticks 1350 --couple-every 1 --sparta-block 2500 \
+            --job-file "../active_jobs/<recipe>.txt"
+   ```
+
+   - `ENABLE_SPARTA=ON` - build and link libsparta in-process (the defining setting of
+     this branch).
+   - `--nticks 1350` - 1350 simulated minutes (22.5 hours), covering the longest recipes
+     plus queue/cooldown behavior.
+   - `RUN_ID` is the recipe name, so outputs land in `data/raw/V4_jobN/`.
+   - The job file path is passed **relative**: the simulator resolves `--job-file` as
+     `<input dir>/<value>`, and since run.sh passes the absolute `input/` dir, the
+     `../active_jobs/...` prefix walks from `input/` back up to the repo root. Keep that
+     `../` prefix if you add your own recipes.
+
+Each recipe runs to completion (or failure) before the next starts. There is no
+per-config parameter sweep on this branch - the physics/power constants are compiled-in
+defaults, and the dataset dimension is the recipe, not the configuration.
 
 ---
 
-## Command-line options (app)
+## 5. Sim/run.sh - build-and-run wrapper
+
+Environment-variable driven; CLI args pass through verbatim to the sim binary.
+
+### What it does
+
+1. Wipes and reconfigures `BUILD_DIR` (default `Sim/build`) every invocation, so source
+   edits always take effect:
+   `cmake -S <repo root> -B $BUILD_DIR -DSPARTA_DIR=... -DENABLE_SPARTA=... -DCMAKE_BUILD_TYPE=Release`
+   then `cmake --build -j $J`.
+2. Selects SPARTA locations from `GPU`:
+   - `GPU=OFF` uses `~/opt/sparta/src` (CPU build of libsparta / spa_)
+   - `GPU=ON` uses `~/opt/sparta/build-gpu/src` and adds Kokkos args (`-k on g 1 -sf kk`)
+3. Builds `SPARTA_EXTRA_ARGS` with the orbit `-var` knobs (pTorrTarget, Pcup_Torr,
+   cup_base_scale, cup_amp_scale, phase0, runID) unless the caller already set it.
+   `SpartaBridge` reads `SPARTA_EXTRA_ARGS` from the environment when opening libsparta.
+4. Creates `data/raw/<RUN_ID>/` and runs headless from the build directory:
+
+   ```bash
+   env -u DISPLAY -u XAUTHORITY mpirun -np $NP ./Sim/sim \
+     --mode $MODE --wake-deck $WAKE_DECK --input-subdir <abs input dir> "$@"
+   ```
+
+### Environment knobs
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `RUN_ID` | `run_default` | Output subfolder name under `data/raw/` (also SPARTA's runID). |
+| `MODE` | `wake` | Simulator mode (`wake`, `power`, `dual`, `legacy`). |
+| `WAKE_DECK` | `in.wake` | Deck filename in `input/` (Slurm uses `in.wake_harness`). |
+| `ENABLE_SPARTA` | `OFF` | `ON` = link libsparta in-process (what the Slurm script uses). `OFF` = external-binary shim fallback. |
+| `GPU` | `OFF` | CPU vs GPU (Kokkos/CUDA) SPARTA paths and args. |
+| `SPARTA_DIR` / `SPARTA_EXE` | `~/opt/sparta/...` | Override SPARTA locations. |
+| `NP` | `1` | MPI ranks (Slurm uses 8). |
+| `J` | `8` | Parallel build jobs. |
+| `BUILD_DIR` | `Sim/build` | CMake build dir (recreated each run). |
+| `INPUT_SUBDIR` | `<repo>/input` | Absolute input dir. |
+| `PTORR_TARGET` | `1.0e-7` | Freestream ambient pressure [Torr]. |
+| `PCUP_TORR` | `9.0e-9` | Target wake-side outgassing addition [Torr]. |
+| `CUP_BASE_SCALE` / `CUP_AMP_SCALE` / `CUP_PHASE0` | `1.0` / `0.50` / `0.0` | Sinusoidal orbital outgassing scale. |
+| `CC` / `CXX` | `mpicc` / `mpicxx` | Compilers. |
+
+### Example: single manual run
+
+```bash
+cd Sim
+RUN_ID=test_run1 MODE=wake ENABLE_SPARTA=ON GPU=OFF WAKE_DECK=in.wake_harness NP=8 \
+./run.sh --nticks 1350 --couple-every 1 --sparta-block 2500 \
+         --job-file ../active_jobs/V4_job1.txt
+# outputs appear in ../data/raw/test_run1/
+```
+
+Prerequisite: a built SPARTA with `libsparta_mpi.a` (or `libsparta.a`) under
+`$SPARTA_DIR`. See [Sim/readmeSim.md](Sim/readmeSim.md) for SPARTA build instructions
+(CPU and GPU/Kokkos). If the library is missing, CMake fails with
+"Couldn't find libsparta*.a".
+
+---
+
+## 6. The LLM-generated MBE recipes (active_jobs/)
+
+Each `V4_jobN.txt` is a whitespace-separated schedule; comments start with `#`.
+
+```
+# start_tick end_tick wafer_flux_cm2s heater_W mbe_on substrate_on phase_code substrate_target_K
+0    180   0.0e0     1800   0   0   SOURCE_DEGAS   300.0
+180  210   0.0e0     0      0   1   OXIDE_DESORB   893.0
+225  240   8.0e12    1700   1   1   NUCLEATE       803.0
+240  330   2.4e13    2200   1   1   GROWTH         873.0
+...
+```
+
+| Column | Meaning |
+| --- | --- |
+| `start_tick`, `end_tick` | Phase window in **minutes** of sim time. |
+| `wafer_flux_cm2s` | Requested growth flux (cm^-2 s^-1) when mbe_on=1; also a thermal anchor for source phases. |
+| `heater_W` | Effusion heater **power cap** in watts (not a temperature setpoint). |
+| `mbe_on` | Beam shutter: 1 only in growth-like phases. |
+| `substrate_on` | Substrate heater control enabled. |
+| `phase_code` | One of IDLE, SOURCE_DEGAS, OXIDE_DESORB, SOAK, NUCLEATE, GROWTH, ANNEAL, COOLDOWN. |
+| `substrate_target_K` | Substrate temperature setpoint (K). |
+
+Validation rules ([helpers.cpp](Sim/src/helpers.cpp) validateJob): growth-like phases
+(NUCLEATE, GROWTH) require mbe_on=1 and positive flux; other timed phases require
+mbe_on=0; OXIDE_DESORB/SOAK/ANNEAL/COOLDOWN require substrate_on=1; IDLE requires beam
+off and zero flux. Malformed lines are skipped with a warning. A legacy 4-column format
+(start end flux heater_W) is still accepted. If the job file is missing, the run
+continues with default heater/flux values (it does not abort on this branch).
+
+Source-side behavior per phase comes from the scheduler policy (deriveSourcePhasePolicy):
+SOURCE_DEGAS holds the source about 100 K above the flux-derived growth target, SOAK
+about 25 K below it, ANNEAL backs off about 150 K, and growth phases use
+targetTempForFlux() - a monotonic log-flux to 1100-1500 K mapping. During growth, the
+requested flux and beam state flow into SPARTA through params.inc, so the DSMC wake
+responds to the recipe in real time.
+
+---
+
+## 7. Simulator CLI reference (sim)
+
+Run `sim --help` for the authoritative list.
 
 | Flag | Default | Meaning |
 | --- | --- | --- |
-| `--mode {dual|legacy}` | `dual` | `dual`: split MPI ranks into two groups (Wake & Effusion). `legacy`: one SPARTA instance on `MPI_COMM_WORLD`. |
-| `--split N` | `size/2` | In dual mode, number of ranks for **Wake**; the rest go to **Effusion**. |
-| `--wake-deck FILE` | `in.wake` | Wake deck filename, resolved under `--input-subdir`. |
-| `--eff-deck FILE` | `in.effusion` | Effusion deck filename, resolved under `--input-subdir`. |
-| `--input-subdir DIR` | `input` | Directory (relative to project root) used as `cwd` before `sparta_file`. |
-| `--couple-every T` | `10` | Every **T engine ticks**, advance SPARTA. |
-| `--sparta-block N` | `200` | Number of SPARTA steps to run on each couple. |
+| `--mode` | `dual` | `wake` (standard), `power` (no SPARTA), `dual` (alias of wake), `legacy`. |
+| `--wake-deck` | `in.wake_harness` | Deck filename, resolved in the SPARTA working dir (`input/`). |
+| `--input-subdir` | `input` | Input directory (run.sh passes it absolute). |
+| `--job-file` | `V4_job1.txt` | Recipe file, resolved as `<input dir>/<value>` (relative only on this branch - use `../active_jobs/...`). |
+| `--nticks` | 500 | Engine ticks (simulated minutes). Slurm uses 1350. |
+| `--dt` | 60.0 | Seconds per tick. |
+| `--couple-every` | 10 | Advance SPARTA every N engine ticks (Slurm uses 1). |
+| `--sparta-block` | 200 | DSMC steps per advance (Slurm uses 2500; must match the deck's `block` variable). |
+| `--split` | size/2 | Rank split for the historical dual mode. |
 
-> The engine currently runs a fixed **500 ticks** at **dt = 0.1 s** (see `main.cpp`).
-
-### Optional: add a `--ticks` flag
-If you want a runtime cap for the engine loop:
-1. In `Args`, add `int ticks = 500;`  
-2. In `parse_args()`, parse `--ticks`  
-3. Replace `const int NTICKS = 500;` with `const int NTICKS = args.ticks;`  
-Rebuild once and then you can do:
-```bash
-... ./Sim/sim_app --mode dual --split 2 --ticks 100 --couple-every 20 --sparta-block 25
-```
+Unlike the decoupled-sparta branch, there are **no per-experiment physics flags**
+(battery capacity, solar efficiency, thermal constants, etc.) - those values are
+compiled-in defaults in the subsystem classes on this branch.
 
 ---
 
-## Decks (`input/`)
+## 8. The wake decks (input/)
 
-### `in.wake` (starter Argon wake)
-- 3D, open boundaries, inflow from **xlo** using a drifting Maxwellian (`mixture air ...` with `Ar`).
-- Sets `global nrho`, `global fnum` so **particle weight** is defined.
-- Diagnostics: `stats`, `c_temp`.
-- `timestep 7e-9` and `run 1000` (consider commenting out the `run 1000`).
+### in.wake_harness (used by the Slurm script)
 
-### `in.effusion` (MBE-cell stand‑in)
-- Small open box, grid 8×8×8.
-- **Important fix:** include the species/mixture in the collide line. Either:
+- 3D LEO wake at 400 km: freestream mixture O/N/N2/O2 (pymsis-derived fractions,
+  normalized) drifting at 7500 m/s, Tgas 800 K, open boundaries, timestep 1.0e-5 s.
+- Geometry via `read_surf`: `surf/wsf.surf` (wake-shield facility), `surf/wafer_300mm.surf`
+  (300 mm wafer behind the shield), `surf/mbe_orifice_10mm.surf` (MBE source orifice).
+- H2O outgassing is emitted from the WSF wake face, scaled sinusoidally over the orbit
+  (`cup_base_scale`, `cup_amp_scale`, `phase0`) toward a target wake addition of
+  `Pcup_Torr`.
+- Harness-driven variables `Fwafer_cm2s` and `mbe_active` arrive via `include params.inc`.
+- Outputs per deck tick (2500 steps): `wake_4probes.csv` (front/wake/free/gap pressures
+  and emission state) and `residualGasAnalyzer.csv` (per-species wake partial pressures),
+  both appended under `data/raw/<runID>/`.
 
-  **(A) collide the species directly)**
-  ```sparta
-  species data/ar.species Ar
-  collide vss Ar data/ar.vss
-  fix fe emit/face xlo species Ar temp 300.0 n 1.0e20 vstream 800.0 0.0 0.0
-  ```
-  **(B) or define a mixture and emit/collide it)**
-  ```sparta
-  species data/ar.species Ar
-  mixture beam Ar temp 300.0 vstream 800.0 0 0
-  collide vss beam data/ar.vss
-  fix fe emit/face xlo beam
-  ```
+### in.wake_harness_cupola (variant)
 
-- To match wake particle weight, add the same **`global fnum`** used in `in.wake`:
-  ```sparta
-  global fnum 7.07043e6
-  ```
-
-- As with `in.wake`, consider removing the initial `run 1000` and let the app drive stepping.
-
-> Both decks run with **open boundaries** and **no surfaces**. If/when you add geometry (shield, wafer), import a mesh and enable `surf_collide ...`; your current logs show all `Surface-* = 0`, which is expected for gas-only tests.
+Same harness-driven pattern, but with the cupola pencil-beam MBE orifice geometry and
+the orbit scaling internal to the deck. Select it with `WAKE_DECK=in.wake_harness_cupola`.
 
 ---
 
-## Typical output & what it means
+## 9. Outputs
 
-- Big block like “`Loop time ... for 1000 steps`” at start → comes from `run 1000` at the end of each deck.
-- Later, smaller repeating blocks (“`for 50 steps`” or “`for 200 steps`”) → triggered by your **coupling cadence** (`--sparta-block` each time the engine reaches `--couple-every` ticks).
-- It returns to the shell when **both** MPI sub-groups finish their 500-tick engine loops and `MPI_Finalize()` completes.
+All outputs collect under `data/raw/<RUN_ID>/`:
 
----
+- **C++ subsystem CSVs** (one row per tick, written via Logger): Battery.csv,
+  EffusionCell.csv, HeaterBank.csv, Orbit.csv, PowerBus.csv, ProcessState.csv,
+  ScheduleState.csv, ScheduleStateText.csv, SimulationEngine.csv, SolarArray.csv,
+  substrate.csv, WakeChamber.csv, plus an Events log.
+- **SPARTA CSVs** (one row per deck tick): wake_4probes.csv, residualGasAnalyzer.csv.
+- **Diagnostics**: `sim_debug_<RUN_ID>_<mode>.log` (rank-0 event log) and
+  `sim_rank_progress_r<K>_*.log` (per-rank progress for MPI hang debugging) in the
+  directory the simulator ran from; `log.capi` / SPARTA logs in `input/`.
 
-## Troubleshooting
-
-- **`ERROR: Illegal collide command (collide_vss.cpp:45)`**  
-  Supply a species/mixture name: `collide vss Ar data/ar.vss` (or create a `mixture` and use that ID).
-
-- **“Authorization required, but no authorization protocol specified”**  
-  Harmless X11 message; ignore—you're already running headless with `env -u DISPLAY`.
-
-- **SPARTA library not found** at runtime  
-  Add it to the loader path:  
-  `export LD_LIBRARY_PATH="$HOME/opt/sparta/src:$LD_LIBRARY_PATH"`
-
-- **Warning about ghost cells not clumped**  
-  Benign for small tests. If you want to silence/optimize, try `balance_grid rcb clump part` or align grid decomposition with ranks.
-
-- **Deck includes not found**  
-  `SpartaBridge` changes CWD to `${PROJECT_SOURCE_DIR}/${input_subdir}` before `sparta_file`. Make sure CMake defines `PROJECT_SOURCE_DIR` for the target (see CMake notes).
-
-- **Too much console spam**  
-  Increase `stats` interval in the decks (e.g., `stats 1000`).
+Logger resolves its base directory as `SF_LOG_DIR` if set, else
+`<repo>/data/raw`, and appends `RUN_ID` as a subfolder.
 
 ---
 
-## License & acknowledgments
+## 10. Build notes
 
-- SPARTA is © Sandia National Laboratories; see SPARTA’s own license for terms.
-- This scaffold is for demonstration and research coupling patterns only.
-- Contributions welcome via PRs (please keep the example decks small and self‑contained).
+- Top-level [CMakeLists.txt](CMakeLists.txt): `-DENABLE_SPARTA=ON` requires
+  `-DSPARTA_DIR` (or env `SPARTA_DIR`) pointing at a SPARTA tree containing
+  `libsparta_mpi.a` or `libsparta.a`. With `ENABLE_SPARTA=OFF` a stub target is used and
+  the external-binary shim is compiled instead.
+- `PROJECT_SOURCE_DIR` is baked in so deck-relative paths (`data/...`, `surf/...`)
+  resolve when SPARTA changes into `input/`.
+- Requires MPI (OpenMPI tested), CMake 3.20+, C++17.
+
+---
+
+## 11. Troubleshooting
+
+| Symptom | Cause / fix |
+| --- | --- |
+| CMake: `Couldn't find libsparta*.a` | Build SPARTA first (see [Sim/readmeSim.md](Sim/readmeSim.md)) or fix SPARTA_DIR. |
+| `[info] No jobs.txt found at ...` | `--job-file` path wrong - it resolves under the input dir, so recipes need the `../active_jobs/` prefix. The run continues with defaults, so check this line in the log. |
+| SPARTA tick counter drifts from harness ticks | `--sparta-block` no longer matches the deck's `variable block equal 2500`. Keep them equal. |
+| Deck includes not found | SPARTA runs with cwd `input/`; make sure `params.inc` exists (the harness writes it at startup) and `data/` / `surf/` paths are intact. |
+| Runs take hours | Expected on this branch: full DSMC coupling. Use the decoupled-sparta branch for fast C++-only dataset generation. |
+| X11 "Authorization required" noise | Harmless; runs are headless (`env -u DISPLAY -u XAUTHORITY`). |
+| Too much console spam | Increase `stats` interval in the deck. |
+
+---
+
+## License and acknowledgments
+
+- SPARTA is (c) Sandia National Laboratories; see SPARTA's own license for terms.
+- This project is a research scaffold for coupling DSMC wake physics to spacecraft
+  power/thermal scheduling; it is not a chemistry-complete MBE digital twin.
