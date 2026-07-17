@@ -25,6 +25,11 @@ set(SIMCORE_SOURCES
   src/GrowthMonitor.cpp
   src/helpers.cpp
   src/HeaterBank.cpp
+  src/ArrayGimbal.cpp
+  src/BatteryThermal.cpp
+  src/CryoPanel.cpp
+  src/Radiator.cpp
+  src/SourceInventory.cpp
 )
 
 set(SIMCORE_HEADERS
@@ -45,6 +50,11 @@ set(SIMCORE_HEADERS
   include/helpers.hpp
   include/SpartaBridge.hpp
   include/HeaterBank.hpp
+  include/ArrayGimbal.hpp
+  include/BatteryThermal.hpp
+  include/CryoPanel.hpp
+  include/Radiator.hpp
+  include/SourceInventory.hpp
 )
 
 # Choose Sparta bridge implementation

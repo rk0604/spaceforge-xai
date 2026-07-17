@@ -45,6 +45,13 @@ Run (from build/, headless):
 #include "helpers.hpp"       // new helpers split from main
 #include "SubstrateHeater.hpp"
 
+// ST-GNN hardware expansion nodes (decoupled-sparta-copy experiment)
+#include "ArrayGimbal.hpp"
+#include "BatteryThermal.hpp"
+#include "CryoPanel.hpp"
+#include "Radiator.hpp"
+#include "SourceInventory.hpp"
+
 
 // Bring helper types/functions into local scope
 using SimHelpers::Args;
@@ -888,6 +895,37 @@ int main(int argc, char** argv) {
     substrateHeater.setIsLeader(rank == 0);
     growth.setNumJobs(njobs);
 
+    // ------------------------------------------------------------------
+    // ST-GNN hardware expansion nodes (decoupled-sparta-copy experiment).
+    //
+    // Radiator        - louvered panel + coolant loop; sink for waste heat.
+    // BatteryThermal  - pack temperature, survival heaters, derates Battery.
+    // CryoPanel       - cryocooler load with regeneration bursts.
+    // SourceInventory - depleting crucible charge, biases EffusionCell.
+    // ArrayGimbal     - sun-tracking drive, cos-loss on SolarArray output.
+    //
+    // All five log their own wide-format CSVs through Logger, identical in
+    // structure to the existing subsystem CSVs.
+    // ------------------------------------------------------------------
+    Radiator radiator;
+    radiator.setPowerBus(&bus);
+
+    BatteryThermal batteryThermal;
+    batteryThermal.setBattery(&battery);
+    batteryThermal.setPowerBus(&bus);
+    batteryThermal.setRadiator(&radiator);
+
+    CryoPanel cryoPanel;
+    cryoPanel.setPowerBus(&bus);
+    cryoPanel.setRadiator(&radiator);
+
+    SourceInventory sourceInventory;
+    sourceInventory.setEffusionCell(&effCell);
+
+    ArrayGimbal arrayGimbal;
+    arrayGimbal.setPowerBus(&bus);
+    arrayGimbal.setSolarArray(&solar);
+
     /**
      * old order 
         engine.addSubsystem(&solar);      // 1) power source
@@ -902,6 +940,10 @@ int main(int argc, char** argv) {
 
     SimulationEngine engine;
 
+    // 0) Gimbal ticks BEFORE solar so its pointing efficiency applies to
+    //    this tick's array output
+    engine.addSubsystem(&arrayGimbal);
+
     // 1) Solar generates power and adds it to the bus early in the tick
     engine.addSubsystem(&solar);
 
@@ -912,13 +954,27 @@ int main(int argc, char** argv) {
     engine.addSubsystem(&substrateHeater);
     engine.addSubsystem(&effCell);
 
+    // 3b) SourceInventory reads this tick's settled source temperature and
+    //     pushes depletion effects that apply from the next tick onward
+    engine.addSubsystem(&sourceInventory);
+
+    // 3c) Cryocooler and battery thermal draw bus power and deposit their
+    //     waste heat on the radiator loop for this tick
+    engine.addSubsystem(&cryoPanel);
+    engine.addSubsystem(&batteryThermal);
+
     // 4) GrowthMonitor draws instrument power (so it MUST be before bus bookkeeping)
     engine.addSubsystem(&growth);
+
+    // 4b) Radiator integrates the deposited heat loads and draws louver
+    //     actuator power (still before bus bookkeeping)
+    engine.addSubsystem(&radiator);
 
     // 5) Bus bookkeeping MUST be after all producers/consumers have run
     engine.addSubsystem(&bus);
 
-    // 6) Battery logs LAST so it reflects the post-bus charge/discharge state for the tick
+    // 6) Battery logs LAST so it reflects the post-bus charge/discharge state
+    //    for the tick, and snapshots per-tick flows for BatteryThermal
     engine.addSubsystem(&battery);
 
 
@@ -969,6 +1025,8 @@ int main(int argc, char** argv) {
         heater.setPrioritySubstrate(false);
         // No jobs in power-only mode -> growth monitor gets jobIndex=-1, mbeOff.
         growth.setBeamState(-1, false, 0.0);
+        sourceInventory.setProcessState(0.0, false);
+        cryoPanel.setProcessState(0.0, false);
         engine.tick();
         MPI_Barrier(MPI_COMM_WORLD);
       }
@@ -2047,6 +2105,10 @@ int main(int argc, char** argv) {
           growth.setBeamState(jobIndexForGrowth,
                               mbe_flag > 0.5,
                               growth_flux_cm2s);
+
+          // Push the same beam/flux state into the hardware expansion nodes.
+          sourceInventory.setProcessState(growth_flux_cm2s, mbe_flag > 0.5);
+          cryoPanel.setProcessState(growth_flux_cm2s, mbe_flag > 0.5);
 
                               // earlier logging was here, but moved after decision logic for cleaner logs and to capture the effect of decisions on SPARTA state in the same tick
 

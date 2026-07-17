@@ -96,6 +96,11 @@ EXPECTED_CSVS=(
     "SimulationEngine.csv"
     "SolarArray.csv"
     "substrate.csv"
+    "ArrayGimbal.csv"
+    "BatteryThermal.csv"
+    "CryoPanel.csv"
+    "Radiator.csv"
+    "SourceInventory.csv"
 )
 
 JOB_COUNTER=0

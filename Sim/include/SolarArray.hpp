@@ -21,9 +21,19 @@ public:
     double getEfficiency() const { return efficiency_; }
     double getBaseInputW() const { return base_input_; }
 
+    /*
+        Pointing efficiency pushed by ArrayGimbal each tick (0..1).
+
+        Multiplies the electrical output: cos-loss of the gimbal pointing
+        error. Defaults to 1.0 so the array behaves exactly as before when
+        no gimbal is wired.
+    */
+    void setPointingEfficiency(double eff);
+
 private:
     PowerBus* bus_;
     double efficiency_;   // fraction of incident solar converted to electrical power
     double base_input_;   // baseline solar input at solar_scale=1 (W)
     double last_output_;  // last tick electrical output (W)
+    double pointing_eff_ = 1.0; // gimbal cos-loss multiplier (0..1)
 };

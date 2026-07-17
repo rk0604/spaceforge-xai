@@ -1,5 +1,6 @@
 #include "SolarArray.hpp"
 #include "Logger.hpp"
+#include <algorithm>
 #include <cmath>
 
 // Global sunlight scale driven by OrbitModel in main.cpp.
@@ -63,7 +64,9 @@ void SolarArray::tick(const TickContext& ctx) {
     }
 
     const double solar_input = base_input_ * solar_scale; // W of sunlight
-    const double output      = solar_input * efficiency_; // W electrical
+
+    // Gimbal pointing cos-loss (1.0 when no ArrayGimbal is wired).
+    const double output = solar_input * efficiency_ * pointing_eff_; // W electrical
 
     last_output_ = output;
 
@@ -85,6 +88,13 @@ void SolarArray::shutdown() {
 
 void SolarArray::setPowerBus(PowerBus* bus) {
     bus_ = bus;
+}
+
+void SolarArray::setPointingEfficiency(double eff) {
+    if (!std::isfinite(eff)) {
+        return;
+    }
+    pointing_eff_ = std::max(0.0, std::min(1.0, eff));
 }
 
 double SolarArray::getLastOutput() const {

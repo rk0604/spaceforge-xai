@@ -278,7 +278,17 @@ void EffusionCell::setTargetTempK(double T_K) {
         return;
     }
 
-    target_temp_K_ = T_K;
+    /*
+        SourceInventory depletion bias: an aging crucible needs a hotter
+        source for the same flux. Only meaningful process targets are
+        biased; idle-level targets stay untouched so idle behavior is
+        unchanged.
+    */
+    if (T_K > 400.0) {
+        target_temp_K_ = T_K * (1.0 + inventory_temp_bias_frac_);
+    } else {
+        target_temp_K_ = T_K;
+    }
 }
 
 bool EffusionCell::hasMeaningfulTarget() const {

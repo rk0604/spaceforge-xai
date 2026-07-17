@@ -68,15 +68,55 @@ public:
     double getCharge() const;
 
     // Regime getters used for logging and dataset conditioning.
+    // These return the CONFIGURED limits so regime columns stay constant.
     double getCapacityWh() const { return capacity_; }
     double getMaxChargeW() const { return max_charge_rate_W_; }
     double getMaxDischargeW() const { return max_discharge_rate_W_; }
+
+    /*
+        Effective limits after BatteryThermal derating. PowerBus clamps
+        against these so a cold pack genuinely cannot deliver its full
+        rated discharge power.
+    */
+    double getEffectiveMaxDischargeW() const {
+        return max_discharge_rate_W_ * thermal_derate_dis_;
+    }
+    double getEffectiveMaxChargeW() const {
+        return max_charge_rate_W_ * thermal_derate_chg_;
+    }
 
     // Called by PowerBus when the bus cannot satisfy a load.
     double discharge(double needed_W, double dt);
 
     // Called by PowerBus to store surplus bus energy.
     void chargeFromSurplus(double surplus_W, double dt);
+
+    /*
+        Thermal derating pushed by BatteryThermal each tick.
+
+        discharge_factor scales the effective max discharge power.
+        charge_factor scales the effective max charge power.
+
+        Both default to 1.0 so the battery behaves exactly as before when no
+        BatteryThermal node is wired. Values are clamped to [0.1, 1.0] so a
+        bad input can never fully disable the battery.
+    */
+    void setThermalDerating(double discharge_factor, double charge_factor) {
+        if (std::isfinite(discharge_factor)) {
+            thermal_derate_dis_ = std::clamp(discharge_factor, 0.1, 1.0);
+        }
+        if (std::isfinite(charge_factor)) {
+            thermal_derate_chg_ = std::clamp(charge_factor, 0.1, 1.0);
+        }
+    }
+
+    /*
+        Previous-tick power flow snapshots used by BatteryThermal for Joule
+        heating. Battery::tick runs last in the engine order, snapshots the
+        per-tick accumulators, and resets them.
+    */
+    double getPrevTickDischargeW() const { return prev_tick_discharge_W_; }
+    double getPrevTickChargeW() const { return prev_tick_charge_W_; }
 
 private:
     PowerBus* bus_;
@@ -102,4 +142,22 @@ private:
             4000 W
     */
     double max_discharge_rate_W_ = 4000.0;
+
+    /*
+        Thermal derating factors from BatteryThermal (1.0 = no derating).
+    */
+    double thermal_derate_dis_ = 1.0;
+    double thermal_derate_chg_ = 1.0;
+
+    /*
+        Per-tick power flow accumulators and their previous-tick snapshots.
+
+        The accumulators grow inside discharge() and chargeFromSurplus()
+        during a tick; Battery::tick (which runs after PowerBus bookkeeping)
+        snapshots and resets them.
+    */
+    double discharge_this_tick_W_ = 0.0;
+    double charge_this_tick_W_    = 0.0;
+    double prev_tick_discharge_W_ = 0.0;
+    double prev_tick_charge_W_    = 0.0;
 };

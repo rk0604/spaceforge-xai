@@ -88,6 +88,26 @@ public:
     void setTargetTempK(double T_K);
 
     /*
+        Fractional target-temperature bias pushed by SourceInventory.
+
+        As the crucible charge depletes, the temperature required to sustain
+        a given flux rises. The bias is applied inside setTargetTempK to
+        every meaningful (above idle) scheduler target:
+
+            T_target_eff = T_target * (1 + bias)
+
+        Clamped to [0, 0.5]. Defaults to 0 so the cell behaves exactly as
+        before when no SourceInventory node is wired.
+    */
+    void setInventoryTempBiasFrac(double bias_frac) {
+        if (std::isfinite(bias_frac)) {
+            inventory_temp_bias_frac_ = std::clamp(bias_frac, 0.0, 0.5);
+        }
+    }
+
+    double getInventoryTempBiasFrac() const { return inventory_temp_bias_frac_; }
+
+    /*
         Configure the core source thermal constants.
 
         c_j_per_k
@@ -251,6 +271,9 @@ private:
 
     // Desired process target temperature in kelvin.
     double target_temp_K_{300.0};
+
+    // Fractional target bias from SourceInventory depletion (0 = fresh charge).
+    double inventory_temp_bias_frac_{0.0};
 
     // Last-applied heater power in watts from HeaterBank.
     double last_heat_W_{0.0};

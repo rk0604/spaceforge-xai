@@ -49,9 +49,9 @@ double PowerBus::drawPower(double requested, const TickContext& ctx) {
     double from_batt = 0.0;
     if (battery_ && remaining_need > 0.0) {
         
-        // Query the battery's physical hardware limit
-        // (Note: Adjust getMaxDischargeW() if your Battery.hpp uses a different getter name)
-        const double max_batt_rate_W = battery_->getMaxDischargeW(); 
+        // Query the battery's effective limit (configured hardware limit
+        // times any thermal derating pushed by BatteryThermal).
+        const double max_batt_rate_W = battery_->getEffectiveMaxDischargeW();
         
         // Calculate how much more power we are ALLOWED to pull from the battery this tick
         const double allowed_from_batt_W = std::max(0.0, max_batt_rate_W - battery_discharged_this_tick_);

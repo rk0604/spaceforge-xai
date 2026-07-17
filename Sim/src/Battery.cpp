@@ -101,11 +101,12 @@ void Battery::chargeFromSurplus(double surplus_W, double dt) {
     }
 
     /*
-        Apply the configured charge rate limit first.
+        Apply the charge rate limit first, including any thermal derating
+        pushed by BatteryThermal.
 
         The power bus may have more surplus than the battery can safely accept.
     */
-    const double actual_W = std::min(surplus_W, max_charge_rate_W_);
+    const double actual_W = std::min(surplus_W, getEffectiveMaxChargeW());
 
     /*
         Convert delivered charging power into stored energy.
@@ -116,6 +117,9 @@ void Battery::chargeFromSurplus(double surplus_W, double dt) {
         Clamp to the configured physical capacity.
     */
     charge_ = std::clamp(charge_ + added_Wh, 0.0, capacity_);
+
+    // Track the accepted charging power for BatteryThermal Joule heating.
+    charge_this_tick_W_ += actual_W;
 }
 
 double Battery::discharge(double needed_W, double dt) {
@@ -133,9 +137,10 @@ double Battery::discharge(double needed_W, double dt) {
     }
 
     /*
-        The battery cannot exceed the configured discharge power limit.
+        The battery cannot exceed the discharge power limit, including any
+        thermal derating pushed by BatteryThermal.
     */
-    const double rate_limited_W = std::min(needed_W, max_discharge_rate_W_);
+    const double rate_limited_W = std::min(needed_W, getEffectiveMaxDischargeW());
 
     /*
         The battery also cannot deliver more energy than it currently stores.
@@ -161,6 +166,9 @@ double Battery::discharge(double needed_W, double dt) {
 
     charge_ = std::clamp(charge_ - used_Wh, 0.0, capacity_);
 
+    // Track the delivered discharge power for BatteryThermal Joule heating.
+    discharge_this_tick_W_ += output_W;
+
     return output_W;
 }
 
@@ -170,7 +178,17 @@ void Battery::tick(const TickContext& ctx) {
 
         The battery tick only logs the state after bus accounting has updated
         the stored charge for this tick.
+
+        Battery ticks last in the engine order, so both discharge (loads)
+        and charge (bus surplus) flows for this tick are final here. Snapshot
+        them for BatteryThermal, which consumes them next tick with a
+        deliberate one-tick lag, then reset the accumulators.
     */
+    prev_tick_discharge_W_ = discharge_this_tick_W_;
+    prev_tick_charge_W_    = charge_this_tick_W_;
+    discharge_this_tick_W_ = 0.0;
+    charge_this_tick_W_    = 0.0;
+
     Logger::instance().log_wide(
         "Battery",
         ctx.tick_index,
