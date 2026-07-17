@@ -11,6 +11,26 @@ namespace SimHelpers {
 using LogFn = std::function<void(const std::string&)>;
 
 // -----------------------------------------------------------------------------
+// Shared physical constants and numeric guards
+// -----------------------------------------------------------------------------
+// Single source of truth for values used by more than one subsystem, so
+// radiative and orbit-thermal physics cannot silently diverge between nodes.
+
+// Stefan-Boltzmann constant (W m^-2 K^-4). Used by SubstrateHeater and
+// Radiator radiative-loss terms.
+inline constexpr double kStefanBoltzmannWm2K4 = 5.670374419e-8;
+
+// Clamp to [0, 1]; non-finite input returns 0.
+double clamp01(double v);
+
+// Clamp to [lo, hi]; non-finite input returns the fallback instead.
+double clampFiniteOrDefault(double value, double lo, double hi, double fallback);
+
+// Orbit day/night interpolation shared by every thermal node:
+//   value = night + (day - night) * clamp01(solar_scale)
+double lerpDayNight(double night_value, double day_value, double solar_scale);
+
+// -----------------------------------------------------------------------------
 // CLI arguments / configuration
 // -----------------------------------------------------------------------------
 // These values control simulator startup and top-level execution behavior.

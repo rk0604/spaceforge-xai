@@ -940,12 +940,15 @@ int main(int argc, char** argv) {
 
     SimulationEngine engine;
 
-    // 0) Gimbal ticks BEFORE solar so its pointing efficiency applies to
-    //    this tick's array output
-    engine.addSubsystem(&arrayGimbal);
-
     // 1) Solar generates power and adds it to the bus early in the tick
+    //    (using the pointing efficiency the gimbal pushed LAST tick)
     engine.addSubsystem(&solar);
+
+    // 1b) Gimbal ticks right after solar: its draw lands on a bus that
+    //     already holds this tick's generation (no needless battery
+    //     micro-cycling), and the pointing efficiency it computes applies
+    //     to the next tick's output - a deliberate one-tick lag
+    engine.addSubsystem(&arrayGimbal);
 
     // 2) Loads draw power during the tick
     engine.addSubsystem(&heater);
@@ -1100,6 +1103,10 @@ int main(int argc, char** argv) {
                        /*dt_s=*/dt,
                        /*inclination_rad=*/0.0,
                        /*sun_theta_rad=*/0.0);
+
+      // Keep the gimbal's Sun-sweep rate in lockstep with the real orbit so
+      // there is a single source of truth for the orbital period.
+      arrayGimbal.setOrbitPeriodS(orbit.period_s());
 
       if (isLeader) {
         std::ostringstream oss;

@@ -126,10 +126,10 @@ void SubstrateHeater::setOrbitThermalEnvironment(double solar_scale) {
 
 double SubstrateHeater::computeEffectiveEnvTempK() const {
   /*
-      Interpolate between eclipse and sunlit effective ambient temperatures.
+      Interpolate between eclipse and sunlit effective ambient temperatures
+      via the shared orbit-thermal helper.
   */
-  return T_env_night_K_ +
-         (T_env_day_K_ - T_env_night_K_) * solar_scale_;
+  return SimHelpers::lerpDayNight(T_env_night_K_, T_env_day_K_, solar_scale_);
 }
 
 double SubstrateHeater::computeSolarAbsorbedPowerW() const {

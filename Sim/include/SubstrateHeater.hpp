@@ -7,6 +7,7 @@
 #include "Subsystem.hpp"
 #include "TickContext.hpp"
 #include "Logger.hpp"
+#include "helpers.hpp"
 
 /*
     SubstrateHeater models the wafer-side thermal plant for the simulator.
@@ -467,7 +468,9 @@ private:
           ready band = 5 K
           fail limit = 20 ticks
   */
-  inline static constexpr double sigma_ = 5.670374419e-8;
+  // Shared physical constant so the radiative physics here and in Radiator
+  // can never silently diverge.
+  inline static constexpr double sigma_ = SimHelpers::kStefanBoltzmannWm2K4;
 
   inline static double emissivity_       = 0.80;
   inline static double h_cond_WK_        = 0.10;

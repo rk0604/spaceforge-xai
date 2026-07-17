@@ -49,14 +49,17 @@ public:
     void setPowerBus(PowerBus* bus) { bus_ = bus; }
 
     /*
-        Deposit waste heat (watts) into the coolant loop for the current tick.
+        Deposit heat (watts, signed) into the coolant loop for the current
+        tick. Positive adds heat to the loop; negative removes it (e.g. the
+        loop conductively warming a colder battery pack), which keeps energy
+        conserved between coupled nodes.
 
         Callers are other subsystems that tick before the radiator inside the
         same engine tick. The accumulator is consumed and reset when the
         radiator itself ticks.
     */
     void addHeatLoad(double watts) {
-        if (std::isfinite(watts) && watts > 0.0) {
+        if (std::isfinite(watts)) {
             heat_load_this_tick_W_ += watts;
         }
     }

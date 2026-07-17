@@ -59,8 +59,6 @@ public:
     void setPowerBus(PowerBus* bus)  { bus_      = bus; }
     void setRadiator(Radiator* rad)  { radiator_ = rad; }
 
-    double getPackTempK() const { return pack_temp_K_; }
-
 private:
     Battery*  battery_  = nullptr;
     PowerBus* bus_      = nullptr;

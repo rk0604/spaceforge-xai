@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <cmath>
 
 #include "Subsystem.hpp"
@@ -38,8 +37,17 @@ class SolarArray;
         P_req = sunlit:  P_track + P_slew * |step| / (omega_max * dt)
                 eclipse: P_park
 
-    The pointing efficiency multiplies the SolarArray electrical output, so
-    dawn re-acquisition couples directly into battery recharge headroom.
+    Tick ordering and lag
+
+    This node ticks AFTER SolarArray, so its electrical draw lands on a bus
+    that already holds this tick's solar generation (instead of forcing a
+    needless battery micro-discharge every tick). The pointing efficiency it
+    pushes therefore applies to the NEXT tick's array output - a deliberate
+    one-tick lag, consistent with the other feedback edges in the sim
+    (battery derating, inventory target bias).
+
+    The orbit period defaults to the 400 km value but should be synced from
+    the real OrbitModel via setOrbitPeriodS so there is one source of truth.
 */
 class ArrayGimbal : public Subsystem {
 public:
@@ -52,26 +60,30 @@ public:
     void setPowerBus(PowerBus* bus)     { bus_   = bus; }
     void setSolarArray(SolarArray* arr) { array_ = arr; }
 
-    double getPointingErrorRad() const { return pointing_err_rad_; }
-    double getPointingEfficiency() const { return pointing_eff_; }
+    /*
+        Sync the Sun-sweep rate with the actual orbit model. main.cpp calls
+        this with OrbitModel::period_s() so the gimbal's internal sun angle
+        cannot drift against the real eclipse phase.
+    */
+    void setOrbitPeriodS(double period_s) {
+        if (std::isfinite(period_s) && period_s > 60.0) {
+            orbit_period_s_ = period_s;
+        }
+    }
 
 private:
     PowerBus*   bus_   = nullptr;
     SolarArray* array_ = nullptr;
 
     // Geometric Sun direction and gimbal shaft angle (radians, wrapped).
+    // These persist across ticks; everything else in tick() is derived.
     double sun_angle_rad_{0.0};
     double gimbal_angle_rad_{0.0};
 
-    // Diagnostics recomputed every tick.
-    double pointing_err_rad_{0.0};
-    double pointing_eff_{1.0};
-
     // ---- Model constants ----
 
-    // Orbit period used for the Sun direction sweep (seconds). Matches the
-    // 400 km OrbitModel period used in main.cpp closely enough for the
-    // pointing model.
+    // Orbit period for the Sun direction sweep (seconds). Default matches
+    // the 400 km OrbitModel; overridden at startup via setOrbitPeriodS.
     double orbit_period_s_{5560.0};
 
     // Maximum gimbal slew rate (radians per second). 0.3 deg/s.

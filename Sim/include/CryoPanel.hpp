@@ -79,9 +79,6 @@ public:
         beam_on_ = beam_on;
     }
 
-    double getColdTipTempK() const { return cold_temp_K_; }
-    double getAdsorbedGrams() const { return adsorbed_g_; }
-
 private:
     PowerBus* bus_      = nullptr;
     Radiator* radiator_ = nullptr;
@@ -132,6 +129,13 @@ private:
     int    regen_duration_ticks_{25};
     double p_regen_W_{200.0};
     double m_residual_g_{0.5};
+
+    // Linear desorption rate that empties threshold -> residual across the
+    // regen window. Derived once here so the decay invariant lives next to
+    // the constants it depends on (declaration order matters).
+    double regen_release_g_per_tick_{
+        (m_regen_threshold_g_ - m_residual_g_) /
+        static_cast<double>(regen_duration_ticks_)};
 
     // Fraction of regen heater power that heats the cold head; the rest is
     // rejected to the radiator loop.

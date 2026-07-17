@@ -2,9 +2,12 @@
 
 #include "EffusionCell.hpp"
 #include "Logger.hpp"
+#include "helpers.hpp"
 
 #include <algorithm>
 #include <cmath>
+#include <string>
+#include <vector>
 
 /*
     SourceInventory
@@ -20,10 +23,20 @@
 */
 
 namespace {
-double clamp01(double v) {
-    if (!std::isfinite(v)) return 0.0;
-    return std::clamp(v, 0.0, 1.0);
-}
+
+// One shared column list keeps the header row (initialize) and the data rows
+// (tick) from ever drifting apart.
+const std::vector<std::string> kColumns = {
+    "status",
+    "remaining_g",
+    "remaining_frac",
+    "deplete_rate_g_min",
+    "live_deposition",
+    "cell_temp_K",
+    "c_eff_J_per_K",
+    "temp_bias_frac"
+};
+
 } // namespace
 
 void SourceInventory::initialize() {
@@ -41,17 +54,7 @@ void SourceInventory::initialize() {
     }
 
     Logger::instance().log_wide(
-        "SourceInventory", 0, 0.0,
-        {
-            "status",
-            "remaining_g",
-            "remaining_frac",
-            "deplete_rate_g_min",
-            "live_deposition",
-            "cell_temp_K",
-            "c_eff_J_per_K",
-            "temp_bias_frac"
-        },
+        "SourceInventory", 0, 0.0, kColumns,
         {1.0, remaining_g_, 1.0, 0.0, 0.0, 300.0, c0_J_per_K_, 0.0}
     );
 }
@@ -76,7 +79,7 @@ void SourceInventory::tick(const TickContext& ctx) {
 
     remaining_g_ = std::max(0.0, remaining_g_ - deplete_rate_g_min * dt_min);
 
-    const double frac = clamp01(
+    const double frac = SimHelpers::clamp01(
         (initial_g_ > 0.0) ? (remaining_g_ / initial_g_) : 0.0);
 
     // ---- 2) Feed the depletion back into the source thermal model ----
@@ -91,17 +94,7 @@ void SourceInventory::tick(const TickContext& ctx) {
     }
 
     Logger::instance().log_wide(
-        "SourceInventory", ctx.tick_index, ctx.time,
-        {
-            "status",
-            "remaining_g",
-            "remaining_frac",
-            "deplete_rate_g_min",
-            "live_deposition",
-            "cell_temp_K",
-            "c_eff_J_per_K",
-            "temp_bias_frac"
-        },
+        "SourceInventory", ctx.tick_index, ctx.time, kColumns,
         {
             1.0,
             remaining_g_,

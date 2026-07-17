@@ -27,11 +27,25 @@ static bool arg_eq(const char* a, const char* b) {
   return std::strcmp(a, b) == 0;
 }
 
-static double clampFiniteOrDefault(double value, double lo, double hi, double fallback) {
+// -----------------------------------------------------------------------------
+// Shared numeric guards (declared in helpers.hpp)
+// -----------------------------------------------------------------------------
+double clamp01(double v) {
+  if (!std::isfinite(v)) {
+    return 0.0;
+  }
+  return std::clamp(v, 0.0, 1.0);
+}
+
+double clampFiniteOrDefault(double value, double lo, double hi, double fallback) {
   if (!std::isfinite(value)) {
     return fallback;
   }
   return std::clamp(value, lo, hi);
+}
+
+double lerpDayNight(double night_value, double day_value, double solar_scale) {
+  return night_value + (day_value - night_value) * clamp01(solar_scale);
 }
 
 // -----------------------------------------------------------------------------

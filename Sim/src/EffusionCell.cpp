@@ -1,6 +1,7 @@
 #include "EffusionCell.hpp"
 #include "Logger.hpp"
 #include "WakeChamber.hpp"
+#include "helpers.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -183,9 +184,8 @@ void EffusionCell::setOrbitThermalEnvironment(double solar_scale) {
         This is the corrected model where eclipse uses the configured night
         ambient value, normally 250 K for the regenerated dataset.
     */
-    ambient_temp_K_ =
-        night_ambient_temp_K_ +
-        (day_ambient_temp_K_ - night_ambient_temp_K_) * solar_scale_;
+    ambient_temp_K_ = SimHelpers::lerpDayNight(
+        night_ambient_temp_K_, day_ambient_temp_K_, solar_scale_);
 
     /*
         Compute absorbed solar heating acting directly on the source node.

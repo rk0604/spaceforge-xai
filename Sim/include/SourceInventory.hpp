@@ -63,12 +63,6 @@ public:
         beam_on_ = beam_on;
     }
 
-    double getRemainingGrams() const { return remaining_g_; }
-    double getRemainingFraction() const {
-        if (initial_g_ <= 0.0) return 0.0;
-        return std::clamp(remaining_g_ / initial_g_, 0.0, 1.0);
-    }
-
 private:
     EffusionCell* cell_ = nullptr;
 
