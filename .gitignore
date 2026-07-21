@@ -60,3 +60,6 @@ Makefile
 
 # dont need the venv stuff
 venv/
+# python bytecode cache
+__pycache__/
+*.pyc
