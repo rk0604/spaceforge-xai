@@ -39,7 +39,11 @@ include in.wake_harness
 #                             which is the classic wake profile shot.
 #   pdiam 0.025            -> render size only, not physical. Tune freely.
 # ------------------------------------------------------------------
-dump wake image 10 viz/${runID}/wake_*.ppm type type &
+# Grammar is: dump ID style mix-ID N file color diam [keywords]
+# The mix-ID is required and easy to miss. Omitting it makes SPARTA read
+# the filename as the frequency, which fails as "Invalid dump frequency"
+# (output.cpp reads atoi(arg[3])). "all" is a built-in mixture.
+dump wake image all 10 viz/${runID}/wake_*.ppm type type &
      size 1600 900 &
      zoom 2.0 &
      center s 0.56 0.5 0.5 &
