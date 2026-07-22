@@ -107,9 +107,14 @@ dump_modify wake scolor * white
 # style "cf" = continuous, fractional, so the pair values are 0..1
 # fractions of the lo..hi range rather than absolute densities.
 #
-# delta is only meaningful for sequential maps, but pass a positive value
-# rather than 0.0 in case it is validated unconditionally.
-dump_modify wake cmap gridy 0.0 1.207e15 cf 1.0 3 0.0 black 0.5 blue 1.0 red
+# For a CONTINUOUS map the first and last entries must be the literal
+# keywords min and max, not numeric endpoints. ColorMap::reset accepts a
+# number OR min/max per entry, then rejects the map if the endpoints are
+# not the keywords. Intermediate stops stay numeric.
+#
+# delta is read only when the style is SEQUENTIAL, so its value is
+# ignored here.
+dump_modify wake cmap gridy 0.0 1.207e15 cf 1.0 3 min black 0.5 blue max red
 
 # Species order from in.wake_harness line 28: O N N2 O2 H2O
 dump_modify wake pcolor 1 cyan          # O   - dominant freestream
