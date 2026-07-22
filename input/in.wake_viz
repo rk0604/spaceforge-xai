@@ -10,11 +10,18 @@
 # Produces ~100 frames in viz/wakeviz/ covering wake formation.
 # ------------------------------------------------------------------
 
-include in.wake_harness
-
-# The included deck appends CSVs here via fix print, so the dir must exist.
+# Directories MUST exist before the include. The production deck creates
+# "fix out print ... append ../data/raw/${runID}/..." and fix print opens
+# its file at fix-creation time, so a missing dir fails the include itself.
+# There is no root-level data/ in a fresh clone, so this is not optional.
+#
+# "index" style does not overwrite a value already set by -var on the
+# command line, so this is only a fallback for a bare run.
+variable runID index wakeviz
 shell mkdir -p ../data/raw/${runID}
 shell mkdir -p viz/${runID}
+
+include in.wake_harness
 
 # ------------------------------------------------------------------
 # Camera notes (box is x -13..12, y -5..5, z -5..5)
