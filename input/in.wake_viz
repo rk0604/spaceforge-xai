@@ -17,9 +17,17 @@
 #
 # "index" style does not overwrite a value already set by -var on the
 # command line, so this is only a fallback for a bare run.
+#
+# SPARTA's "shell mkdir" is a builtin that calls mkdir(2) on each argument.
+# It does NOT accept -p, does NOT create parent directories, and ignores
+# failures silently. So every level must be created separately, in order.
+# Re-creating a level that already exists is a harmless no-op.
 variable runID index wakeviz
-shell mkdir -p ../data/raw/${runID}
-shell mkdir -p viz/${runID}
+shell mkdir ../data
+shell mkdir ../data/raw
+shell mkdir ../data/raw/${runID}
+shell mkdir viz
+shell mkdir viz/${runID}
 
 include in.wake_harness
 
