@@ -54,13 +54,18 @@ dump wake image all 10 viz/${runID}/wake_*.ppm type type &
      box yes 0.02
 
 # pad 5 keeps frames in lexical order so ffmpeg globs them correctly.
-dump_modify wake pad 5 backcolor black boxcolor gray30
+#
+# Colors are restricted to primaries/secondaries that exist in every
+# SPARTA palette. Names with numeric suffixes (gray30) and exotic names
+# (dodgerblue) are X11/ImageMagick conventions and are NOT in the table;
+# they fail as "Invalid color in dump_modify command".
+dump_modify wake pad 5 backcolor black boxcolor white
 dump_modify wake scolor * white
 
 # Species order from in.wake_harness line 28: O N N2 O2 H2O
-dump_modify wake pcolor 1 dodgerblue    # O   - dominant freestream
+dump_modify wake pcolor 1 cyan          # O   - dominant freestream
 dump_modify wake pcolor 2 green         # N
-dump_modify wake pcolor 3 orange        # N2
+dump_modify wake pcolor 3 blue          # N2
 dump_modify wake pcolor 4 red           # O2
 dump_modify wake pcolor 5 yellow        # H2O - outgassed off the wake face
 
