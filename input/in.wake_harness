@@ -18,7 +18,13 @@ include params.inc
 # Domain and grid
 # ------------------------------------------------------------------
 create_box         -13.0  12.0    -5.0  5.0    -5.0  5.0
-create_grid        96     56       40
+# Grid resolution is overridable from the command line with -var so that
+# visualization runs can refine without editing this deck. Defaults are
+# the production values, so a normal run is unchanged.
+variable           gridNx        index 96
+variable           gridNy        index 56
+variable           gridNz        index 40
+create_grid        ${gridNx}  ${gridNy}  ${gridNz}
 
 # ------------------------------------------------------------------
 # Gas and flow
@@ -172,7 +178,9 @@ print              "diag:pInf_Torr=${pTorrTarget}" screen yes
 print              "diag:pInf_Pa=${pInf}" screen yes
 print              "diag:nInf_m^-3=${nInf}" screen yes
 
-variable           FNUM          equal 1.0e13
+# index rather than equal so -var FNUM can override it. An equal-style
+# variable would be redefined by this line and silently ignore -var.
+variable           FNUM          index 1.0e13
 global             fnum ${FNUM}
 
 mixture            mixWake nrho ${nInf}
