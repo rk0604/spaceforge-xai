@@ -1,0 +1,49 @@
+# ------------------------------------------------------------------
+# in.wake_viz - watch the WSF wake form. Visualization only.
+#
+# Pulls in the production deck unchanged, then adds an image dump and
+# a short run. Nothing here is used by the C++ harness.
+#
+# Run from spaceforge-xai/input :
+#   mpirun -np 4 spa_ -in in.wake_viz -var runID wakeviz
+#
+# Produces ~100 frames in viz/wakeviz/ covering wake formation.
+# ------------------------------------------------------------------
+
+include in.wake_harness
+
+# The included deck appends CSVs here via fix print, so the dir must exist.
+shell mkdir -p ../data/raw/${runID}
+shell mkdir -p viz/${runID}
+
+# ------------------------------------------------------------------
+# Camera notes (box is x -13..12, y -5..5, z -5..5)
+#   center s 0.56 0.5 0.5  -> puts x = +1.0 m at frame center
+#   zoom 2.0               -> frames about 12.5 m of x, roughly -5..+7
+#   view 90 90             -> camera on +y, level. x runs left to right,
+#                             which is the classic wake profile shot.
+#   pdiam 0.025            -> render size only, not physical. Tune freely.
+# ------------------------------------------------------------------
+dump wake image 10 viz/${runID}/wake_*.ppm type type &
+     size 1600 900 &
+     zoom 2.0 &
+     center s 0.56 0.5 0.5 &
+     view 90 90 &
+     up 0 0 1 &
+     pdiam 0.025 &
+     surf proc 0.0 &
+     box yes 0.02
+
+# pad 5 keeps frames in lexical order so ffmpeg globs them correctly.
+dump_modify wake pad 5 backcolor black boxcolor gray30
+dump_modify wake scolor * white
+
+# Species order from in.wake_harness line 28: O N N2 O2 H2O
+dump_modify wake pcolor 1 dodgerblue    # O   - dominant freestream
+dump_modify wake pcolor 2 green         # N
+dump_modify wake pcolor 3 orange        # N2
+dump_modify wake pcolor 4 red           # O2
+dump_modify wake pcolor 5 yellow        # H2O - outgassed off the wake face
+
+# 1000 steps = 3 full domain transits. Wake is established by ~500.
+run 1000
