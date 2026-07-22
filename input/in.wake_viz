@@ -33,11 +33,17 @@ include in.wake_harness
 
 # ------------------------------------------------------------------
 # Camera notes (box is x -13..12, y -5..5, z -5..5)
-#   center s 0.56 0.5 0.5  -> puts x = +1.0 m at frame center
-#   zoom 2.0               -> frames about 12.5 m of x, roughly -5..+7
-#   view 90 90             -> camera on +y, level. x runs left to right,
-#                             which is the classic wake profile shot.
-#   pdiam 0.025            -> render size only, not physical. Tune freely.
+#
+#   center is FRACTIONAL, not metres. dump_image.cpp box_center() does:
+#     image->xctr = boxxlo + cx*(boxxhi-boxxlo)
+#   so cx = 0.64  ->  x = -13 + 0.64*25 = +3.0 m, i.e. downstream of the
+#   shield and inside the wake. Half the domain is upstream freestream
+#   that carries no information, so centering on the shield wastes pixels.
+#
+#   zoom is linear: 3.5 framed the whole 25 m box, so 7.0 frames ~12.5 m,
+#   roughly x = -3.25 to +9.25. That covers shield plus wake.
+#
+#   view 90 90 puts the camera on +y. Note this renders +x to the LEFT.
 # ------------------------------------------------------------------
 # Grammar is: dump ID style mix-ID N file color diam [keywords]
 # The mix-ID is required and easy to miss. Omitting it makes SPARTA read
@@ -68,8 +74,8 @@ compute nAll grid all mixAll nrho
 # the camera on -y instead and read flow left to right.
 dump wake image all 10 viz/${runID}/wake_*.ppm type type &
      size 1600 900 &
-     zoom 3.5 &
-     center s 0.5 0.5 0.5 &
+     zoom 7.0 &
+     center s 0.64 0.5 0.5 &
      view 90 90 &
      up 0 0 1 &
      particle yes &
