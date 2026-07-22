@@ -93,6 +93,21 @@ dump wake image all 10 viz/${runID}/wake_*.ppm type type &
 dump_modify wake pad 5 backcolor black boxcolor white
 dump_modify wake scolor * white
 
+# Pin the cut-plane color scale to 0 -> freestream density.
+#
+# Without this the scale auto-ranges to the compression spike at the
+# shield, which is several times freestream. That crushes both the
+# freestream AND the near-vacuum wake into the bottom of the palette a
+# few color steps apart, so the boundary is invisible. Clamping hi to
+# nInf (1.207e15 from the run diagnostics) spends the entire palette on
+# the range the boundary actually occupies; the spike simply clips to
+# the top color.
+#
+# Syntax: cmap which lo hi style delta N   then N value/color pairs.
+# style "cf" = continuous, fractional, so the pair values are 0..1
+# fractions of the lo..hi range rather than absolute densities.
+dump_modify wake cmap gridy 0.0 1.207e15 cf 0.0 3 0.0 black 0.5 blue 1.0 red
+
 # Species order from in.wake_harness line 28: O N N2 O2 H2O
 dump_modify wake pcolor 1 cyan          # O   - dominant freestream
 dump_modify wake pcolor 2 green         # N
