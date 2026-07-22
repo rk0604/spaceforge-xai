@@ -72,7 +72,8 @@ dump wake image all 10 viz/${runID}/wake_*.ppm type type &
      center s 0.5 0.5 0.5 &
      view 90 90 &
      up 0 0 1 &
-     particle no &
+     particle yes &
+     pdiam 0.012 &
      gridy 0.0 c_nAll[1] &
      surf proc 0.0 &
      box yes 0.02
