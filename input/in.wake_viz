@@ -43,13 +43,32 @@ include in.wake_harness
 # The mix-ID is required and easy to miss. Omitting it makes SPARTA read
 # the filename as the frequency, which fails as "Invalid dump frequency"
 # (output.cpp reads atoi(arg[3])). "all" is a built-in mixture.
+# Whole-domain number density, needed by the cut plane below. Every
+# compute in the production deck is restricted to a probe group, so none
+# of them can be reused here.
+compute nAll grid all mixAll nrho
+
+# Rendering PARTICLES cannot show the wake. Looking along y integrates
+# through the full 10 m depth, but the wake cavity is only 3.66 m across,
+# so even a ray straight through it still accumulates 6.34 m of
+# freestream. That caps contrast at about a 37 percent darkening.
+#
+# gridy slices a single plane at y = 0 and colors cells by density
+# instead, which is a true slice rather than a projection. Contrast goes
+# from ~37 percent to near total. particle no keeps the particle cloud
+# from covering the plane back up.
+#
+# NOTE: +x renders to the LEFT with view 90 90 and up 0 0 1, because
+# screen-right = cross(forward, up) = (-1,0,0). Use view 90 270 to put
+# the camera on -y instead and read flow left to right.
 dump wake image all 10 viz/${runID}/wake_*.ppm type type &
      size 1600 900 &
-     zoom 2.0 &
-     center s 0.56 0.5 0.5 &
+     zoom 3.5 &
+     center s 0.5 0.5 0.5 &
      view 90 90 &
      up 0 0 1 &
-     pdiam 0.025 &
+     particle no &
+     gridy 0.0 c_nAll &
      surf proc 0.0 &
      box yes 0.02
 
