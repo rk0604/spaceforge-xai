@@ -71,8 +71,12 @@ compute nAll grid all mixAll nrho
 #
 # gridy slices a single plane at y = 0 and colors cells by density
 # instead, which is a true slice rather than a projection. Contrast goes
-# from ~37 percent to near total. particle no keeps the particle cloud
-# from covering the plane back up.
+# from ~37 percent to near total.
+#
+# particle no is deliberate: with a refined grid the plane needs a high
+# particle count for good per-cell statistics, and at those counts the
+# particle overlay carpets the whole frame and buries the plane. The
+# plane is the informative layer, so we do not draw particles on top.
 #
 # NOTE: +x renders to the LEFT with view 90 90 and up 0 0 1, because
 # screen-right = cross(forward, up) = (-1,0,0). Use view 90 270 to put
@@ -83,8 +87,7 @@ dump wake image all ${dumpEvery} viz/${runID}/wake_*.ppm type type &
      center s 0.64 0.5 0.5 &
      view 90 90 &
      up 0 0 1 &
-     particle yes &
-     pdiam 0.012 &
+     particle no &
      gridy 0.0 c_nAll[1] &
      surf proc 0.0 &
      box yes 0.02
